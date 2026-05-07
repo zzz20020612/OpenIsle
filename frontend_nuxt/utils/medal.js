@@ -1,10 +1,10 @@
 export const medalTitles = {
-  COMMENT: '评论达人',
-  POST: '发帖达人',
-  FEATURED: '精选作者',
-  SEED: '种子用户',
-  CONTRIBUTOR: '贡献者',
-  PIONEER: '开山鼻祖',
+  COMMENT: 'Active Commenter',
+  POST: 'Active Publisher',
+  FEATURED: 'Featured Author',
+  SEED: 'Seed Member',
+  CONTRIBUTOR: 'Contributor',
+  PIONEER: 'Pioneer Member',
 }
 
 export function getMedalTitle(type) {

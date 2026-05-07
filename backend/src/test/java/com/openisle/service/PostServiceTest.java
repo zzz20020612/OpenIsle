@@ -45,6 +45,7 @@ class PostServiceTest {
     PointHistoryRepository pointHistoryRepository = mock(PointHistoryRepository.class);
     RedisTemplate redisTemplate = mock(RedisTemplate.class);
     SearchIndexEventPublisher searchIndexEventPublisher = mock(SearchIndexEventPublisher.class);
+    CategoryService categoryService = mock(CategoryService.class);
 
     PostService service = new PostService(
       postRepo,
@@ -72,7 +73,8 @@ class PostServiceTest {
       pointHistoryRepository,
       PublishMode.DIRECT,
       redisTemplate,
-      searchIndexEventPublisher
+      searchIndexEventPublisher,
+      categoryService
     );
     when(context.getBean(PostService.class)).thenReturn(service);
 
@@ -125,6 +127,7 @@ class PostServiceTest {
     PointHistoryRepository pointHistoryRepository = mock(PointHistoryRepository.class);
     RedisTemplate redisTemplate = mock(RedisTemplate.class);
     SearchIndexEventPublisher searchIndexEventPublisher = mock(SearchIndexEventPublisher.class);
+    CategoryService categoryService = mock(CategoryService.class);
 
     PostService service = new PostService(
       postRepo,
@@ -152,7 +155,8 @@ class PostServiceTest {
       pointHistoryRepository,
       PublishMode.DIRECT,
       redisTemplate,
-      searchIndexEventPublisher
+      searchIndexEventPublisher,
+      categoryService
     );
     when(context.getBean(PostService.class)).thenReturn(service);
 
@@ -218,6 +222,7 @@ class PostServiceTest {
     PointHistoryRepository pointHistoryRepository = mock(PointHistoryRepository.class);
     RedisTemplate redisTemplate = mock(RedisTemplate.class);
     SearchIndexEventPublisher searchIndexEventPublisher = mock(SearchIndexEventPublisher.class);
+    CategoryService categoryService = mock(CategoryService.class);
 
     PostService service = new PostService(
       postRepo,
@@ -245,7 +250,8 @@ class PostServiceTest {
       pointHistoryRepository,
       PublishMode.DIRECT,
       redisTemplate,
-      searchIndexEventPublisher
+      searchIndexEventPublisher,
+      categoryService
     );
     when(context.getBean(PostService.class)).thenReturn(service);
 
@@ -258,8 +264,6 @@ class PostServiceTest {
         "t",
         "c",
         List.of(1L),
-        null,
-        null,
         null,
         null,
         null,
@@ -303,6 +307,7 @@ class PostServiceTest {
     PointHistoryRepository pointHistoryRepository = mock(PointHistoryRepository.class);
     RedisTemplate redisTemplate = mock(RedisTemplate.class);
     SearchIndexEventPublisher searchIndexEventPublisher = mock(SearchIndexEventPublisher.class);
+    CategoryService categoryService = mock(CategoryService.class);
 
     PostService service = new PostService(
       postRepo,
@@ -330,7 +335,8 @@ class PostServiceTest {
       pointHistoryRepository,
       PublishMode.DIRECT,
       redisTemplate,
-      searchIndexEventPublisher
+      searchIndexEventPublisher,
+      categoryService
     );
     when(context.getBean(PostService.class)).thenReturn(service);
 
@@ -399,6 +405,7 @@ class PostServiceTest {
     PointHistoryRepository pointHistoryRepository = mock(PointHistoryRepository.class);
     RedisTemplate redisTemplate = mock(RedisTemplate.class);
     SearchIndexEventPublisher searchIndexEventPublisher = mock(SearchIndexEventPublisher.class);
+    CategoryService categoryService = mock(CategoryService.class);
 
     PostService service = new PostService(
       postRepo,
@@ -426,7 +433,8 @@ class PostServiceTest {
       pointHistoryRepository,
       PublishMode.DIRECT,
       redisTemplate,
-      searchIndexEventPublisher
+      searchIndexEventPublisher,
+      categoryService
     );
     when(context.getBean(PostService.class)).thenReturn(service);
 

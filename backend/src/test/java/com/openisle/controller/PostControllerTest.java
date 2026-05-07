@@ -129,8 +129,6 @@ class PostControllerTest {
         isNull(),
         isNull(),
         isNull(),
-        isNull(),
-        isNull(),
         isNull()
       )
     ).thenReturn(post);
@@ -189,7 +187,7 @@ class PostControllerTest {
     post.setTags(Set.of(tag));
 
     when(
-      postService.updatePost(eq(1L), eq("alice"), eq(1L), eq("t2"), eq("c2"), eq(List.of(1L)))
+      postService.updatePost(eq(1L), eq("alice"), eq(1L), eq("t2"), eq("c2"), eq(List.of(1L)), isNull())
     ).thenReturn(post);
     when(commentService.getCommentsForPost(eq(1L), any())).thenReturn(List.of());
     when(commentService.getParticipants(anyLong(), anyInt())).thenReturn(List.of());
@@ -267,8 +265,6 @@ class PostControllerTest {
       .andExpect(status().isBadRequest());
 
     verify(postService, never()).createPost(
-      any(),
-      any(),
       any(),
       any(),
       any(),

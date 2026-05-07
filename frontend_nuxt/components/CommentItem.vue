@@ -15,7 +15,7 @@
       <div class="common-info-content-header">
         <div class="info-content-header-left">
           <span class="user-name">{{ comment.userName }}</span>
-          <span v-if="isCommentFromPostAuthor" class="op-badge" title="楼主">OP</span>
+          <span v-if="isCommentFromPostAuthor" class="op-badge" title="Original poster">OP</span>
           <span v-if="comment.isBot" class="bot-badge" title="Bot">Bot</span>
           <medal-one class="medal-icon" />
           <NuxtLink
@@ -91,7 +91,7 @@
       <div v-if="replyCount && level < 2" class="reply-toggle" @click="toggleReplies">
         <up v-if="showReplies" class="reply-toggle-icon" />
         <down v-else class="reply-toggle-icon" />
-        {{ replyCount }}条回复
+        {{ replyCount }} {{ replyCount === 1 ? 'reply' : 'replies' }}
       </div>
       <div v-if="showReplies && level < 2" class="reply-list">
         <BaseTimeline :items="replyList">
@@ -232,13 +232,13 @@ const isAdmin = computed(() => authState.role === 'ADMIN')
 const commentMenuItems = computed(() => {
   const items = []
   if (isAuthor.value || isAdmin.value) {
-    items.push({ text: '删除评论', color: 'red', onClick: () => deleteComment() })
+    items.push({ text: 'Delete comment', color: 'red', onClick: () => deleteComment() })
   }
   if (isAdmin.value || isPostAuthor.value) {
     if (props.comment.pinned) {
-      items.push({ text: '取消置顶', onClick: () => unpinComment() })
+      items.push({ text: 'Unpin comment', onClick: () => unpinComment() })
     } else {
-      items.push({ text: '置顶', onClick: () => pinComment() })
+      items.push({ text: 'Pin comment', onClick: () => pinComment() })
     }
   }
   return items
@@ -246,7 +246,7 @@ const commentMenuItems = computed(() => {
 const deleteComment = async () => {
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please sign in first.')
     return
   }
   console.debug('Deleting comment', props.comment.id)
@@ -256,22 +256,22 @@ const deleteComment = async () => {
   })
   console.debug('Delete comment response status', res.status)
   if (res.ok) {
-    toast.success('已删除')
+    toast.success('Comment deleted.')
     emit('deleted', props.comment.id)
   } else {
-    toast.error('操作失败')
+    toast.error('Action failed.')
   }
 }
 const submitReply = async (parentUserName, text, clear) => {
   if (!text.trim()) return
   if (props.postClosed) {
-    toast.error('帖子已关闭')
+    toast.error('This discussion is closed.')
     return
   }
   isWaitingForReply.value = true
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please sign in first.')
     isWaitingForReply.value = false
     return
   }
@@ -318,15 +318,15 @@ const submitReply = async (parentUserName, text, clear) => {
       })
       clear()
       showEditor.value = false
-      toast.success('回复成功')
+      toast.success('Reply posted.')
     } else if (res.status === 429) {
-      toast.error('回复过于频繁，请稍后再试')
+      toast.error('You are replying too frequently. Please try again later.')
     } else {
-      toast.error(`回复失败: ${res.status} ${res.statusText}`)
+      toast.error(`Reply failed: ${res.status} ${res.statusText}`)
     }
   } catch (e) {
     console.debug('Submit reply error', e)
-    toast.error(`回复失败: ${e.message}`)
+    toast.error(`Reply failed: ${e.message}`)
   } finally {
     isWaitingForReply.value = false
   }
@@ -335,7 +335,7 @@ const submitReply = async (parentUserName, text, clear) => {
 const pinComment = async () => {
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please sign in first.')
     return
   }
   const url = isAdmin.value
@@ -347,15 +347,15 @@ const pinComment = async () => {
   })
   if (res.ok) {
     props.comment.pinned = true
-    toast.success('已置顶')
+    toast.success('Comment pinned.')
   } else {
-    toast.error('操作失败')
+    toast.error('Action failed.')
   }
 }
 const unpinComment = async () => {
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please sign in first.')
     return
   }
   const url = isAdmin.value
@@ -367,16 +367,16 @@ const unpinComment = async () => {
   })
   if (res.ok) {
     props.comment.pinned = false
-    toast.success('已取消置顶')
+    toast.success('Comment unpinned.')
   } else {
-    toast.error('操作失败')
+    toast.error('Action failed.')
   }
 }
 
 const copyCommentLink = () => {
   const link = `${location.origin}${location.pathname}#comment-${props.comment.id}`
   navigator.clipboard.writeText(link).then(() => {
-    toast.success('已复制')
+    toast.success('Link copied.')
   })
 }
 

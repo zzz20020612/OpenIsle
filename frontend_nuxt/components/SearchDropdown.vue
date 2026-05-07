@@ -17,7 +17,7 @@
           <input
             class="text-input"
             v-model="keyword"
-            placeholder="键盘点击「/」以触发搜索"
+            placeholder="Search papers, posts, people... Press /"
             ref="searchInput"
             @input="setSearch(keyword)"
           />

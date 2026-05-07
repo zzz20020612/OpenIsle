@@ -7,10 +7,10 @@
     <div class="comment-bottom-container">
       <div class="comment-submit" :class="{ disabled: isDisabled }" @click="submit">
         <template v-if="!loading">
-          发布评论
-          <span class="shortcut-icon" v-if="!isMobile"> {{ isMac ? '⌘' : 'Ctrl' }} ⏎ </span>
+          Publish comment
+          <span class="shortcut-icon" v-if="!isMobile">{{ isMac ? 'Cmd' : 'Ctrl' }} + Enter</span>
         </template>
-        <template v-else> <loading-four class="loading-icon" /> 发布中... </template>
+        <template v-else> <loading-four class="loading-icon" /> Publishing... </template>
       </div>
     </div>
   </div>
@@ -66,12 +66,6 @@ export default {
 
     const isMac = ref(false)
 
-    if (navigator.userAgentData) {
-      isMac.value = navigator.userAgentData.platform === 'macOS'
-    } else {
-      isMac.value = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
-    }
-
     const getEditorTheme = getEditorThemeUtil
     const getPreviewTheme = getPreviewThemeUtil
     const applyTheme = () => {
@@ -94,8 +88,14 @@ export default {
     }
 
     onMounted(() => {
+      if (navigator.userAgentData) {
+        isMac.value = navigator.userAgentData.platform === 'macOS'
+      } else {
+        isMac.value = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
+      }
+
       vditorInstance.value = createVditor(editorId.value, {
-        placeholder: '说点什么...',
+        placeholder: 'Write a thoughtful comment...',
         preview: {
           actions: [],
           markdown: { toc: false },
@@ -110,9 +110,9 @@ export default {
           applyTheme()
         },
       })
-      // 不是手机的情况下不添加快捷键
+      // Enable keyboard submission on desktop.
       if (!isMobile.value) {
-        // 添加快捷键监听 (Ctrl+Enter 或 Cmd+Enter)
+        // Submit with Ctrl+Enter or Cmd+Enter.
         const handleKeydown = (e) => {
           if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             e.preventDefault()
@@ -208,7 +208,7 @@ export default {
 .comment-submit:hover {
   background-color: var(--primary-color-hover);
 }
-/** 评论按钮快捷键样式 */
+/** Comment submit shortcut badge. */
 .shortcut-icon {
   padding: 2px 6px;
   border-radius: 6px;

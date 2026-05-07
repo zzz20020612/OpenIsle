@@ -18,7 +18,7 @@
             <div>{{ counts[r.type] }}</div>
           </div>
 
-          <ToolTip content="发表心情" placement="bottom">
+          <ToolTip content="React" placement="bottom">
             <div class="reactions-viewer-item placeholder" @click="openPanel">
               <sly-face-whit-smile class="reactions-viewer-item-placeholder-icon" />
             </div>
@@ -192,7 +192,7 @@ watch(panelTypes, async () => {
 const toggleReaction = async (type) => {
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please log in first.')
     return
   }
   const url =
@@ -235,7 +235,7 @@ const toggleReaction = async (type) => {
           reactions.value.push(data)
         }
         if (data.reward && data.reward > 0) {
-          toast.success(`获得 ${data.reward} 经验值`)
+          toast.success(`Earned ${data.reward} XP.`)
         }
       }
       emit('update:modelValue', reactions.value)
@@ -248,7 +248,7 @@ const toggleReaction = async (type) => {
         reactions.value.push(removedReaction)
       }
       emit('update:modelValue', reactions.value)
-      toast.error('操作失败')
+      toast.error('Action failed.')
     }
   } catch (e) {
     if (tempReaction) {
@@ -258,7 +258,7 @@ const toggleReaction = async (type) => {
       reactions.value.push(removedReaction)
     }
     emit('update:modelValue', reactions.value)
-    toast.error('操作失败')
+    toast.error('Action failed.')
   }
 }
 

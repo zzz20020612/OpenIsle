@@ -3,9 +3,9 @@
     <div class="header-content">
       <div class="header-content-left">
         <div v-if="showMenuBtn" class="menu-btn-wrapper">
-          <button class="menu-btn" ref="menuBtn" @click="$emit('toggle-menu')">
-            <ToolTip content="展开/收起菜单" placement="bottom">
-              <application-menu class="micon"></application-menu>
+          <button class="menu-btn" ref="menuBtn" type="button" @click="$emit('toggle-menu')">
+            <ToolTip content="Toggle navigation" placement="bottom">
+              <application-menu class="micon" />
             </ToolTip>
           </button>
           <span
@@ -13,14 +13,18 @@
             class="menu-unread-dot"
           ></span>
         </div>
-        <NuxtLink class="logo-container" :to="`/`" @click="refrechData">
+
+        <NuxtLink class="logo-container" to="/" @click="refreshData">
           <BaseImage
             alt="OpenIsle"
             src="https://openisle-1307107697.cos.ap-guangzhou.myqcloud.com/assert/image.png"
-            width="60"
-            height="60"
+            width="42"
+            height="42"
           />
-          <div class="logo-text">OpenIsle</div>
+          <div class="logo-copy">
+            <span class="logo-text">OpenIsle</span>
+            <span class="logo-subtitle">Research Evaluation</span>
+          </div>
         </NuxtLink>
       </div>
 
@@ -31,68 +35,67 @@
             v-if="!isMobile || showSearch"
             @close="closeSearch"
           />
-          <!-- 搜索 -->
-          <ToolTip v-if="isMobile" content="搜索" placement="bottom">
-            <div class="header-icon-item" @click="search">
+
+          <ToolTip v-if="isMobile" content="Search" placement="bottom">
+            <button class="header-icon-item" type="button" @click="search">
               <search-icon class="header-icon" />
-              <span class="header-label">搜索</span>
-            </div>
+              <span class="header-label">Search</span>
+            </button>
           </ToolTip>
-          <!-- 主题切换 -->
-          <ToolTip v-if="isMobile" content="切换主题" placement="bottom">
-            <div class="header-icon-item" @click="cycleTheme">
+
+          <ToolTip v-if="isMobile" content="Switch theme" placement="bottom">
+            <button class="header-icon-item" type="button" @click="cycleTheme">
               <component :is="iconClass" class="header-icon" />
-              <span class="header-label">主题</span>
-            </div>
+              <span class="header-label">Theme</span>
+            </button>
           </ToolTip>
-          <!-- 邀请 -->
-          <ToolTip v-if="!isMobile" content="邀请好友" placement="bottom">
-            <div class="header-icon-item" @click="copyInviteLink">
+
+          <ToolTip v-if="!isMobile" content="Copy invite link" placement="bottom">
+            <button class="header-icon-item" type="button" @click="copyInviteLink">
               <template v-if="!isCopying">
                 <copy-link class="header-icon" />
-                <span class="header-label">邀请</span>
+                <span class="header-label">Invite</span>
               </template>
               <loading v-else />
-            </div>
+            </button>
           </ToolTip>
-          <!-- 在线人数 -->
-          <ToolTip v-if="!isMobile" content="当前在线人数" placement="bottom">
-            <div class="header-icon-item">
+
+          <ToolTip v-if="!isMobile" content="Online users" placement="bottom">
+            <div class="header-icon-item passive">
               <peoples-two class="header-icon" />
-              <span class="header-label">在线</span>
+              <span class="header-label">Online</span>
               <span class="header-badge">{{ onlineCount }}</span>
             </div>
           </ToolTip>
-          <!-- RSS -->
-          <ToolTip content="复制RSS链接" placement="bottom">
-            <div class="header-icon-item" @click="copyRssLink">
+
+          <ToolTip content="Copy RSS link" placement="bottom">
+            <button class="header-icon-item" type="button" @click="copyRssLink">
               <rss class="header-icon" />
               <span class="header-label">RSS</span>
-            </div>
-          </ToolTip>
-          <!-- 发帖 -->
-          <ToolTip v-if="!isMobile && isLogin" content="发帖" placement="bottom">
-            <div class="header-icon-item" @click="goToNewPost">
-              <edit class="header-icon" />
-              <span class="header-label">发帖</span>
-            </div>
+            </button>
           </ToolTip>
 
-          <!-- 消息 -->
-          <ToolTip v-if="isLogin" content="站内信和频道" placement="bottom">
-            <div class="header-icon-item" @click="goToMessages">
+          <ToolTip v-if="!isMobile && isLogin" content="Submit a paper" placement="bottom">
+            <button class="header-submit-button" type="button" @click="goToSubmitPaper">
+              <edit class="header-icon" />
+              <span>Submit</span>
+            </button>
+          </ToolTip>
+
+          <ToolTip v-if="isLogin" content="Messages and channels" placement="bottom">
+            <button class="header-icon-item" type="button" @click="goToMessages">
               <message-emoji class="header-icon" />
-              <span class="header-label">消息</span>
-              <span v-if="unreadMessageCount > 0" class="unread-badge">{{
-                unreadMessageCount
-              }}</span>
+              <span class="header-label">Messages</span>
+              <span v-if="unreadMessageCount > 0" class="unread-badge">
+                {{ unreadMessageCount }}
+              </span>
               <span v-else-if="hasChannelUnread" class="unread-dot"></span>
-            </div>
+            </button>
           </ToolTip>
 
           <DropdownMenu v-if="isLogin" ref="userMenu" :items="headerMenuItems">
             <template #trigger>
-              <div class="avatar-container">
+              <button class="avatar-container" type="button">
                 <BaseUserAvatar
                   class="avatar-img"
                   :user-id="authState.userId"
@@ -101,13 +104,17 @@
                   :width="32"
                 />
                 <down />
-              </div>
+              </button>
             </template>
           </DropdownMenu>
 
           <div v-if="!isLogin" class="auth-btns">
-            <div class="header-content-item-main" @click="goToLogin">登录</div>
-            <div class="header-content-item-secondary" @click="goToSignup">注册</div>
+            <button class="header-content-item-secondary" type="button" @click="goToLogin">
+              Log in
+            </button>
+            <button class="header-content-item-main" type="button" @click="goToSignup">
+              Sign up
+            </button>
           </div>
         </div>
       </ClientOnly>
@@ -117,23 +124,23 @@
 
 <script setup>
 import { ClientOnly } from '#components'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import DropdownMenu from '~/components/DropdownMenu.vue'
 import ToolTip from '~/components/ToolTip.vue'
 import SearchDropdown from '~/components/SearchDropdown.vue'
 import BaseUserAvatar from '~/components/BaseUserAvatar.vue'
-import { authState, clearToken } from '~/utils/auth'
+import { authState, clearToken, getToken } from '~/utils/auth'
 import { useUnreadCount } from '~/composables/useUnreadCount'
 import { useChannelsUnreadCount } from '~/composables/useChannelsUnreadCount'
 import { useIsMobile } from '~/utils/screen'
 import { themeState, cycleTheme, ThemeMode } from '~/utils/theme'
 import { toast } from '~/main'
-import { getToken } from '~/utils/auth'
+
 const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
 const WEBSITE_BASE_URL = config.public.websiteBaseUrl
 
-const props = defineProps({
+defineProps({
   showMenuBtn: {
     type: Boolean,
     default: true,
@@ -146,21 +153,15 @@ const { count: unreadMessageCount, fetchUnreadCount } = useUnreadCount()
 const { hasUnread: hasChannelUnread, fetchChannelUnread } = useChannelsUnreadCount()
 const showSearch = ref(false)
 const searchDropdown = ref(null)
-const userMenu = ref(null)
-const menuBtn = ref(null)
 const isCopying = ref(false)
 const onlineCount = ref(0)
 
-// 心跳检测
 async function sendPing() {
   try {
-    // 已登录就用 userId，否则随机生成游客ID
     let userId = authState.userId
     if (userId) {
-      // 用户已登录，清理游客 ID
       localStorage.removeItem('guestId')
     } else {
-      // 游客模式
       let savedId = localStorage.getItem('guestId')
       if (!savedId) {
         savedId = `guest-${crypto.randomUUID()}`
@@ -168,50 +169,80 @@ async function sendPing() {
       }
       userId = savedId
     }
-    const res = await fetch(`${API_BASE_URL}/api/online/heartbeat?userId=${userId}`, {
-      method: 'POST',
-    })
-  } catch (e) {
-    console.error('心跳失败', e)
+    await fetch(`${API_BASE_URL}/api/online/heartbeat?userId=${userId}`, { method: 'POST' })
+  } catch (error) {
+    console.error('Online heartbeat failed', error)
   }
 }
 
-// 获取在线人数
 async function fetchCount() {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/online/count`, {
-      method: 'GET',
-    })
+    const res = await fetch(`${API_BASE_URL}/api/online/count`, { method: 'GET' })
     onlineCount.value = await res.json()
-  } catch (e) {
-    console.error('获取在线人数失败', e)
+  } catch (error) {
+    console.error('Failed to fetch online count', error)
   }
 }
 
 const search = () => {
   showSearch.value = true
   nextTick(() => {
-    searchDropdown.value.toggle()
+    searchDropdown.value?.toggle?.()
   })
 }
+
 const closeSearch = () => {
   nextTick(() => {
     showSearch.value = false
   })
 }
+
 const goToLogin = () => {
   navigateTo('/login', { replace: true })
 }
+
+const goToSignup = () => {
+  navigateTo('/signup', { replace: true })
+}
+
 const goToSettings = () => {
   navigateTo('/settings', { replace: true })
+}
+
+const goToAdminPapers = () => {
+  navigateTo('/admin/papers', { replace: false })
+}
+
+const goToProfile = () => {
+  const id = authState.username || authState.id
+  if (id) {
+    navigateTo(`/users/${id}`, { replace: true })
+  }
+}
+
+const goToLogout = () => {
+  clearToken()
+  navigateTo('/login', { replace: true })
+}
+
+const goToSubmitPaper = () => {
+  navigateTo('/papers/submit', { replace: false })
+}
+
+const goToMessages = () => {
+  navigateTo('/message-box')
+}
+
+const refreshData = () => {
+  window.dispatchEvent(new Event('refresh-home'))
 }
 
 const copyInviteLink = async () => {
   isCopying.value = true
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
-    isCopying.value = false // 🔥 修复：未登录时立即复原状态
+    toast.error('Please log in first.')
+    isCopying.value = false
     return
   }
   try {
@@ -219,74 +250,39 @@ const copyInviteLink = async () => {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (res.ok) {
-      const data = await res.json()
-      const inviteLink = data.token ? `${WEBSITE_BASE_URL}/signup?invite_token=${data.token}` : ''
-      /**
-       * navigator.clipboard在webkit中有点奇怪的行为
-       * https://stackoverflow.com/questions/62327358/javascript-clipboard-api-safari-ios-notallowederror-message
-       * https://webkit.org/blog/10247/new-webkit-features-in-safari-13-1/
-       */
-      setTimeout(() => {
-        navigator.clipboard
-          .writeText(inviteLink)
-          .then(() => {
-            toast.success('邀请链接已复制')
-          })
-          .catch(() => {
-            toast.error('邀请链接复制失败')
-          })
-      }, 0)
-    } else {
+    if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      toast.error(data.error || '生成邀请链接失败')
+      toast.error(data.error || 'Failed to generate invite link.')
+      return
     }
-  } catch (e) {
-    toast.error('生成邀请链接失败')
+    const data = await res.json()
+    const inviteLink = data.token ? `${WEBSITE_BASE_URL}/signup?invite_token=${data.token}` : ''
+    await navigator.clipboard.writeText(inviteLink)
+    toast.success('Invite link copied.')
+  } catch (error) {
+    toast.error('Failed to generate invite link.')
   } finally {
     isCopying.value = false
   }
 }
 
 const copyRssLink = async () => {
-  const rssLink = `${API_BASE_URL}/api/rss`
-  await navigator.clipboard.writeText(rssLink)
-  toast.success('RSS链接已复制')
+  await navigator.clipboard.writeText(`${API_BASE_URL}/api/rss`)
+  toast.success('RSS link copied.')
 }
 
-const goToProfile = async () => {
-  let id = authState.username || authState.id
-  if (id) {
-    navigateTo(`/users/${id}`, { replace: true })
+const headerMenuItems = computed(() => {
+  const items = [
+    { text: 'Settings', onClick: goToSettings },
+    { text: 'Profile', onClick: goToProfile },
+  ]
+  if (authState.role === 'ADMIN') {
+    items.push({ text: 'Paper Admin', onClick: goToAdminPapers })
   }
-}
-const goToSignup = () => {
-  navigateTo('/signup', { replace: true })
-}
-const goToLogout = () => {
-  clearToken()
-  navigateTo('/login', { replace: true })
-}
+  items.push({ text: 'Log out', onClick: goToLogout })
+  return items
+})
 
-const goToNewPost = () => {
-  navigateTo('/new-post', { replace: false })
-}
-
-const refrechData = async () => {
-  window.dispatchEvent(new Event('refresh-home'))
-}
-
-const goToMessages = () => {
-  navigateTo('/message-box')
-}
-
-const headerMenuItems = computed(() => [
-  { text: '设置', onClick: goToSettings },
-  { text: '个人主页', onClick: goToProfile },
-  { text: '退出', onClick: goToLogout },
-])
-
-/** 其余逻辑保持不变 */
 const iconClass = computed(() => {
   switch (themeState.mode) {
     case ThemeMode.DARK:
@@ -309,12 +305,10 @@ onMounted(async () => {
   }
 
   await updateUnread()
-
-  // 新增的在线人数逻辑
   sendPing()
   fetchCount()
-  setInterval(sendPing, 120000) // 每 2 分钟发一次心跳
-  setInterval(fetchCount, 60000) // 每 1 分更新 UI
+  setInterval(sendPing, 120000)
+  setInterval(fetchCount, 60000)
 })
 </script>
 
@@ -324,111 +318,211 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   height: var(--header-height);
-  background-color: var(--background-color-blur);
+  background: color-mix(in srgb, var(--background-color) 86%, transparent);
   backdrop-filter: var(--blur-10);
-  color: var(--primary-color);
+  color: var(--header-text-color);
   border-bottom: 1px solid var(--header-border-color);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  max-width: var(--page-max-width);
+  padding: 0 18px;
+}
+
+.header-content-left,
+.header-content-right,
+.auth-btns {
+  display: flex;
+  align-items: center;
+}
+
+.header-content-right {
+  margin-left: auto;
+  gap: 18px;
+}
+
+.auth-btns {
+  gap: 10px;
 }
 
 .logo-container {
   display: flex;
   align-items: center;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  text-decoration: none;
+  gap: 9px;
   color: inherit;
+  text-decoration: none;
 }
 
-.header-content {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  max-width: var(--page-max-width);
-  backdrop-filter: var(--blur-10);
+.logo-copy {
+  display: grid;
+  gap: 1px;
 }
 
-.header-content-left {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
+.logo-text {
+  color: var(--header-text-color);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
-.header-content-right {
-  display: flex;
-  margin-left: auto;
-  flex-direction: row;
-  align-items: center;
-  gap: 30px;
+.logo-subtitle {
+  color: var(--menu-text-color);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.auth-btns {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 20px;
-  padding-right: 15px;
-}
-
-.micon {
-  margin-left: 10px;
+.menu-btn,
+.header-icon-item,
+.avatar-container,
+.header-content-item-main,
+.header-content-item-secondary,
+.header-submit-button {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
 }
 
 .menu-btn {
-  font-size: 24px;
-  background: none;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-  opacity: 0.4;
-  margin-right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-right: 8px;
+  border-radius: 12px;
+  color: var(--menu-text-color);
+  background: transparent;
+}
+
+.menu-btn:hover,
+.header-icon-item:hover,
+.avatar-container:hover {
+  background: var(--secondary-color-hover);
 }
 
 .menu-btn-wrapper {
   position: relative;
-  display: inline-block;
+  display: inline-flex;
 }
 
-.menu-unread-dot {
+.micon {
+  font-size: 23px;
+}
+
+.menu-unread-dot,
+.unread-dot {
   position: absolute;
-  top: 0;
-  right: 10px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #ff4d4f;
+  background: #b74135;
 }
 
-.menu-btn:hover {
-  opacity: 0.8;
+.menu-unread-dot {
+  top: 4px;
+  right: 10px;
 }
 
-.header-content-item-main {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 10px;
-  cursor: pointer;
+.unread-dot {
+  top: 4px;
+  right: 4px;
 }
 
-.header-content-item-main:hover {
-  background-color: var(--primary-color-hover);
+.header-icon-item {
+  position: relative;
+  display: inline-flex;
+  min-width: 42px;
+  min-height: 42px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 12px;
+  color: var(--menu-text-color);
+  background: transparent;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    transform 0.15s ease;
 }
 
-.header-content-item-secondary {
+.header-icon-item:not(.passive):active {
+  transform: translateY(1px);
+}
+
+.header-icon-item.passive {
+  cursor: default;
+}
+
+.header-icon,
+.theme-icon {
+  font-size: 19px;
+  line-height: 1;
+}
+
+.header-label {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.header-submit-button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 24%, transparent);
+  border-radius: 999px;
+  color: #fff;
+  background: var(--primary-color);
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.header-submit-button:hover {
+  background: var(--primary-color-hover);
+}
+
+.header-badge,
+.unread-badge {
+  position: absolute;
+  top: -3px;
+  right: -5px;
+  display: inline-flex;
+  min-width: 17px;
+  min-height: 17px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border-radius: 999px;
+  color: #fff;
+  background: #b74135;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.header-badge {
   color: var(--primary-color);
-  text-decoration: underline;
-  cursor: pointer;
+  background: transparent;
 }
 
 .avatar-container {
-  position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  cursor: pointer;
-  margin-right: 10px;
+  gap: 3px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  color: var(--menu-text-color);
+  background: transparent;
 }
 
 .avatar-img {
@@ -439,167 +533,47 @@ onMounted(async () => {
   object-fit: cover;
 }
 
-.dropdown-icon {
-  margin-left: 5px;
+.header-content-item-main,
+.header-content-item-secondary {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 760;
 }
 
-.dropdown-item {
-  padding: 8px 16px;
-  white-space: nowrap;
+.header-content-item-main {
+  color: #fff;
+  background: var(--primary-color);
 }
 
-.dropdown-item:hover {
-  background-color: var(--menu-selected-background-color);
+.header-content-item-main:hover {
+  background: var(--primary-color-hover);
 }
 
-.search-icon,
-.theme-icon {
-  font-size: 18px;
-  cursor: pointer;
-}
-
-.invite_text:hover {
-  opacity: 0.8;
-  text-decoration: underline;
-}
-
-.invite_text,
-.online-count,
-.rss-icon,
-.new-post-icon,
-.messages-icon {
-  font-size: 18px;
-  cursor: pointer;
-  position: relative;
-}
-
-.unread-badge {
-  position: absolute;
-  top: -4px;
-  right: -6px;
-  background-color: #ff4d4f;
-  color: white;
-  border-radius: 50%;
-  padding: 2px 5px;
-  font-size: 10px;
-  font-weight: bold;
-  line-height: 1;
-  min-width: 16px;
-  text-align: center;
-  box-sizing: border-box;
-}
-
-.unread-dot {
-  position: absolute;
-  top: 0;
-  right: -1px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: #ff4d4f;
-}
-
-.rss-icon {
-  animation: rss-glow 2s 3;
-}
-
-.online-count {
-  cursor: default;
-}
-
-/* === 统一图标按钮风格 === */
-.header-icon-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  font-size: 14px;
+.header-content-item-secondary {
   color: var(--primary-color);
-  cursor: pointer;
-  position: relative;
-  transition:
-    color 0.25s ease,
-    transform 0.15s ease,
-    opacity 0.2s ease;
+  background: transparent;
 }
 
-.header-icon-item:hover {
-  opacity: 0.8;
-  transform: translateY(-1px);
-}
-
-/* 点击时瞬间高亮 + 轻微缩放 */
-.header-icon-item:active {
-  color: var(--primary-color-hover);
-  transform: scale(0.92);
-}
-
-.header-icon {
-  font-size: 20px;
-  line-height: 1;
-}
-
-.header-label {
-  font-size: 12px;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-/* 在线人数的数字文字样式（无背景） */
-.header-badge {
-  position: absolute;
-  top: -4px;
-  right: -6px;
-  color: var(--primary-color); /* 🔹 使用主题主色 */
-  background: none; /* 🔹 去掉背景 */
-  font-size: 11px; /* 字体稍微大一点以便清晰 */
-  font-weight: 600; /* 加一点权重让数字更醒目 */
-  line-height: 1;
-  padding: 0; /* 去掉内边距 */
-}
-
-@keyframes rss-glow {
-  0% {
-    text-shadow: 0 0 0px var(--primary-color);
-    opacity: 1;
-  }
-  50% {
-    text-shadow: 0 0 12px var(--primary-color);
-    opacity: 0.8;
-  }
-  100% {
-    text-shadow: 0 0 0px var(--primary-color);
-    opacity: 1;
-  }
-}
-
-@media (max-width: 1200px) {
-  .header-content {
-    padding-left: 15px;
-    padding-right: 15px;
-    width: calc(100% - 30px);
-  }
+.header-content-item-secondary:hover {
+  background: var(--secondary-color-hover);
 }
 
 @media (max-width: 768px) {
-  .header-content-item-secondary {
+  .logo-subtitle,
+  .header-content-item-secondary,
+  .header-label,
+  .header-badge {
     display: none;
   }
 
-  .logo-text {
-    display: none;
+  .header-content {
+    padding: 0 12px;
   }
 
   .header-content-right {
-    gap: 15px;
-  }
-  /* 手机不显示文字 */
-  .header-label {
-    display: none;
-  }
-  .header-badge {
-    display: none;
+    gap: 8px;
   }
 }
 </style>

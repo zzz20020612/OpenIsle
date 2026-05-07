@@ -13,11 +13,11 @@
 const props = defineProps({
   text: {
     type: String,
-    default: '请先登录，点击跳转到登录页面',
+    default: 'Please sign in to continue.',
   },
   buttonText: {
     type: String,
-    default: '登录',
+    default: 'Log in',
   },
   buttonLink: {
     type: String,

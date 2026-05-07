@@ -153,7 +153,10 @@ useHead({
 })
 
 const config = useRuntimeConfig()
-const API_BASE_URL = config.public.apiBaseUrl
+const API_BASE_URL =
+  process.server && config.public.apiBaseUrlSsr
+    ? config.public.apiBaseUrlSsr
+    : config.public.apiBaseUrl
 const selectedCategory = ref('')
 const selectedTags = ref([])
 const route = useRoute()

@@ -141,6 +141,8 @@ public class SecurityConfig {
           .permitAll()
           .requestMatchers(HttpMethod.GET, "/api/posts/**")
           .permitAll()
+          .requestMatchers(HttpMethod.GET, "/api/papers/**")
+          .permitAll()
           .requestMatchers(HttpMethod.GET, "/api/comments/**")
           .permitAll()
           .requestMatchers(HttpMethod.GET, "/api/categories/**")
@@ -221,6 +223,7 @@ public class SecurityConfig {
         boolean publicGet =
           "GET".equalsIgnoreCase(request.getMethod()) &&
           (uri.startsWith("/api/posts") ||
+            uri.startsWith("/api/papers") ||
             uri.startsWith("/api/comments") ||
             uri.startsWith("/api/categories") ||
             uri.startsWith("/api/tags") ||

@@ -1,11 +1,20 @@
-<template>
+﻿<template>
   <transition name="slide">
     <nav v-if="visible" class="menu">
       <div class="menu-content">
         <div class="menu-item-container">
-          <NuxtLink class="menu-item" exact-active-class="selected" to="/" @click="handleItemClick">
+                    <NuxtLink class="menu-item" exact-active-class="selected" to="/" @click="handleItemClick">
             <hashtag-key class="menu-item-icon" />
-            <span class="menu-item-text">话题</span>
+            <span class="menu-item-text">Home</span>
+          </NuxtLink>
+          <NuxtLink
+            class="menu-item"
+            exact-active-class="selected"
+            to="/papers"
+            @click="handleItemClick"
+          >
+            <hashtag-key class="menu-item-icon" />
+            <span class="menu-item-text">Papers</span>
           </NuxtLink>
           <NuxtLink
             class="menu-item"
@@ -14,7 +23,7 @@
             @click="handleItemClick"
           >
             <edit class="menu-item-icon" />
-            <span class="menu-item-text">发帖</span>
+            <span class="menu-item-text">New Post</span>
           </NuxtLink>
           <NuxtLink
             class="menu-item"
@@ -23,7 +32,7 @@
             @click="handleItemClick"
           >
             <remind class="menu-item-icon" />
-            <span class="menu-item-text">我的消息</span>
+            <span class="menu-item-text">Messages</span>
             <span v-if="unreadCount > 0" class="unread-container">
               <span class="unread"> {{ showUnreadCount }} </span>
             </span>
@@ -35,7 +44,7 @@
             @click="handleItemClick"
           >
             <info-icon class="menu-item-icon" />
-            <span class="menu-item-text">关于</span>
+            <span class="menu-item-text">About</span>
           </NuxtLink>
           <NuxtLink
             class="menu-item"
@@ -44,7 +53,7 @@
             @click="handleItemClick"
           >
             <gift class="menu-item-icon" />
-            <span class="menu-item-text">🔥 活动</span>
+            <span class="menu-item-text">Activities</span>
           </NuxtLink>
           <NuxtLink
             v-if="shouldShowStats"
@@ -54,7 +63,7 @@
             @click="handleItemClick"
           >
             <chart-line class="menu-item-icon" />
-            <span class="menu-item-text">站点统计</span>
+            <span class="menu-item-text">Site Stats</span>
           </NuxtLink>
           <NuxtLink
             v-if="authState.loggedIn"
@@ -65,7 +74,7 @@
           >
             <finance class="menu-item-icon" />
             <span class="menu-item-text">
-              积分商城
+              Points Store
               <span v-if="myPoint !== null" class="point-count">{{ myPoint }}</span>
             </span>
           </NuxtLink>
@@ -73,7 +82,7 @@
 
         <div class="menu-section">
           <div class="section-header" @click="categoryOpen = !categoryOpen">
-            <span>类别</span>
+            <span>Categories</span>
             <up v-if="categoryOpen" class="menu-item-icon" />
             <down v-else class="menu-item-icon" />
           </div>
@@ -108,7 +117,7 @@
 
         <div class="menu-section">
           <div class="section-header" @click="tagOpen = !tagOpen">
-            <span>标签</span>
+            <span>Tags</span>
             <up v-if="tagOpen" class="menu-item-icon" />
             <down v-else class="menu-item-icon" />
           </div>
@@ -147,16 +156,16 @@
                   class="more-link"
                   @click.prevent="loadMoreTags"
                 >
-                  查看更多
+                  View More
                 </a>
-                <span v-else class="more-loading">加载中...</span>
+                <span v-else class="more-loading">Loading...</span>
               </div>
             </template>
           </div>
         </div>
       </div>
 
-      <!-- 解决动态样式的水合错误 -->
+      <!-- 瑙ｅ喅鍔ㄦ€佹牱寮忕殑姘村悎閿欒 -->
       <ClientOnly v-if="!isMobile">
         <div class="menu-footer">
           <div class="menu-footer-btn" @click="cycleTheme">
@@ -177,12 +186,12 @@ import { cycleTheme, ThemeMode, themeState } from '~/utils/theme'
 import { selectedCategoryGlobal, selectedTagsGlobal } from '~/composables/postFilter'
 
 const isMobile = useIsMobile()
-// 判断当前分类是否被选中
+// 鍒ゆ柇褰撳墠鍒嗙被鏄惁琚€変腑
 const isCategorySelected = (id) => {
   return id === selectedCategoryGlobal.value
 }
 
-// 判断当前标签是否被选中
+// 鍒ゆ柇褰撳墠鏍囩鏄惁琚€変腑
 const isTagSelected = (id) => {
   const selected = Array.isArray(selectedTagsGlobal.value)
     ? selectedTagsGlobal.value
@@ -191,7 +200,10 @@ const isTagSelected = (id) => {
 }
 
 const config = useRuntimeConfig()
-const API_BASE_URL = config.public.apiBaseUrl
+const API_BASE_URL =
+  process.server && config.public.apiBaseUrlSsr
+    ? config.public.apiBaseUrlSsr
+    : config.public.apiBaseUrl
 
 const props = defineProps({
   visible: { type: Boolean, default: true },
@@ -202,19 +214,19 @@ const categoryOpen = ref(true)
 const tagOpen = ref(true)
 const myPoint = ref(null)
 
-/** ✅ 用 useAsyncData 替换原生 fetch，避免 SSR+CSR 二次请求 */
+/** 鉁?鐢?useAsyncData 鏇挎崲鍘熺敓 fetch锛岄伩鍏?SSR+CSR 浜屾璇锋眰 */
 const {
   data: categoryData,
   pending: isLoadingCategory,
   error: categoryError,
 } = await useAsyncData(
-  // 稳定 key：避免 hydration 期误判
+  // 绋冲畾 key锛氶伩鍏?hydration 鏈熻鍒?
   'menu:categories',
   () => $fetch(`${API_BASE_URL}/api/categories`),
   {
-    server: true, // SSR 预取
-    default: () => [], // 初始默认值，减少空判断
-    // 5 分钟内复用缓存，避免路由往返重复请求
+    server: true, // SSR 棰勫彇
+    default: () => [], // 鍒濆榛樿鍊硷紝鍑忓皯绌哄垽鏂?
+    // 5 鍒嗛挓鍐呭鐢ㄧ紦瀛橈紝閬垮厤璺敱寰€杩旈噸澶嶈姹?
     staleTime: 5 * 60 * 1000,
   },
 )
@@ -301,7 +313,7 @@ const loadMoreTags = async () => {
   }
 }
 
-/** 其余逻辑保持不变 */
+/** 鍏朵綑閫昏緫淇濇寔涓嶅彉 */
 const iconClass = computed(() => {
   switch (themeState.mode) {
     case ThemeMode.DARK:
@@ -336,7 +348,7 @@ const updateCount = async () => {
 
 onMounted(async () => {
   await Promise.all([updateCount(), loadPoint()])
-  // 登录态变化时再拉一次未读数和积分；与 useAsyncData 无关
+  // 鐧诲綍鎬佸彉鍖栨椂鍐嶆媺涓€娆℃湭璇绘暟鍜岀Н鍒嗭紱涓?useAsyncData 鏃犲叧
   watch(
     () => authState.loggedIn,
     () => {
@@ -612,3 +624,4 @@ const gotoTag = (t) => {
   }
 }
 </style>
+
