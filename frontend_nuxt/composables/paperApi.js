@@ -37,6 +37,71 @@ export const usePaperApi = () => {
       body: payload,
     })
 
+  const createSubmissionDraft = () =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts`, {
+      method: 'POST',
+      headers: authHeaders(),
+    })
+
+  const getCurrentSubmissionDraft = () =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/current`, {
+      headers: authHeaders(),
+    })
+
+  const getSubmissionDraft = (draftId) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}`, {
+      headers: authHeaders(),
+    })
+
+  const updateSubmissionDraft = (draftId, payload) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: payload,
+    })
+
+  const discardSubmissionDraft = (draftId) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    })
+
+  const validateSubmissionDraft = (draftId) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}/validate`, {
+      method: 'POST',
+      headers: authHeaders(),
+    })
+
+  const submitSubmissionDraft = (draftId, payload) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}/submit`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: payload,
+    })
+
+  const presignSubmissionFile = (draftId, payload) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}/files/presign`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: payload,
+    })
+
+  const updateSubmissionFile = (draftId, fileId, payload) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}/files/${fileId}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: payload,
+    })
+
+  const removeSubmissionFile = (draftId, fileId) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}/files/${fileId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    })
+
+  const paperFileContentUrl = (paperId, fileId, mode = 'download') =>
+    `${apiBaseUrl}/api/papers/${paperId}/files/${fileId}/content?mode=${encodeURIComponent(mode)}`
+
   const ratePaper = (paperId, payload) =>
     $fetch(`${apiBaseUrl}/api/papers/${paperId}/ratings`, {
       method: 'POST',
@@ -59,6 +124,8 @@ export const usePaperApi = () => {
       params: { limit },
     })
 
+  const getExpert = (expertId) => $fetch(`${apiBaseUrl}/api/experts/${expertId}`)
+
   const listAdminPapers = (params = {}) =>
     $fetch(`${apiBaseUrl}/api/admin/papers`, {
       headers: authHeaders(),
@@ -74,6 +141,18 @@ export const usePaperApi = () => {
       method: 'POST',
       headers: authHeaders(),
     })
+
+  const clearPublicPaperCache = () => {
+    clearNuxtData((key) =>
+      [
+        'papers:feed',
+        'papers:top-rated:sidebar',
+        'rankings:papers',
+        'rankings:authors',
+        'rankings:institutions',
+      ].includes(key),
+    )
+  }
 
   const runAdminPostAction = (postId, action) =>
     $fetch(`${apiBaseUrl}/api/admin/posts/${postId}/${action}`, {
@@ -92,12 +171,25 @@ export const usePaperApi = () => {
     getPaperFilters,
     getPaper,
     submitPaper,
+    createSubmissionDraft,
+    getCurrentSubmissionDraft,
+    getSubmissionDraft,
+    updateSubmissionDraft,
+    discardSubmissionDraft,
+    validateSubmissionDraft,
+    submitSubmissionDraft,
+    presignSubmissionFile,
+    updateSubmissionFile,
+    removeSubmissionFile,
+    paperFileContentUrl,
     ratePaper,
     getTopRatedPapers,
     getAuthorRankings,
     getInstitutionRankings,
+    getExpert,
     listAdminPapers,
     runAdminPaperAction,
+    clearPublicPaperCache,
     runAdminPostAction,
     runPostAction,
   }
