@@ -22,4 +22,13 @@ public class PaperSubmitRequest {
   private String dataAvailability;
   private String ethicsStatement;
   private List<PaperAuthorRequest> authors;
+  private List<PaperFundingRequest> funding;
+  private Boolean noFundingReceived;
+  private String preprintStatement;
+  private String aiUseDisclosure;
+  private Boolean allAuthorsConsent;
+  private Boolean originalityConfirmed;
+  private Boolean rightsConfirmed;
+  private Boolean correspondingAuthorContactConfirmed;
+  private String privateComments;
 }
