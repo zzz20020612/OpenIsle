@@ -305,7 +305,10 @@ public class PaperService {
         }
       }
     }
-    if (correspondingAuthorCount != 1) {
+    if (correspondingAuthorCount == 0) {
+      throw new IllegalArgumentException("At least one corresponding author is required");
+    }
+    if (correspondingAuthorCount > 1) {
       throw new IllegalArgumentException("Exactly one corresponding author is required");
     }
     validateCoFirstAuthors(request.getAuthors());
@@ -377,6 +380,7 @@ public class PaperService {
   }
 
   private void saveAuthors(PaperProfile paper, PaperSubmitRequest request) {
+    List<PaperAuthor> authors = new java.util.ArrayList<>();
     for (int i = 0; i < request.getAuthors().size(); i++) {
       PaperAuthorRequest authorRequest = request.getAuthors().get(i);
       PaperAffiliationRequest primaryAffiliation = primaryAffiliation(authorRequest);
@@ -403,7 +407,7 @@ public class PaperService {
       author.setMiddleName(cleanOptionalText(authorRequest.getMiddleName()));
       author.setFamilyName(cleanOptionalText(authorRequest.getFamilyName()));
       author.setAuthorRole(cleanOptionalText(authorRequest.getAuthorRole()));
-      author.setEmail(authorRequest.getEmail());
+      author.setEmail(cleanOptionalText(authorRequest.getEmail()));
       author.setOrcid(cleanOptionalText(authorRequest.getOrcid()));
       author.setCountry(cleanOptionalText(country));
       author.setUser(linkedUser);
@@ -414,8 +418,14 @@ public class PaperService {
       author.setEqualContribution(Boolean.TRUE.equals(authorRequest.getEqualContribution()));
       author.setContributionRoles(serializeList(authorRequest.getContributionRoles()));
       author.setInstitution(institution);
-      author = paperAuthorRepository.save(author);
-      saveAffiliations(author, authorRequest.getAffiliations());
+      authors.add(author);
+    }
+    List<PaperAuthor> savedAuthors = paperAuthorRepository.saveAll(authors);
+    if (savedAuthors == null || savedAuthors.size() != authors.size()) {
+      savedAuthors = authors;
+    }
+    for (int index = 0; index < savedAuthors.size(); index++) {
+      saveAffiliations(savedAuthors.get(index), request.getAuthors().get(index).getAffiliations());
     }
   }
 

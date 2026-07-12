@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,7 +33,10 @@ import com.openisle.repository.AiScreeningResultRepository;
 import com.openisle.repository.CategoryRepository;
 import com.openisle.repository.ExpertProfileRepository;
 import com.openisle.repository.InstitutionRepository;
+import com.openisle.repository.PaperAuthorAffiliationRepository;
 import com.openisle.repository.PaperAuthorRepository;
+import com.openisle.repository.PaperFileRepository;
+import com.openisle.repository.PaperFundingRecordRepository;
 import com.openisle.repository.PaperProfileRepository;
 import com.openisle.repository.PaperScoreSnapshotRepository;
 import com.openisle.repository.TagRepository;
@@ -40,6 +45,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import org.springframework.data.domain.PageRequest;
 import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.Test;
 
@@ -67,6 +73,9 @@ class PaperServiceTest {
       postService,
       paperProfileRepository,
       paperAuthorRepository,
+      mock(PaperAuthorAffiliationRepository.class),
+      mock(PaperFundingRecordRepository.class),
+      mock(PaperFileRepository.class),
       institutionRepository,
       aiScreeningResultRepository,
       mockAiScreeningService,
@@ -83,6 +92,12 @@ class PaperServiceTest {
     PaperProfile econPaper = buildPublishedPaper(12L, 102L, "Paper B", "Economics", 3.2, 8);
     PaperProfile secondInfoSystemsPaper = buildPublishedPaper(13L, 103L, "Paper C", "Information Systems", 4.1, 3);
 
+    when(paperProfileRepository.findPublishedOrderByScoreDesc(eq("Information Systems"), eq(4.2), any())).thenReturn(
+      List.of(infoSystemsPaper)
+    );
+    when(paperProfileRepository.findPublishedOrderByScoreDesc(isNull(), isNull(), any())).thenReturn(
+      List.of(infoSystemsPaper, secondInfoSystemsPaper, econPaper)
+    );
     when(paperProfileRepository.findByPublicationStatusOrderByPublishedAtDesc(any(), any())).thenReturn(
       List.of(infoSystemsPaper, econPaper, secondInfoSystemsPaper)
     );
@@ -107,6 +122,46 @@ class PaperServiceTest {
   }
 
   @Test
+  void listPublishedPapersUsesDatabaseQueryForScorePagination() {
+    PostService postService = mock(PostService.class);
+    PaperProfileRepository paperProfileRepository = mock(PaperProfileRepository.class);
+    PaperAuthorRepository paperAuthorRepository = mock(PaperAuthorRepository.class);
+    PaperScoreSnapshotRepository paperScoreSnapshotRepository = mock(
+      PaperScoreSnapshotRepository.class
+    );
+    PaperService service = new PaperService(
+      postService,
+      paperProfileRepository,
+      paperAuthorRepository,
+      mock(PaperAuthorAffiliationRepository.class),
+      mock(PaperFundingRecordRepository.class),
+      mock(PaperFileRepository.class),
+      mock(InstitutionRepository.class),
+      mock(AiScreeningResultRepository.class),
+      new MockAiScreeningService(),
+      paperScoreSnapshotRepository,
+      mock(CategoryRepository.class),
+      mock(TagRepository.class),
+      new PaperAccessPolicy(paperAuthorRepository),
+      mock(UserRepository.class),
+      mock(ExpertProfileRepository.class),
+      mock(SubscriptionService.class)
+    );
+
+    PaperProfile highScoreOlderPaper = buildPublishedPaper(31L, 301L, "High Score Older Paper", "AI", 4.9, 5);
+    when(paperProfileRepository.findPublishedOrderByScoreDesc(any(), any(), any())).thenReturn(
+      List.of(highScoreOlderPaper)
+    );
+    when(paperAuthorRepository.findByPaperIdOrderByAuthorOrderAsc(any())).thenReturn(List.of());
+    when(paperScoreSnapshotRepository.findByPaperId(31L)).thenReturn(Optional.of(buildSnapshot(31L, 4.9, 5)));
+
+    var result = service.listPublishedPapers(0, 1, null, 4.5, "score");
+
+    assertEquals(List.of("High Score Older Paper"), result.stream().map(item -> item.getTitle()).toList());
+    verify(paperProfileRepository).findPublishedOrderByScoreDesc(null, 4.5, PageRequest.of(0, 1));
+  }
+
+  @Test
   void listPublishedPapersSurfacesFeaturedPapersFirstAndExposesLinkedPostDistributionState() {
     PostService postService = mock(PostService.class);
     PaperProfileRepository paperProfileRepository = mock(PaperProfileRepository.class);
@@ -118,6 +173,9 @@ class PaperServiceTest {
       postService,
       paperProfileRepository,
       paperAuthorRepository,
+      mock(PaperAuthorAffiliationRepository.class),
+      mock(PaperFundingRecordRepository.class),
+      mock(PaperFileRepository.class),
       mock(InstitutionRepository.class),
       mock(AiScreeningResultRepository.class),
       new MockAiScreeningService(),
@@ -171,6 +229,9 @@ class PaperServiceTest {
       postService,
       paperProfileRepository,
       paperAuthorRepository,
+      mock(PaperAuthorAffiliationRepository.class),
+      mock(PaperFundingRecordRepository.class),
+      mock(PaperFileRepository.class),
       institutionRepository,
       aiScreeningResultRepository,
       mockAiScreeningService,
@@ -349,6 +410,9 @@ class PaperServiceTest {
       postService,
       paperProfileRepository,
       paperAuthorRepository,
+      mock(PaperAuthorAffiliationRepository.class),
+      mock(PaperFundingRecordRepository.class),
+      mock(PaperFileRepository.class),
       institutionRepository,
       aiScreeningResultRepository,
       new MockAiScreeningService(),
@@ -510,6 +574,9 @@ class PaperServiceTest {
       postService,
       paperProfileRepository,
       paperAuthorRepository,
+      mock(PaperAuthorAffiliationRepository.class),
+      mock(PaperFundingRecordRepository.class),
+      mock(PaperFileRepository.class),
       institutionRepository,
       aiScreeningResultRepository,
       new MockAiScreeningService(),
@@ -642,6 +709,9 @@ class PaperServiceTest {
       postService,
       paperProfileRepository,
       paperAuthorRepository,
+      mock(PaperAuthorAffiliationRepository.class),
+      mock(PaperFundingRecordRepository.class),
+      mock(PaperFileRepository.class),
       institutionRepository,
       aiScreeningResultRepository,
       new MockAiScreeningService(),
@@ -784,6 +854,9 @@ class PaperServiceTest {
       postService,
       paperProfileRepository,
       paperAuthorRepository,
+      mock(PaperAuthorAffiliationRepository.class),
+      mock(PaperFundingRecordRepository.class),
+      mock(PaperFileRepository.class),
       institutionRepository,
       aiScreeningResultRepository,
       new MockAiScreeningService(),
@@ -816,6 +889,9 @@ class PaperServiceTest {
       postService,
       paperProfileRepository,
       paperAuthorRepository,
+      mock(PaperAuthorAffiliationRepository.class),
+      mock(PaperFundingRecordRepository.class),
+      mock(PaperFileRepository.class),
       mock(InstitutionRepository.class),
       mock(AiScreeningResultRepository.class),
       new MockAiScreeningService(),
@@ -879,6 +955,9 @@ class PaperServiceTest {
       mock(PostService.class),
       mock(PaperProfileRepository.class),
       paperAuthorRepository,
+      mock(PaperAuthorAffiliationRepository.class),
+      mock(PaperFundingRecordRepository.class),
+      mock(PaperFileRepository.class),
       mock(InstitutionRepository.class),
       mock(AiScreeningResultRepository.class),
       new MockAiScreeningService(),

@@ -120,9 +120,10 @@ class PaperSubmissionPersistenceTest {
     duplicateDraft.setManuscriptType("Research Article");
     duplicateDraft.setFormDataJson("{\"title\":\"duplicate draft\"}");
     duplicateDraft.setIdempotencyKey("submission-key-1");
-    draftRepository.save(duplicateDraft);
-
-    assertThrows(DataIntegrityViolationException.class, draftRepository::flush);
+    assertThrows(
+      DataIntegrityViolationException.class,
+      () -> draftRepository.saveAndFlush(duplicateDraft)
+    );
   }
 
   @Test
