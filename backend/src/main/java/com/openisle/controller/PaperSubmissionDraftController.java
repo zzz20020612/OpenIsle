@@ -6,6 +6,8 @@ import com.openisle.dto.PaperSubmissionFileDto;
 import com.openisle.dto.PaperSubmissionFilePresignRequest;
 import com.openisle.dto.PaperSubmissionFilePresignResponse;
 import com.openisle.dto.PaperSubmissionFileUpdateRequest;
+import com.openisle.dto.PaperSubmissionResultDto;
+import com.openisle.dto.PaperSubmissionSubmitRequest;
 import com.openisle.dto.PaperSubmissionValidationDto;
 import com.openisle.service.PaperSubmissionDraftService;
 import com.openisle.service.PaperSubmissionFileService;
@@ -92,6 +94,17 @@ public class PaperSubmissionDraftController {
     Authentication authentication
   ) {
     return draftService.validateDraft(authentication.getName(), draftId);
+  }
+
+  @PostMapping("/{draftId}/submit")
+  @Operation(summary = "Finalize a paper submission draft")
+  @ApiResponse(responseCode = "200", description = "Draft finalized or prior result returned")
+  public PaperSubmissionResultDto submitDraft(
+    @PathVariable Long draftId,
+    @RequestBody PaperSubmissionSubmitRequest request,
+    Authentication authentication
+  ) {
+    return draftService.submitDraft(authentication.getName(), draftId, request);
   }
 
   @GetMapping("/{draftId}/files")

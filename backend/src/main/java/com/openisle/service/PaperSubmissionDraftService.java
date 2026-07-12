@@ -5,14 +5,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openisle.dto.PaperSubmissionDraftDto;
 import com.openisle.dto.PaperSubmissionDraftPatchRequest;
 import com.openisle.dto.PaperSubmissionFileDto;
+import com.openisle.dto.PaperSubmissionResultDto;
+import com.openisle.dto.PaperSubmissionSubmitRequest;
 import com.openisle.dto.PaperSubmissionValidationDto;
+import com.openisle.dto.PaperDetailDto;
 import com.openisle.dto.PaperSubmitRequest;
 import com.openisle.exception.DraftVersionConflictException;
 import com.openisle.exception.NotFoundException;
 import com.openisle.model.PaperSubmissionDraft;
 import com.openisle.model.PaperSubmissionDraftStatus;
 import com.openisle.model.PaperSubmissionFile;
+import com.openisle.model.PaperProfile;
 import com.openisle.model.User;
+import com.openisle.repository.PaperProfileRepository;
 import com.openisle.repository.PaperSubmissionDraftRepository;
 import com.openisle.repository.PaperSubmissionFileRepository;
 import com.openisle.repository.UserRepository;
@@ -32,8 +37,10 @@ public class PaperSubmissionDraftService {
 
   private final PaperSubmissionDraftRepository draftRepository;
   private final PaperSubmissionFileRepository fileRepository;
+  private final PaperProfileRepository paperProfileRepository;
   private final UserRepository userRepository;
   private final PaperSubmissionValidator validator;
+  private final PaperService paperService;
   private final ObjectMapper objectMapper;
 
   @Transactional
@@ -106,6 +113,60 @@ public class PaperSubmissionDraftService {
     );
   }
 
+  @Transactional
+  public PaperSubmissionResultDto submitDraft(
+    String username,
+    Long draftId,
+    PaperSubmissionSubmitRequest request
+  ) {
+    User user = requireUser(username);
+    PaperSubmissionDraft draft = draftRepository
+      .findByIdForUpdate(draftId)
+      .orElseThrow(() -> new NotFoundException("Submission draft not found"));
+    if (!draft.getCreatedBy().getId().equals(user.getId())) {
+      throw new AccessDeniedException("You do not have access to this submission draft");
+    }
+    if (draft.getStatus() == PaperSubmissionDraftStatus.SUBMITTED) {
+      if (draft.getSubmittedPaper() == null) {
+        throw new IllegalStateException("Submitted draft has no linked paper");
+      }
+      return toSubmissionResult(draft.getSubmittedPaper());
+    }
+    requireEditable(draft);
+    if (request == null || request.getVersion() != draft.getVersion()) {
+      throw new DraftVersionConflictException(draft.getVersion());
+    }
+
+    PaperSubmitRequest form = readForm(draft.getFormDataJson());
+    List<PaperSubmissionFile> files = fileRepository.findByDraftIdOrderBySortOrderAscIdAsc(
+      draft.getId()
+    );
+    PaperSubmissionValidationDto validation = validator.validateForSubmission(
+      form,
+      files,
+      request
+    );
+    if (!validation.isValid()) {
+      String message = validation
+        .getIssues()
+        .stream()
+        .findFirst()
+        .map(issue -> issue.getMessage())
+        .orElse("Submission validation failed");
+      throw new IllegalArgumentException(message);
+    }
+
+    PaperDetailDto submitted = paperService.submitPaper(username, form, files);
+    PaperProfile paper = paperProfileRepository
+      .findById(submitted.getId())
+      .orElseThrow(() -> new IllegalStateException("Submitted paper could not be loaded"));
+    draft.setSubmittedPaper(paper);
+    draft.setIdempotencyKey(clean(request.getIdempotencyKey()));
+    draft.setStatus(PaperSubmissionDraftStatus.SUBMITTED);
+    draftRepository.saveAndFlush(draft);
+    return toSubmissionResult(paper);
+  }
+
   @Transactional(readOnly = true)
   public PaperSubmissionDraft requireOwnedDraft(String username, Long draftId) {
     User user = requireUser(username);
@@ -168,6 +229,15 @@ public class PaperSubmissionDraftService {
     dto.setCreatedAt(file.getCreatedAt());
     dto.setUpdatedAt(file.getUpdatedAt());
     return dto;
+  }
+
+  private PaperSubmissionResultDto toSubmissionResult(PaperProfile paper) {
+    PaperSubmissionResultDto result = new PaperSubmissionResultDto();
+    result.setPaperId(paper.getId());
+    result.setPostId(paper.getPost().getId());
+    result.setPublicationStatus(paper.getPublicationStatus());
+    result.setScreeningStatus(paper.getScreeningStatus());
+    return result;
   }
 
   private String writeForm(PaperSubmitRequest form) {

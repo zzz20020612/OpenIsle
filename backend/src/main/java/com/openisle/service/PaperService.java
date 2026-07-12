@@ -1,11 +1,13 @@
 package com.openisle.service;
 
 import com.openisle.dto.AiScreeningDto;
+import com.openisle.dto.PaperAffiliationRequest;
 import com.openisle.dto.PaperAuthorDto;
 import com.openisle.dto.PaperAuthorRequest;
 import com.openisle.dto.PaperDetailDto;
 import com.openisle.dto.PaperFileRecordDto;
 import com.openisle.dto.PaperFilterOptionsDto;
+import com.openisle.dto.PaperFundingRequest;
 import com.openisle.dto.PaperScoreSnapshotDto;
 import com.openisle.dto.PaperSubmitRequest;
 import com.openisle.dto.PaperSummaryDto;
@@ -18,10 +20,17 @@ import com.openisle.model.ExpertIdentityStatus;
 import com.openisle.model.ExpertProfile;
 import com.openisle.model.Institution;
 import com.openisle.model.PaperAuthor;
+import com.openisle.model.PaperAuthorAffiliation;
+import com.openisle.model.PaperFile;
+import com.openisle.model.PaperFileRole;
+import com.openisle.model.PaperFileVisibility;
+import com.openisle.model.PaperFundingRecord;
 import com.openisle.model.PaperProfile;
 import com.openisle.model.PaperPublicationStatus;
 import com.openisle.model.PaperScoreSnapshot;
 import com.openisle.model.PaperScreeningStatus;
+import com.openisle.model.PaperSubmissionFile;
+import com.openisle.model.PaperUploadStatus;
 import com.openisle.model.Post;
 import com.openisle.model.PostType;
 import com.openisle.model.PostVisibleScopeType;
@@ -30,16 +39,19 @@ import com.openisle.repository.AiScreeningResultRepository;
 import com.openisle.repository.CategoryRepository;
 import com.openisle.repository.ExpertProfileRepository;
 import com.openisle.repository.InstitutionRepository;
+import com.openisle.repository.PaperAuthorAffiliationRepository;
 import com.openisle.repository.PaperAuthorRepository;
+import com.openisle.repository.PaperFileRepository;
+import com.openisle.repository.PaperFundingRecordRepository;
 import com.openisle.repository.PaperProfileRepository;
 import com.openisle.repository.PaperScoreSnapshotRepository;
 import com.openisle.repository.TagRepository;
 import com.openisle.repository.UserRepository;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -56,6 +68,9 @@ public class PaperService {
   private final PostService postService;
   private final PaperProfileRepository paperProfileRepository;
   private final PaperAuthorRepository paperAuthorRepository;
+  private final PaperAuthorAffiliationRepository paperAuthorAffiliationRepository;
+  private final PaperFundingRecordRepository paperFundingRecordRepository;
+  private final PaperFileRepository paperFileRepository;
   private final InstitutionRepository institutionRepository;
   private final AiScreeningResultRepository aiScreeningResultRepository;
   private final MockAiScreeningService mockAiScreeningService;
@@ -69,15 +84,35 @@ public class PaperService {
 
   @Transactional
   public PaperDetailDto submitPaper(String username, PaperSubmitRequest request) {
+    return submitPaper(username, request, List.of());
+  }
+
+  @Transactional
+  public PaperDetailDto submitPaper(
+    String username,
+    PaperSubmitRequest request,
+    List<PaperSubmissionFile> submissionFiles
+  ) {
     validateSubmitRequest(request);
     Long categoryId = resolvePaperCategoryId(request.getCategoryId());
     List<Long> tagIds = resolvePaperTagIds(request.getTagIds());
+    String postContent = cleanOptionalText(request.getContent());
+    if (postContent == null) {
+      postContent = request.getAbstractText().trim();
+    }
+    List<PaperSubmissionFile> uploadedFiles = submissionFiles == null
+      ? List.of()
+      : submissionFiles
+        .stream()
+        .filter(Objects::nonNull)
+        .filter(file -> file.getUploadStatus() == PaperUploadStatus.UPLOADED)
+        .toList();
 
     Post post = postService.createPost(
       username,
       categoryId,
       request.getTitle(),
-      request.getContent(),
+      postContent,
       tagIds,
       PostType.PAPER,
       PostVisibleScopeType.ALL,
@@ -101,14 +136,39 @@ public class PaperService {
     paper.setAbstractText(request.getAbstractText());
     paper.setKeywords(serializeList(request.getKeywords()));
     paper.setReferencesText(serializeList(request.getReferences()));
-    paper.setManuscriptFiles(serializeFileRecords(request.getManuscriptFiles()));
-    paper.setSupplementaryFiles(serializeFileRecords(request.getSupplementaryFiles()));
+    paper.setManuscriptFiles(
+      serializeFileRecords(
+        uploadedFiles.isEmpty()
+          ? request.getManuscriptFiles()
+          : toLegacyFileRecords(uploadedFiles, true)
+      )
+    );
+    paper.setSupplementaryFiles(
+      serializeFileRecords(
+        uploadedFiles.isEmpty()
+          ? request.getSupplementaryFiles()
+          : toLegacyFileRecords(uploadedFiles, false)
+      )
+    );
     paper.setSubjectArea(request.getSubjectArea());
     paper.setPaperType(request.getPaperType());
-    paper.setFundingStatement(cleanOptionalText(request.getFundingStatement()));
+    paper.setFundingStatement(resolveFundingStatement(request));
     paper.setConflictOfInterest(cleanOptionalText(request.getConflictOfInterest()));
     paper.setDataAvailability(cleanOptionalText(request.getDataAvailability()));
     paper.setEthicsStatement(cleanOptionalText(request.getEthicsStatement()));
+    paper.setPreprintStatement(cleanOptionalText(request.getPreprintStatement()));
+    paper.setAiUseDisclosure(cleanOptionalText(request.getAiUseDisclosure()));
+    paper.setPrivateComments(cleanOptionalText(request.getPrivateComments()));
+    paper.setAllAuthorsConsent(Boolean.TRUE.equals(request.getAllAuthorsConsent()));
+    paper.setOriginalityConfirmed(Boolean.TRUE.equals(request.getOriginalityConfirmed()));
+    paper.setRightsConfirmed(Boolean.TRUE.equals(request.getRightsConfirmed()));
+    paper.setCorrespondingAuthorContactConfirmed(
+      Boolean.TRUE.equals(request.getCorrespondingAuthorContactConfirmed())
+    );
+    if (paper.isCorrespondingAuthorContactConfirmed()) {
+      paper.setCorrespondingAuthorContactConfirmedAt(LocalDateTime.now());
+      paper.setCorrespondingAuthorContactConfirmedBy(post.getAuthor());
+    }
     paper.setPrimaryInstitution(primaryInstitution);
     paper.setCreatedBy(post.getAuthor());
     paper.setPublicationStatus(PaperPublicationStatus.SCREENING);
@@ -116,6 +176,8 @@ public class PaperService {
     paper = paperProfileRepository.save(paper);
 
     saveAuthors(paper, request);
+    saveFunding(paper, request.getFunding());
+    saveFiles(paper, uploadedFiles);
 
     AiScreeningResult screening = mockAiScreeningService.screen(paper);
     screening = aiScreeningResultRepository.save(screening);
@@ -138,19 +200,29 @@ public class PaperService {
     Double minScore,
     String sort
   ) {
+    PageRequest pageRequest = PageRequest.of(Math.max(page, 0), Math.max(pageSize, 1));
+    if ("score".equalsIgnoreCase(sort)) {
+      return paperProfileRepository
+        .findPublishedOrderByScoreDesc(cleanOptionalText(subject), minScore, pageRequest)
+        .stream()
+        .filter(paperAccessPolicy::canAppearInFeed)
+        .map(this::toSummaryDto)
+        .toList();
+    }
+
     List<PaperProfile> papers;
     if (subject != null && !subject.isBlank()) {
       papers =
         paperProfileRepository.findByPublicationStatusAndSubjectAreaIgnoreCaseOrderByPublishedAtDesc(
           PaperPublicationStatus.PUBLISHED,
           subject.trim(),
-          PageRequest.of(Math.max(page, 0), Math.max(pageSize, 1))
+          pageRequest
         );
     } else {
       papers =
         paperProfileRepository.findByPublicationStatusOrderByPublishedAtDesc(
           PaperPublicationStatus.PUBLISHED,
-          PageRequest.of(Math.max(page, 0), Math.max(pageSize, 1))
+          pageRequest
         );
     }
 
@@ -209,9 +281,6 @@ public class PaperService {
     if (request.getAbstractText() == null || request.getAbstractText().isBlank()) {
       throw new IllegalArgumentException("Abstract is required");
     }
-    if (request.getContent() == null || request.getContent().isBlank()) {
-      throw new IllegalArgumentException("Full text is required");
-    }
     if (request.getSubjectArea() == null || request.getSubjectArea().isBlank()) {
       throw new IllegalArgumentException("Subject area is required");
     }
@@ -221,20 +290,20 @@ public class PaperService {
     if (request.getAuthors() == null || request.getAuthors().isEmpty()) {
       throw new IllegalArgumentException("At least one author is required");
     }
-    boolean hasCorrespondingAuthor = false;
+    int correspondingAuthorCount = 0;
     for (PaperAuthorRequest author : request.getAuthors()) {
-      if (author == null || cleanOptionalText(author.getDisplayName()) == null) {
+      if (author == null || resolveDisplayName(author) == null) {
         throw new IllegalArgumentException("Author name is required");
       }
       if (Boolean.TRUE.equals(author.getCorrespondingAuthor())) {
-        hasCorrespondingAuthor = true;
+        correspondingAuthorCount++;
         if (cleanOptionalText(author.getEmail()) == null) {
           throw new IllegalArgumentException("Corresponding author email is required");
         }
       }
     }
-    if (!hasCorrespondingAuthor) {
-      throw new IllegalArgumentException("At least one corresponding author is required");
+    if (correspondingAuthorCount != 1) {
+      throw new IllegalArgumentException("Exactly one corresponding author is required");
     }
     validateCoFirstAuthors(request.getAuthors());
   }
@@ -280,7 +349,11 @@ public class PaperService {
       return null;
     }
 
-    String firstAuthorInstitution = cleanOptionalText(request.getAuthors().get(0).getInstitutionName());
+    PaperAuthorRequest firstAuthor = request.getAuthors().get(0);
+    PaperAffiliationRequest firstPrimaryAffiliation = primaryAffiliation(firstAuthor);
+    String firstAuthorInstitution = firstPrimaryAffiliation != null
+      ? cleanOptionalText(firstPrimaryAffiliation.getOrganizationName())
+      : cleanOptionalText(firstAuthor.getInstitutionName());
     if (firstAuthorInstitution != null) {
       return getOrCreateInstitution(firstAuthorInstitution);
     }
@@ -289,7 +362,10 @@ public class PaperService {
       .getAuthors()
       .stream()
       .filter(author -> Boolean.TRUE.equals(author.getCorrespondingAuthor()))
-      .map(PaperAuthorRequest::getInstitutionName)
+      .map(author -> {
+        PaperAffiliationRequest primary = primaryAffiliation(author);
+        return primary != null ? primary.getOrganizationName() : author.getInstitutionName();
+      })
       .map(PaperService::cleanOptionalText)
       .filter(Objects::nonNull)
       .findFirst()
@@ -298,18 +374,35 @@ public class PaperService {
   }
 
   private void saveAuthors(PaperProfile paper, PaperSubmitRequest request) {
-    List<PaperAuthor> authors = new ArrayList<>();
     for (int i = 0; i < request.getAuthors().size(); i++) {
       PaperAuthorRequest authorRequest = request.getAuthors().get(i);
-      Institution institution = getOrCreateInstitution(authorRequest.getInstitutionName());
+      PaperAffiliationRequest primaryAffiliation = primaryAffiliation(authorRequest);
+      String institutionName = primaryAffiliation != null
+        ? primaryAffiliation.getOrganizationName()
+        : authorRequest.getInstitutionName();
+      String country = primaryAffiliation != null
+        ? primaryAffiliation.getCountry()
+        : authorRequest.getCountry();
+      Institution institution = getOrCreateInstitution(institutionName);
       com.openisle.model.User linkedUser = resolveAuthorUser(authorRequest.getEmail());
-      ExpertProfile expertProfile = resolveExpertProfile(authorRequest, institution, linkedUser);
+      String displayName = resolveDisplayName(authorRequest);
+      ExpertProfile expertProfile = resolveExpertProfile(
+        authorRequest,
+        displayName,
+        institution,
+        country,
+        linkedUser
+      );
       PaperAuthor author = new PaperAuthor();
       author.setPaper(paper);
-      author.setDisplayName(authorRequest.getDisplayName());
+      author.setDisplayName(displayName);
+      author.setGivenName(cleanOptionalText(authorRequest.getGivenName()));
+      author.setMiddleName(cleanOptionalText(authorRequest.getMiddleName()));
+      author.setFamilyName(cleanOptionalText(authorRequest.getFamilyName()));
+      author.setAuthorRole(cleanOptionalText(authorRequest.getAuthorRole()));
       author.setEmail(authorRequest.getEmail());
       author.setOrcid(cleanOptionalText(authorRequest.getOrcid()));
-      author.setCountry(cleanOptionalText(authorRequest.getCountry()));
+      author.setCountry(cleanOptionalText(country));
       author.setUser(linkedUser);
       author.setExpertProfile(expertProfile);
       author.setIdentityStatus(resolveIdentityStatus(authorRequest, linkedUser, expertProfile));
@@ -318,9 +411,162 @@ public class PaperService {
       author.setEqualContribution(Boolean.TRUE.equals(authorRequest.getEqualContribution()));
       author.setContributionRoles(serializeList(authorRequest.getContributionRoles()));
       author.setInstitution(institution);
-      authors.add(author);
+      author = paperAuthorRepository.save(author);
+      saveAffiliations(author, authorRequest.getAffiliations());
     }
-    paperAuthorRepository.saveAll(authors);
+  }
+
+  private void saveAffiliations(
+    PaperAuthor author,
+    List<PaperAffiliationRequest> affiliationRequests
+  ) {
+    if (affiliationRequests == null || affiliationRequests.isEmpty()) {
+      return;
+    }
+    List<PaperAuthorAffiliation> affiliations = new java.util.ArrayList<>();
+    for (int index = 0; index < affiliationRequests.size(); index++) {
+      PaperAffiliationRequest request = affiliationRequests.get(index);
+      if (request == null || cleanOptionalText(request.getOrganizationName()) == null) {
+        continue;
+      }
+      Institution institution = getOrCreateInstitution(request.getOrganizationName());
+      PaperAuthorAffiliation affiliation = new PaperAuthorAffiliation();
+      affiliation.setPaperAuthor(author);
+      affiliation.setInstitution(institution);
+      affiliation.setOrganizationName(institution.getName());
+      affiliation.setDepartment(cleanOptionalText(request.getDepartment()));
+      affiliation.setAddressLine1(cleanOptionalText(request.getAddressLine1()));
+      affiliation.setAddressLine2(cleanOptionalText(request.getAddressLine2()));
+      affiliation.setCountry(cleanOptionalText(request.getCountry()));
+      affiliation.setRegion(cleanOptionalText(request.getRegion()));
+      affiliation.setCity(cleanOptionalText(request.getCity()));
+      affiliation.setPostalCode(cleanOptionalText(request.getPostalCode()));
+      affiliation.setPrimaryAffiliation(Boolean.TRUE.equals(request.getPrimaryAffiliation()));
+      affiliation.setDisplayOrder(index);
+      affiliations.add(affiliation);
+    }
+    paperAuthorAffiliationRepository.saveAll(affiliations);
+  }
+
+  private void saveFunding(PaperProfile paper, List<PaperFundingRequest> fundingRequests) {
+    if (fundingRequests == null || fundingRequests.isEmpty()) {
+      return;
+    }
+    List<PaperFundingRecord> records = new java.util.ArrayList<>();
+    for (int index = 0; index < fundingRequests.size(); index++) {
+      PaperFundingRequest request = fundingRequests.get(index);
+      String funderName = request != null
+        ? cleanOptionalText(request.getFunderName())
+        : null;
+      if (funderName == null) {
+        continue;
+      }
+      PaperFundingRecord record = new PaperFundingRecord();
+      record.setPaper(paper);
+      record.setFunderName(funderName);
+      record.setGrantId(cleanOptionalText(request.getGrantId()));
+      record.setDisplayOrder(index);
+      records.add(record);
+    }
+    paperFundingRecordRepository.saveAll(records);
+  }
+
+  private void saveFiles(PaperProfile paper, List<PaperSubmissionFile> submissionFiles) {
+    if (submissionFiles == null || submissionFiles.isEmpty()) {
+      return;
+    }
+    List<PaperFile> files = submissionFiles
+      .stream()
+      .map(source -> {
+        PaperFile file = new PaperFile();
+        file.setPaper(paper);
+        file.setOriginalFileName(source.getOriginalFileName());
+        file.setDisplayName(source.getDisplayName());
+        file.setContentType(source.getContentType());
+        file.setFileSize(source.getFileSize());
+        file.setRole(source.getRole());
+        file.setDescription(source.getDescription());
+        file.setVisibility(source.getVisibility());
+        file.setStorageKey(source.getStorageKey());
+        file.setUploadStatus(PaperUploadStatus.UPLOADED);
+        file.setSortOrder(source.getSortOrder());
+        return file;
+      })
+      .toList();
+    paperFileRepository.saveAll(files);
+  }
+
+  private static List<PaperFileRecordDto> toLegacyFileRecords(
+    List<PaperSubmissionFile> files,
+    boolean manuscript
+  ) {
+    return files
+      .stream()
+      .filter(file -> file.getVisibility() == PaperFileVisibility.PUBLIC)
+      .filter(file -> manuscript
+        ? file.getRole() == PaperFileRole.MANUSCRIPT
+        : file.getRole() != PaperFileRole.MANUSCRIPT)
+      .map(file ->
+        new PaperFileRecordDto(
+          file.getDisplayName(),
+          file.getContentType(),
+          file.getFileSize(),
+          file.getRole().name()
+        )
+      )
+      .toList();
+  }
+
+  private static String resolveFundingStatement(PaperSubmitRequest request) {
+    List<String> funding = request.getFunding() == null
+      ? List.of()
+      : request
+        .getFunding()
+        .stream()
+        .filter(Objects::nonNull)
+        .map(item -> {
+          String funder = cleanOptionalText(item.getFunderName());
+          if (funder == null) {
+            return null;
+          }
+          String grantId = cleanOptionalText(item.getGrantId());
+          return grantId == null ? funder : funder + " (" + grantId + ")";
+        })
+        .filter(Objects::nonNull)
+        .toList();
+    if (!funding.isEmpty()) {
+      return String.join("; ", funding);
+    }
+    if (Boolean.TRUE.equals(request.getNoFundingReceived())) {
+      return "No funding was received for this work.";
+    }
+    return cleanOptionalText(request.getFundingStatement());
+  }
+
+  private static PaperAffiliationRequest primaryAffiliation(PaperAuthorRequest author) {
+    if (author == null || author.getAffiliations() == null) {
+      return null;
+    }
+    return author
+      .getAffiliations()
+      .stream()
+      .filter(Objects::nonNull)
+      .filter(item -> Boolean.TRUE.equals(item.getPrimaryAffiliation()))
+      .findFirst()
+      .orElse(null);
+  }
+
+  private static String resolveDisplayName(PaperAuthorRequest author) {
+    if (author == null) {
+      return null;
+    }
+    String structuredName = Stream
+      .of(author.getGivenName(), author.getMiddleName(), author.getFamilyName())
+      .map(PaperService::cleanOptionalText)
+      .filter(Objects::nonNull)
+      .reduce((left, right) -> left + " " + right)
+      .orElse(null);
+    return structuredName != null ? structuredName : cleanOptionalText(author.getDisplayName());
   }
 
   private com.openisle.model.User resolveAuthorUser(String email) {
@@ -332,7 +578,9 @@ public class PaperService {
 
   private ExpertProfile resolveExpertProfile(
     PaperAuthorRequest authorRequest,
+    String displayName,
     Institution institution,
+    String country,
     com.openisle.model.User linkedUser
   ) {
     String orcid = cleanOptionalText(authorRequest.getOrcid());
@@ -346,14 +594,14 @@ public class PaperService {
     }
     if (expertProfile == null) {
       expertProfile = new ExpertProfile();
-      expertProfile.setDisplayName(authorRequest.getDisplayName());
+      expertProfile.setDisplayName(displayName);
     }
     expertProfile.setUser(linkedUser != null ? linkedUser : expertProfile.getUser());
-    expertProfile.setDisplayName(cleanOptionalText(authorRequest.getDisplayName()));
+    expertProfile.setDisplayName(displayName);
     expertProfile.setEmail(email);
     expertProfile.setOrcid(orcid);
     expertProfile.setPrimaryInstitution(institution);
-    expertProfile.setCountry(cleanOptionalText(authorRequest.getCountry()));
+    expertProfile.setCountry(cleanOptionalText(country));
     expertProfile.setIdentityStatus(resolveIdentityStatus(authorRequest, linkedUser, expertProfile));
     return expertProfileRepository.save(expertProfile);
   }
