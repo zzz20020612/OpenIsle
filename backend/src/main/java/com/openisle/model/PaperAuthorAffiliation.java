@@ -40,16 +40,19 @@ public class PaperAuthorAffiliation {
   @Column
   private String department;
 
-  @Column(name = "address_lines", columnDefinition = "TEXT")
-  private String addressLines;
+  @Column(name = "address_line_1")
+  private String addressLine1;
 
-  @Column
+  @Column(name = "address_line_2")
+  private String addressLine2;
+
+  @Column(nullable = false)
   private String country;
 
   @Column
   private String region;
 
-  @Column
+  @Column(nullable = false)
   private String city;
 
   @Column(name = "postal_code")

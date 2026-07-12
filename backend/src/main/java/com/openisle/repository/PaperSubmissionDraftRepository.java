@@ -7,8 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PaperSubmissionDraftRepository
   extends JpaRepository<PaperSubmissionDraft, Long> {
-  Optional<PaperSubmissionDraft> findFirstByOwnerIdAndStatusOrderByUpdatedAtDescIdDesc(
-    Long ownerId,
+  Optional<PaperSubmissionDraft> findFirstByCreatedByIdAndStatusOrderByUpdatedAtDescIdDesc(
+    Long createdById,
     PaperSubmissionDraftStatus status
   );
 }

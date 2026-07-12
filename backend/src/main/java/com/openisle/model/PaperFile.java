@@ -15,7 +15,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Table(
   name = "paper_files",
   indexes = {
-    @Index(name = "idx_paper_files_paper_order", columnList = "paper_id,sort_order,id")
+    @Index(name = "idx_paper_files_paper_order", columnList = "paper_id,sort_order,id"),
+    @Index(name = "idx_paper_files_paper_role", columnList = "paper_id,role")
   }
 )
 public class PaperFile {

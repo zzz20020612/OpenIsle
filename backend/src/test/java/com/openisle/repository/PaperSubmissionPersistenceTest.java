@@ -3,6 +3,7 @@ package com.openisle.repository;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.openisle.model.Category;
@@ -22,11 +23,14 @@ import com.openisle.model.Post;
 import com.openisle.model.PostType;
 import com.openisle.model.User;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @DataJpaTest
 class PaperSubmissionPersistenceTest {
@@ -68,26 +72,26 @@ class PaperSubmissionPersistenceTest {
   private PaperFileRepository paperFileRepository;
 
   @Test
-  void persistsVersionedDraftAndFindsLatestInProgressDraftForOwner() {
-    User owner = createUser("draft-owner");
+  void persistsVersionedDraftAndFindsLatestInProgressDraftForCreator() {
+    User createdBy = createUser("draft-owner");
     User otherUser = createUser("other-user");
 
-    createDraft(owner, "older draft");
-    PaperSubmissionDraft latestDraft = createDraft(owner, "latest draft");
-    PaperSubmissionDraft submittedDraft = createDraft(owner, "submitted draft");
+    createDraft(createdBy, "older draft");
+    PaperSubmissionDraft latestDraft = createDraft(createdBy, "latest draft");
+    PaperSubmissionDraft submittedDraft = createDraft(createdBy, "submitted draft");
     submittedDraft.setStatus(PaperSubmissionDraftStatus.SUBMITTED);
     draftRepository.saveAndFlush(submittedDraft);
     createDraft(otherUser, "other user's draft");
 
     PaperSubmissionDraft found = draftRepository
-      .findFirstByOwnerIdAndStatusOrderByUpdatedAtDescIdDesc(
-        owner.getId(),
+      .findFirstByCreatedByIdAndStatusOrderByUpdatedAtDescIdDesc(
+        createdBy.getId(),
         PaperSubmissionDraftStatus.IN_PROGRESS
       )
       .orElseThrow();
 
     assertEquals(latestDraft.getId(), found.getId());
-    assertEquals(owner.getId(), found.getOwner().getId());
+    assertEquals(createdBy.getId(), found.getCreatedBy().getId());
     assertEquals("Research Article", found.getManuscriptType());
     assertEquals("{\"title\":\"latest draft\"}", found.getFormDataJson());
     assertEquals("details", found.getCurrentSection());
@@ -102,6 +106,23 @@ class PaperSubmissionPersistenceTest {
     draftRepository.saveAndFlush(found);
 
     assertEquals(1L, found.getVersion());
+  }
+
+  @Test
+  void rejectsDuplicateDraftIdempotencyKeys() {
+    User createdBy = createUser("idempotency-owner");
+    PaperSubmissionDraft firstDraft = createDraft(createdBy, "first idempotent draft");
+    firstDraft.setIdempotencyKey("submission-key-1");
+    draftRepository.saveAndFlush(firstDraft);
+
+    PaperSubmissionDraft duplicateDraft = new PaperSubmissionDraft();
+    duplicateDraft.setCreatedBy(createdBy);
+    duplicateDraft.setManuscriptType("Research Article");
+    duplicateDraft.setFormDataJson("{\"title\":\"duplicate draft\"}");
+    duplicateDraft.setIdempotencyKey("submission-key-1");
+    draftRepository.save(duplicateDraft);
+
+    assertThrows(DataIntegrityViolationException.class, draftRepository::flush);
   }
 
   @Test
@@ -126,10 +147,9 @@ class PaperSubmissionPersistenceTest {
   void returnsTwoAuthorAffiliationsInOrderWithOnePrimary() {
     User owner = createUser("author-owner");
     PaperProfile paper = createPaper(owner, "Affiliation Paper");
-    PaperAuthor author = createAuthor(paper, createInstitution("Legacy Institution"));
-
     Institution primaryInstitution = createInstitution("Primary University");
     Institution secondaryInstitution = createInstitution("Secondary University");
+    PaperAuthor author = createAuthor(paper, primaryInstitution);
     affiliationRepository.save(
       createAffiliation(author, primaryInstitution, "Primary University", true, 10)
     );
@@ -149,6 +169,16 @@ class PaperSubmissionPersistenceTest {
       1L,
       affiliations.stream().filter(PaperAuthorAffiliation::isPrimaryAffiliation).count()
     );
+    PaperAuthorAffiliation primaryAffiliation = affiliations
+      .stream()
+      .filter(PaperAuthorAffiliation::isPrimaryAffiliation)
+      .findFirst()
+      .orElseThrow();
+    assertEquals("1 Research Way", primaryAffiliation.getAddressLine1());
+    assertEquals("Floor 2", primaryAffiliation.getAddressLine2());
+    assertEquals("United Kingdom", primaryAffiliation.getCountry());
+    assertEquals("London", primaryAffiliation.getCity());
+    assertEquals(primaryAffiliation.getInstitution().getId(), author.getInstitution().getId());
   }
 
   @Test
@@ -187,6 +217,16 @@ class PaperSubmissionPersistenceTest {
     );
     assertTrue(files.stream().allMatch(file -> file.getViewCount() == 0L));
     assertTrue(files.stream().allMatch(file -> file.getDownloadCount() == 0L));
+  }
+
+  @Test
+  void declaresPaperFileRoleLookupIndex() {
+    Table table = PaperFile.class.getAnnotation(Table.class);
+
+    assertNotNull(table);
+    assertTrue(
+      Arrays.stream(table.indexes()).anyMatch(index -> index.columnList().equals("paper_id,role"))
+    );
   }
 
   @Test
@@ -233,9 +273,9 @@ class PaperSubmissionPersistenceTest {
     return userRepository.save(user);
   }
 
-  private PaperSubmissionDraft createDraft(User owner, String title) {
+  private PaperSubmissionDraft createDraft(User createdBy, String title) {
     PaperSubmissionDraft draft = new PaperSubmissionDraft();
-    draft.setOwner(owner);
+    draft.setCreatedBy(createdBy);
     draft.setManuscriptType("Research Article");
     draft.setFormDataJson("{\"title\":\"" + title + "\"}");
     draft.setCurrentSection("details");
@@ -326,7 +366,8 @@ class PaperSubmissionPersistenceTest {
     affiliation.setInstitution(institution);
     affiliation.setOrganizationName(organizationName);
     affiliation.setDepartment("Department of Computing");
-    affiliation.setAddressLines("1 Research Way");
+    affiliation.setAddressLine1("1 Research Way");
+    affiliation.setAddressLine2("Floor 2");
     affiliation.setCountry("United Kingdom");
     affiliation.setRegion("London");
     affiliation.setCity("London");

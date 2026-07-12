@@ -17,7 +17,7 @@ import org.hibernate.annotations.UpdateTimestamp;
   indexes = {
     @Index(
       name = "idx_paper_submission_drafts_owner_status",
-      columnList = "owner_id,status,updated_at"
+      columnList = "created_by,status,updated_at"
     )
   }
 )
@@ -29,8 +29,8 @@ public class PaperSubmissionDraft {
   private Long id;
 
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
-  @JoinColumn(name = "owner_id", nullable = false)
-  private User owner;
+  @JoinColumn(name = "created_by", nullable = false)
+  private User createdBy;
 
   @Column(name = "manuscript_type")
   private String manuscriptType;
