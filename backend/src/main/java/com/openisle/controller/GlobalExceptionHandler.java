@@ -1,15 +1,37 @@
 package com.openisle.controller;
 
 import com.openisle.exception.FieldException;
+import com.openisle.exception.DraftVersionConflictException;
 import com.openisle.exception.NotFoundException;
 import com.openisle.exception.RateLimitException;
 import java.util.Map;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+  @ExceptionHandler(DraftVersionConflictException.class)
+  public ResponseEntity<?> handleDraftVersionConflict(DraftVersionConflictException ex) {
+    return ResponseEntity
+      .status(409)
+      .body(Map.of("error", ex.getMessage(), "currentVersion", ex.getCurrentVersion()));
+  }
+
+  @ExceptionHandler(OptimisticLockingFailureException.class)
+  public ResponseEntity<?> handleOptimisticLockingFailure(OptimisticLockingFailureException ex) {
+    return ResponseEntity
+      .status(409)
+      .body(Map.of("error", "Draft was updated in another session"));
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<?> handleAccessDenied(AccessDeniedException ex) {
+    return ResponseEntity.status(403).body(Map.of("error", ex.getMessage()));
+  }
 
   @ExceptionHandler(FieldException.class)
   public ResponseEntity<?> handleFieldException(FieldException ex) {

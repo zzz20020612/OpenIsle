@@ -11,4 +11,6 @@ public interface PaperSubmissionDraftRepository
     Long createdById,
     PaperSubmissionDraftStatus status
   );
+
+  Optional<PaperSubmissionDraft> findByIdAndCreatedById(Long id, Long createdById);
 }
