@@ -66,6 +66,34 @@ public class PaperProfile {
   @Column(name = "ethics_statement", columnDefinition = "TEXT")
   private String ethicsStatement;
 
+  @Column(name = "preprint_statement", columnDefinition = "TEXT")
+  private String preprintStatement;
+
+  @Column(name = "ai_use_disclosure", columnDefinition = "TEXT")
+  private String aiUseDisclosure;
+
+  @Column(name = "private_comments", columnDefinition = "TEXT")
+  private String privateComments;
+
+  @Column(name = "all_authors_consent", nullable = false)
+  private boolean allAuthorsConsent;
+
+  @Column(name = "originality_confirmed", nullable = false)
+  private boolean originalityConfirmed;
+
+  @Column(name = "rights_confirmed", nullable = false)
+  private boolean rightsConfirmed;
+
+  @Column(name = "corresponding_author_contact_confirmed", nullable = false)
+  private boolean correspondingAuthorContactConfirmed;
+
+  @Column(name = "corresponding_author_contact_confirmed_at")
+  private LocalDateTime correspondingAuthorContactConfirmedAt;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "corresponding_author_contact_confirmed_by")
+  private User correspondingAuthorContactConfirmedBy;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "publication_status", nullable = false)
   private PaperPublicationStatus publicationStatus = PaperPublicationStatus.DRAFT;

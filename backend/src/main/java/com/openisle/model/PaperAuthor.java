@@ -37,6 +37,18 @@ public class PaperAuthor {
   @Column(name = "display_name", nullable = false)
   private String displayName;
 
+  @Column(name = "given_name")
+  private String givenName;
+
+  @Column(name = "middle_name")
+  private String middleName;
+
+  @Column(name = "family_name")
+  private String familyName;
+
+  @Column(name = "author_role")
+  private String authorRole;
+
   @Column
   private String email;
 

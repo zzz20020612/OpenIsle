@@ -1,0 +1,14 @@
+package com.openisle.model;
+
+public enum PaperFileRole {
+  MANUSCRIPT,
+  COVER_LETTER,
+  TOC_GRAPHIC,
+  SUPPORTING_INFORMATION,
+  REVIEW_ONLY,
+  PDF_VERSION,
+  LATEX_SOURCE,
+  DATASET,
+  CODE,
+  OTHER
+}
