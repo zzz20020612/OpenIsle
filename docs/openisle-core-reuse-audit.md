@@ -24,10 +24,22 @@ The development rule from this point forward is:
 
 ## Paper-Specific Extension Boundary
 
+The persistence and reuse boundary is explicit:
+
+- `Post` owns finalized community behavior: comments, reactions, subscriptions, notifications, and moderation.
+- `PaperProfile` owns formal finalized paper metadata and publication state.
+- `PaperSubmissionDraft` owns incomplete private form state only and never substitutes for either finalized object.
+
+Partial saves and autosaves must not create `Post` or `PaperProfile` rows.
+
 The following objects are still justified as paper-specific extensions:
 
-- `PaperProfile`: paper metadata, lifecycle status, screening status, declarations, references, file metadata.
-- `PaperAuthor`: ordered author snapshot, corresponding author flag, equal contribution flag, institution link.
+- `PaperSubmissionDraft`: owner-scoped partial form state and draft file references before final submission.
+- `PaperProfile`: formal finalized paper metadata, lifecycle status, screening status, declarations, references, and publication state.
+- `PaperAuthor`: ordered author snapshot, author role, exactly-one corresponding author rule, and equal contribution flag.
+- `PaperAuthorAffiliation`: multiple affiliation links per author with exactly one primary affiliation.
+- `PaperFundingRecord`: structured finalized funding data.
+- `PaperFile`: finalized role-based file records with enforced public/private visibility.
 - `Institution`: normalized institution identity and ranking support.
 - `ExpertProfile`: long-term researcher/expert identity derived from authors and later ORCID binding.
 - `AiScreeningResult`: AI admission and risk-control result.
@@ -35,6 +47,8 @@ The following objects are still justified as paper-specific extensions:
 - `PaperScoreSnapshot`: calculated score for feeds and rankings.
 
 These objects should link back to OpenIsle core objects, especially `Post` and `User`.
+
+Normalized `PaperFile` rows are the authority for finalized file metadata, visibility, and access. Any legacy file summaries retained on `PaperProfile` are compatibility projections only.
 
 ## Submitter And Paper Author Rule
 
@@ -61,6 +75,8 @@ MVP rule:
 - Display scholarly authors from `PaperAuthor`, not from `Post.author`.
 - Link `PaperAuthor.user_id` when a contributor email matches a registered user.
 - Do not block submission just because the submitter is not yet matched to one listed author. This can be tightened later when ORCID/account binding is implemented.
+- Require every finalized author to have email, given name, family name, author role, at least one affiliation, and exactly one primary affiliation.
+- Require exactly one corresponding author for the finalized paper.
 
 Future rule:
 
@@ -95,12 +111,21 @@ If a new paper notification type is truly needed, it must still be added to the 
 
 ## Immediate Corrections
 
-1. Paper submissions must create a `Post` with `PostType.PAPER`.
+1. Partial paper submissions must remain in `PaperSubmissionDraft`; only final submission creates a `Post` with `PostType.PAPER` and a `PaperProfile`.
 2. Paper pages should progressively reuse existing `Post` detail capabilities: comments, reactions, subscriptions, admin actions, and notification behavior.
 3. Manuscript upload should reuse `/api/upload` or its presigned upload path after the upload policy is extended beyond images.
 4. Admin paper management should be added as a paper layer on top of existing admin post moderation, not as an unrelated backend.
 5. Frontend paper UI can keep its academic style, but reusable primitives such as comment editor, reaction group, dropdowns, and auth state should come from OpenIsle components.
 6. Paper notification behavior must use the existing OpenIsle notification preference system. Do not create paper-only notification settings.
+7. Finalization implementation must remain idempotent and atomic across `Post`, paper metadata, authors, affiliations, funding, authoritative `PaperFile` rows, and screening state.
+8. Submission validation, public-contact confirmation, affiliation visibility, required file roles, and other detailed business rules must follow [paper-platform-business-rules.md](./paper-platform-business-rules.md) as the source of truth instead of being duplicated here.
+9. Compatibility summaries on `PaperProfile` must not become an alternate visibility or access-control path around authoritative `PaperFile` records.
+
+## Browser Draft And MCP Boundary
+
+The browser draft endpoints are intentionally not exposed as MCP tools. Draft creation, autosave, recovery, validation, and draft-file management are interactive owner-scoped workflows, and exposing them through MCP would expand the private partial-state surface without a finalized paper contract.
+
+Finalized paper APIs remain the future MCP integration boundary. Any future MCP tools should operate on formally finalized paper resources and preserve the same validation, idempotency, transaction, and privacy rules.
 
 ## Current Deviation To Watch
 
