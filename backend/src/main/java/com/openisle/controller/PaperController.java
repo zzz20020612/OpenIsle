@@ -12,12 +12,16 @@ import com.openisle.dto.PaperSubmitRequest;
 import com.openisle.dto.PaperSummaryDto;
 import com.openisle.service.PaperRatingService;
 import com.openisle.service.PaperRankingService;
+import com.openisle.service.PaperFileAccessService;
 import com.openisle.service.PaperService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import java.net.URI;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +33,7 @@ import org.springframework.web.bind.annotation.*;
 public class PaperController {
 
   private final PaperService paperService;
+  private final PaperFileAccessService paperFileAccessService;
   private final PaperRatingService paperRatingService;
   private final PaperRankingService paperRankingService;
 
@@ -92,6 +97,26 @@ public class PaperController {
   public PaperDetailDto getPaper(@PathVariable Long paperId, Authentication authentication) {
     String viewer = authentication != null ? authentication.getName() : null;
     return paperService.getPaper(paperId, viewer);
+  }
+
+  @GetMapping("/{paperId}/files/{fileId}/content")
+  @Operation(
+    summary = "Open paper file content",
+    description = "Permission-check a paper file and redirect to a short-lived storage URL."
+  )
+  public ResponseEntity<Void> openPaperFile(
+    @PathVariable Long paperId,
+    @PathVariable Long fileId,
+    @RequestParam(value = "mode", defaultValue = "download") String mode,
+    Authentication authentication
+  ) {
+    String viewer = authentication != null ? authentication.getName() : null;
+    String url = paperFileAccessService.openFile(paperId, fileId, mode, viewer);
+    return ResponseEntity
+      .status(HttpStatus.FOUND)
+      .location(URI.create(url))
+      .cacheControl(CacheControl.noStore())
+      .build();
   }
 
   @PostMapping("/{paperId}/ratings")

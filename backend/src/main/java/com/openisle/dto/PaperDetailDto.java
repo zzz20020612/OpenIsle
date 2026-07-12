@@ -13,8 +13,12 @@ public class PaperDetailDto extends PaperSummaryDto {
   private String conflictOfInterest;
   private String dataAvailability;
   private String ethicsStatement;
+  private String preprintStatement;
+  private String aiUseDisclosure;
+  private List<PaperFundingDto> funding;
   private List<PaperFileRecordDto> manuscriptFiles;
   private List<PaperFileRecordDto> supplementaryFiles;
+  private PaperFileRecordDto tocGraphic;
   private AiScreeningDto screening;
   private boolean subscribed;
 }

@@ -1,6 +1,7 @@
 package com.openisle.service;
 
 import com.openisle.dto.AiScreeningDto;
+import com.openisle.dto.PaperAffiliationDto;
 import com.openisle.dto.PaperAffiliationRequest;
 import com.openisle.dto.PaperAuthorDto;
 import com.openisle.dto.PaperAuthorRequest;
@@ -8,6 +9,7 @@ import com.openisle.dto.PaperDetailDto;
 import com.openisle.dto.PaperFileRecordDto;
 import com.openisle.dto.PaperFilterOptionsDto;
 import com.openisle.dto.PaperFundingRequest;
+import com.openisle.dto.PaperFundingDto;
 import com.openisle.dto.PaperScoreSnapshotDto;
 import com.openisle.dto.PaperSubmitRequest;
 import com.openisle.dto.PaperSummaryDto;
@@ -34,6 +36,7 @@ import com.openisle.model.PaperUploadStatus;
 import com.openisle.model.Post;
 import com.openisle.model.PostType;
 import com.openisle.model.PostVisibleScopeType;
+import com.openisle.model.Role;
 import com.openisle.model.Tag;
 import com.openisle.repository.AiScreeningResultRepository;
 import com.openisle.repository.CategoryRepository;
@@ -646,7 +649,7 @@ public class PaperService {
       paperAuthorRepository
         .findByPaperIdOrderByAuthorOrderAsc(paper.getId())
         .stream()
-        .map(this::toAuthorDto)
+        .map(author -> toAuthorDto(author, false))
         .toList()
     );
     dto.setScoreSnapshot(getScoreSnapshotDto(paper.getId()));
@@ -693,7 +696,13 @@ public class PaperService {
     dto.setPublicationStatus(summary.getPublicationStatus());
     dto.setScreeningStatus(summary.getScreeningStatus());
     dto.setPrimaryInstitutionName(summary.getPrimaryInstitutionName());
-    dto.setAuthors(summary.getAuthors());
+    dto.setAuthors(
+      paperAuthorRepository
+        .findByPaperIdOrderByAuthorOrderAsc(paper.getId())
+        .stream()
+        .map(author -> toAuthorDto(author, true))
+        .toList()
+    );
     dto.setPublishedAt(summary.getPublishedAt());
     dto.setFeatured(summary.isFeatured());
     dto.setRssExcluded(summary.isRssExcluded());
@@ -705,8 +714,58 @@ public class PaperService {
     dto.setConflictOfInterest(paper.getConflictOfInterest());
     dto.setDataAvailability(paper.getDataAvailability());
     dto.setEthicsStatement(paper.getEthicsStatement());
-    dto.setManuscriptFiles(deserializeFileRecords(paper.getManuscriptFiles()));
-    dto.setSupplementaryFiles(deserializeFileRecords(paper.getSupplementaryFiles()));
+    dto.setPreprintStatement(paper.getPreprintStatement());
+    dto.setAiUseDisclosure(paper.getAiUseDisclosure());
+    dto.setFunding(
+      paperFundingRecordRepository
+        .findByPaperIdOrderByDisplayOrderAscIdAsc(paper.getId())
+        .stream()
+        .map(this::toFundingDto)
+        .toList()
+    );
+    List<PaperFile> normalizedFiles = paperFileRepository.findByPaperIdOrderBySortOrderAscIdAsc(
+      paper.getId()
+    );
+    if (normalizedFiles.isEmpty()) {
+      dto.setManuscriptFiles(deserializeFileRecords(paper.getManuscriptFiles()));
+      dto.setSupplementaryFiles(deserializeFileRecords(paper.getSupplementaryFiles()));
+    } else {
+      boolean canSeePrivateMetadata = canSeePrivateFileMetadata(viewer, paper);
+      List<PaperFile> visibleFiles = normalizedFiles
+        .stream()
+        .filter(file ->
+          file.getVisibility() == PaperFileVisibility.PUBLIC || canSeePrivateMetadata
+        )
+        .toList();
+      dto.setManuscriptFiles(
+        visibleFiles
+          .stream()
+          .filter(file ->
+            file.getRole() == PaperFileRole.MANUSCRIPT ||
+            file.getRole() == PaperFileRole.PDF_VERSION
+          )
+          .map(file -> toFileDto(file, canSeePrivateMetadata))
+          .toList()
+      );
+      dto.setSupplementaryFiles(
+        visibleFiles
+          .stream()
+          .filter(file ->
+            file.getRole() != PaperFileRole.MANUSCRIPT &&
+            file.getRole() != PaperFileRole.PDF_VERSION
+          )
+          .map(file -> toFileDto(file, canSeePrivateMetadata))
+          .toList()
+      );
+      dto.setTocGraphic(
+        visibleFiles
+          .stream()
+          .filter(file -> file.getRole() == PaperFileRole.TOC_GRAPHIC)
+          .findFirst()
+          .map(file -> toFileDto(file, canSeePrivateMetadata))
+          .orElse(null)
+      );
+    }
     dto.setAuthorInstitutions(
       paperAuthorRepository
         .findByPaperIdOrderByAuthorOrderAsc(paper.getId())
@@ -729,22 +788,89 @@ public class PaperService {
       .orElseGet(PaperService::emptyScoreSnapshotDto);
   }
 
-  private PaperAuthorDto toAuthorDto(PaperAuthor author) {
+  private PaperAuthorDto toAuthorDto(PaperAuthor author, boolean includeAffiliations) {
     PaperAuthorDto dto = new PaperAuthorDto();
     dto.setId(author.getId());
     dto.setAuthorOrder(author.getAuthorOrder());
     dto.setDisplayName(author.getDisplayName());
+    dto.setGivenName(author.getGivenName());
+    dto.setMiddleName(author.getMiddleName());
+    dto.setFamilyName(author.getFamilyName());
+    dto.setEmail(author.isCorrespondingAuthor() ? author.getEmail() : null);
+    dto.setOrcid(author.getOrcid());
+    dto.setAuthorRole(author.getAuthorRole());
     dto.setInstitutionId(author.getInstitution() != null ? author.getInstitution().getId() : null);
     dto.setInstitution(author.getInstitution() != null ? author.getInstitution().getName() : null);
     dto.setCountry(author.getCountry());
     dto.setCorrespondingAuthor(author.isCorrespondingAuthor());
     dto.setEqualContribution(author.isEqualContribution());
+    dto.setContributionRoles(deserializeList(author.getContributionRoles()));
+    dto.setAffiliations(
+      includeAffiliations
+        ? paperAuthorAffiliationRepository
+          .findByPaperAuthorIdOrderByDisplayOrderAscIdAsc(author.getId())
+          .stream()
+          .map(this::toAffiliationDto)
+          .toList()
+        : List.of()
+    );
     dto.setIdentityStatus(author.getIdentityStatus());
     dto.setExpertProfileId(
       author.getExpertProfile() != null ? author.getExpertProfile().getId() : null
     );
     dto.setUserId(author.getUser() != null ? author.getUser().getId() : null);
     return dto;
+  }
+
+  private PaperAffiliationDto toAffiliationDto(PaperAuthorAffiliation affiliation) {
+    PaperAffiliationDto dto = new PaperAffiliationDto();
+    dto.setId(affiliation.getId());
+    dto.setOrganizationName(affiliation.getOrganizationName());
+    dto.setDepartment(affiliation.getDepartment());
+    dto.setCountry(affiliation.getCountry());
+    dto.setRegion(affiliation.getRegion());
+    dto.setCity(affiliation.getCity());
+    dto.setPrimaryAffiliation(affiliation.isPrimaryAffiliation());
+    dto.setDisplayOrder(affiliation.getDisplayOrder());
+    return dto;
+  }
+
+  private PaperFundingDto toFundingDto(PaperFundingRecord funding) {
+    PaperFundingDto dto = new PaperFundingDto();
+    dto.setId(funding.getId());
+    dto.setFunderName(funding.getFunderName());
+    dto.setGrantId(funding.getGrantId());
+    dto.setDisplayOrder(funding.getDisplayOrder());
+    return dto;
+  }
+
+  private PaperFileRecordDto toFileDto(PaperFile file, boolean includeVisibility) {
+    PaperFileRecordDto dto = new PaperFileRecordDto();
+    dto.setId(file.getId());
+    dto.setFileName(file.getDisplayName());
+    dto.setDisplayName(file.getDisplayName());
+    dto.setFileType(file.getContentType());
+    dto.setFileSize(file.getFileSize());
+    dto.setFileRole(file.getRole().name());
+    dto.setDescription(file.getDescription());
+    dto.setVisibility(includeVisibility ? file.getVisibility() : null);
+    dto.setPreviewable(
+      PaperFileAccessService.isPreviewable(file.getContentType(), file.getOriginalFileName())
+    );
+    dto.setTocGraphic(file.getRole() == PaperFileRole.TOC_GRAPHIC);
+    dto.setViewCount(file.getViewCount());
+    dto.setDownloadCount(file.getDownloadCount());
+    return dto;
+  }
+
+  private boolean canSeePrivateFileMetadata(String viewer, PaperProfile paper) {
+    if (viewer == null || viewer.isBlank()) {
+      return false;
+    }
+    return userRepository
+      .findByUsername(viewer)
+      .map(user -> user.getRole() == Role.ADMIN || paperAccessPolicy.isPaperAuthor(user, paper))
+      .orElse(false);
   }
 
   private PaperScoreSnapshotDto toScoreSnapshotDto(PaperScoreSnapshot snapshot) {
