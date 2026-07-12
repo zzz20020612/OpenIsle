@@ -30,6 +30,8 @@ public class CosImageUploader extends ImageUploader {
   private final String bucketName;
   private final String baseUrl;
   private static final String UPLOAD_DIR = "dynamic_assert/";
+  private static final String PAPER_MANUSCRIPT_UPLOAD_DIR = "paper_manuscripts/";
+  private static final String PAPER_SUPPLEMENTARY_UPLOAD_DIR = "paper_supplementary/";
   private static final Logger logger = LoggerFactory.getLogger(CosImageUploader.class);
   private final ExecutorService executor = Executors.newFixedThreadPool(
     2,
@@ -111,13 +113,19 @@ public class CosImageUploader extends ImageUploader {
 
   @Override
   public java.util.Map<String, String> presignUpload(String filename) {
+    return presignUpload(filename, "image");
+  }
+
+  @Override
+  public java.util.Map<String, String> presignUpload(String filename, String purpose) {
+    validateStorageConfig();
     String ext = "";
     int dot = filename.lastIndexOf('.');
     if (dot != -1) {
       ext = filename.substring(dot);
     }
     String randomName = java.util.UUID.randomUUID().toString().replace("-", "") + ext;
-    String objectKey = UPLOAD_DIR + randomName;
+    String objectKey = uploadDirectoryForPurpose(purpose) + randomName;
     java.util.Date expiration = new java.util.Date(System.currentTimeMillis() + 15 * 60 * 1000L);
     GeneratePresignedUrlRequest req = new GeneratePresignedUrlRequest(
       bucketName,
@@ -128,5 +136,36 @@ public class CosImageUploader extends ImageUploader {
     java.net.URL url = cosClient.generatePresignedUrl(req);
     String fileUrl = baseUrl + "/" + objectKey;
     return java.util.Map.of("uploadUrl", url.toString(), "fileUrl", fileUrl, "key", objectKey);
+  }
+
+  @Override
+  public String presignDownload(String key, String filename, boolean inline) {
+    validateStorageConfig();
+    GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(
+      bucketName,
+      key,
+      HttpMethodName.GET
+    );
+    request.setExpiration(new java.util.Date(System.currentTimeMillis() + 15 * 60 * 1000L));
+    return cosClient.generatePresignedUrl(request).toString();
+  }
+
+  private void validateStorageConfig() {
+    if (bucketName == null || bucketName.isBlank()) {
+      throw new IllegalStateException("Storage is not configured: COS_BUCKET_NAME is required");
+    }
+    if (baseUrl == null || baseUrl.isBlank()) {
+      throw new IllegalStateException("Storage is not configured: COS_BASE_URL is required");
+    }
+  }
+
+  private static String uploadDirectoryForPurpose(String purpose) {
+    if ("manuscript".equalsIgnoreCase(purpose)) {
+      return PAPER_MANUSCRIPT_UPLOAD_DIR;
+    }
+    if ("supplementary".equalsIgnoreCase(purpose)) {
+      return PAPER_SUPPLEMENTARY_UPLOAD_DIR;
+    }
+    return UPLOAD_DIR;
   }
 }

@@ -143,6 +143,8 @@ public class SecurityConfig {
           .permitAll()
           .requestMatchers(HttpMethod.GET, "/api/papers/**")
           .permitAll()
+          .requestMatchers(HttpMethod.GET, "/api/experts/**")
+          .permitAll()
           .requestMatchers(HttpMethod.GET, "/api/comments/**")
           .permitAll()
           .requestMatchers(HttpMethod.GET, "/api/categories/**")
@@ -176,6 +178,12 @@ public class SecurityConfig {
           .requestMatchers(HttpMethod.GET, "/api/online/**")
           .permitAll()
           .requestMatchers(HttpMethod.POST, "/api/online/**")
+          .permitAll()
+          .requestMatchers(HttpMethod.PUT, "/api/upload/local/**")
+          .permitAll()
+          .requestMatchers(HttpMethod.GET, "/api/upload/local/file/**")
+          .permitAll()
+          .requestMatchers(HttpMethod.GET, "/api/upload/local/download/**")
           .permitAll()
           .requestMatchers(HttpMethod.GET, "/api/point-goods")
           .permitAll()
@@ -219,11 +227,15 @@ public class SecurityConfig {
         }
         String authHeader = request.getHeader("Authorization");
         String uri = request.getRequestURI();
+        boolean localUpload =
+          uri.startsWith("/api/upload/local/") &&
+          ("PUT".equalsIgnoreCase(request.getMethod()) || "GET".equalsIgnoreCase(request.getMethod()));
 
         boolean publicGet =
           "GET".equalsIgnoreCase(request.getMethod()) &&
           (uri.startsWith("/api/posts") ||
             uri.startsWith("/api/papers") ||
+            uri.startsWith("/api/experts") ||
             uri.startsWith("/api/comments") ||
             uri.startsWith("/api/categories") ||
             uri.startsWith("/api/tags") ||
@@ -265,7 +277,8 @@ public class SecurityConfig {
           !uri.startsWith("/api/ws") &&
           !uri.startsWith("/api/sockjs") &&
           !uri.startsWith("/api/v3/api-docs") &&
-          !uri.startsWith("/api/online")
+          !uri.startsWith("/api/online") &&
+          !localUpload
         ) {
           response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
           response.setContentType("application/json");

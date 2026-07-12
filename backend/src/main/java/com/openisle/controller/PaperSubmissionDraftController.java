@@ -2,13 +2,22 @@ package com.openisle.controller;
 
 import com.openisle.dto.PaperSubmissionDraftDto;
 import com.openisle.dto.PaperSubmissionDraftPatchRequest;
+import com.openisle.dto.PaperSubmissionFileDto;
+import com.openisle.dto.PaperSubmissionFilePresignRequest;
+import com.openisle.dto.PaperSubmissionFilePresignResponse;
+import com.openisle.dto.PaperSubmissionFileUpdateRequest;
 import com.openisle.dto.PaperSubmissionValidationDto;
 import com.openisle.service.PaperSubmissionDraftService;
+import com.openisle.service.PaperSubmissionFileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import java.net.URI;
+import java.util.List;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaperSubmissionDraftController {
 
   private final PaperSubmissionDraftService draftService;
+  private final PaperSubmissionFileService fileService;
 
   @PostMapping
   @Operation(summary = "Create paper submission draft")
@@ -82,5 +92,67 @@ public class PaperSubmissionDraftController {
     Authentication authentication
   ) {
     return draftService.validateDraft(authentication.getName(), draftId);
+  }
+
+  @GetMapping("/{draftId}/files")
+  @Operation(summary = "List paper submission draft files")
+  public List<PaperSubmissionFileDto> listFiles(
+    @PathVariable Long draftId,
+    Authentication authentication
+  ) {
+    return fileService.listFiles(authentication.getName(), draftId);
+  }
+
+  @PostMapping("/{draftId}/files/presign")
+  @Operation(summary = "Create draft-scoped presigned upload")
+  public PaperSubmissionFilePresignResponse presignFile(
+    @PathVariable Long draftId,
+    @RequestBody PaperSubmissionFilePresignRequest request,
+    Authentication authentication
+  ) {
+    return fileService.presign(authentication.getName(), draftId, request);
+  }
+
+  @PatchMapping("/{draftId}/files/{fileId}")
+  @Operation(summary = "Update paper submission file metadata")
+  public PaperSubmissionFileDto updateFile(
+    @PathVariable Long draftId,
+    @PathVariable Long fileId,
+    @RequestBody PaperSubmissionFileUpdateRequest request,
+    Authentication authentication
+  ) {
+    return fileService.updateFile(authentication.getName(), draftId, fileId, request);
+  }
+
+  @DeleteMapping("/{draftId}/files/{fileId}")
+  @Operation(summary = "Remove paper submission file")
+  public ResponseEntity<Void> deleteFile(
+    @PathVariable Long draftId,
+    @PathVariable Long fileId,
+    Authentication authentication
+  ) {
+    fileService.deleteFile(authentication.getName(), draftId, fileId);
+    return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/{draftId}/files/{fileId}/content")
+  @Operation(summary = "Open a paper submission file through a signed URL")
+  public ResponseEntity<Void> openFile(
+    @PathVariable Long draftId,
+    @PathVariable Long fileId,
+    @RequestParam(defaultValue = "true") boolean inline,
+    Authentication authentication
+  ) {
+    String url = fileService.getContentUrl(
+      authentication.getName(),
+      draftId,
+      fileId,
+      inline
+    );
+    return ResponseEntity
+      .status(HttpStatus.FOUND)
+      .location(URI.create(url))
+      .cacheControl(CacheControl.noStore())
+      .build();
   }
 }

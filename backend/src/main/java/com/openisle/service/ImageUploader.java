@@ -46,6 +46,14 @@ public abstract class ImageUploader {
     throw new UnsupportedOperationException("presignUpload not supported");
   }
 
+  public java.util.Map<String, String> presignUpload(String filename, String purpose) {
+    return presignUpload(filename);
+  }
+
+  public String presignDownload(String key, String filename, boolean inline) {
+    throw new UnsupportedOperationException("presignDownload not supported");
+  }
+
   /** Extract COS URLs from text. */
   public Set<String> extractUrls(String text) {
     Set<String> set = new HashSet<>();
