@@ -82,7 +82,6 @@ public class PaperSubmissionValidator {
 
     requireExactlyOneRole(uploadedFiles, PaperFileRole.MANUSCRIPT, "Manuscript File", issues);
     requireExactlyOneRole(uploadedFiles, PaperFileRole.COVER_LETTER, "Cover Letter", issues);
-    requireExactlyOneRole(uploadedFiles, PaperFileRole.TOC_GRAPHIC, "TOC Graphic", issues);
 
     uploadedFiles
       .stream()

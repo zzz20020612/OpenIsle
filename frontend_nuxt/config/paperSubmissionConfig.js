@@ -23,6 +23,7 @@ export const MANUSCRIPT_TYPES = [
 export const REQUIRED_FILE_ROWS = [
   {
     role: 'MANUSCRIPT',
+    required: true,
     label: 'Manuscript File',
     description: 'The editable manuscript source. DOCX is required for this release.',
     accept: '.docx',
@@ -30,6 +31,7 @@ export const REQUIRED_FILE_ROWS = [
   },
   {
     role: 'COVER_LETTER',
+    required: true,
     label: 'Cover Letter',
     description: 'A short letter introducing the work and its relevance.',
     accept: '.doc,.docx,.pdf,.rtf,.txt',
@@ -37,8 +39,9 @@ export const REQUIRED_FILE_ROWS = [
   },
   {
     role: 'TOC_GRAPHIC',
+    required: false,
     label: 'TOC Graphic',
-    description: 'A clear raster image used in the paper record and discovery views.',
+    description: 'Optional. A clear raster image used in the paper record and discovery views.',
     accept: '.png,.jpg,.jpeg,.webp,.gif',
     visibility: 'PUBLIC',
   },

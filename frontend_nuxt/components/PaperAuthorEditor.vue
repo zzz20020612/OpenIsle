@@ -118,22 +118,34 @@
             </div>
           </fieldset>
 
-          <div class="affiliation-heading">
+          <div class="affiliation-disclosure">
             <div>
               <strong>Affiliations</strong>
-              <span>Each author needs at least one affiliation and exactly one primary affiliation.</span>
+              <span>{{ affiliationSummary(author) }}</span>
             </div>
-            <button class="author-command-button" type="button" @click="addAffiliation(index)">
-              <AddOne :size="17" /> Add affiliation
+            <button class="author-command-button" type="button" @click="toggleAffiliations(author)">
+              <Edit :size="17" />
+              {{ affiliationsExpanded(author) ? 'Hide affiliations' : 'Add / Edit affiliations' }}
             </button>
           </div>
 
-          <div class="affiliation-list">
-            <article
-              v-for="(affiliation, affiliationIndex) in author.affiliations"
-              :key="affiliation._key"
-              class="affiliation-editor"
-            >
+          <div v-if="affiliationsExpanded(author)" class="affiliation-panel">
+            <div class="affiliation-heading">
+              <div>
+                <strong>Institution details</strong>
+                <span>Each author needs at least one affiliation and exactly one primary affiliation.</span>
+              </div>
+              <button class="author-command-button" type="button" @click="addAffiliation(index)">
+                <AddOne :size="17" /> Add affiliation
+              </button>
+            </div>
+
+            <div class="affiliation-list">
+              <article
+                v-for="(affiliation, affiliationIndex) in author.affiliations"
+                :key="affiliation._key"
+                class="affiliation-editor"
+              >
               <div class="affiliation-editor-head">
                 <strong>Affiliation {{ affiliationIndex + 1 }}</strong>
                 <div>
@@ -202,7 +214,8 @@
                   </label>
                 </div>
               </details>
-            </article>
+              </article>
+            </div>
           </div>
         </div>
       </article>
@@ -242,6 +255,7 @@ const withKeys = (authors) => authors.map((author) => ({
 
 const localAuthors = ref(withKeys(props.modelValue.length ? props.modelValue : [createEmptyAuthor(true)]))
 const expandedIndex = ref(0)
+const expandedAffiliations = ref({})
 let syncingFromParent = false
 
 watch(
@@ -293,6 +307,21 @@ const authorName = (author, index) => {
 
 const primaryAffiliation = (author) =>
   author.affiliations?.find((item) => item.primaryAffiliation) || author.affiliations?.[0]
+
+const affiliationsExpanded = (author) => Boolean(expandedAffiliations.value[author._key])
+
+const toggleAffiliations = (author) => {
+  expandedAffiliations.value = {
+    ...expandedAffiliations.value,
+    [author._key]: !affiliationsExpanded(author),
+  }
+}
+
+const affiliationSummary = (author) => {
+  const affiliation = primaryAffiliation(author)
+  if (!affiliation?.organizationName) return 'Institution details are required before submission.'
+  return [affiliation.organizationName, affiliation.city, affiliation.country].filter(Boolean).join(', ')
+}
 
 const toggleEditor = (index) => {
   expandedIndex.value = expandedIndex.value === index ? -1 : index
@@ -381,6 +410,10 @@ const setPrimaryAffiliation = (authorIndex, affiliationIndex) => {
 .author-contributions > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 14px; }
 .author-contributions label { display: flex; gap: 7px; align-items: flex-start; color: #4b5962; font-size: 12px; line-height: 1.35; }
 .author-command-button { min-height: 40px; width: fit-content; display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px; border: 1px solid #1f5b78; background: #fff; color: #174b64; font-weight: 700; cursor: pointer; }
+.affiliation-disclosure { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px; border: 1px solid #d6dde1; background: #fff; }
+.affiliation-disclosure > div { display: grid; gap: 3px; min-width: 0; }
+.affiliation-disclosure span { color: #65727b; font-size: 12px; overflow-wrap: anywhere; }
+.affiliation-panel { display: grid; gap: 12px; padding: 14px; border: 1px solid #d6dde1; background: #f1f4f5; }
 .affiliation-list { display: grid; gap: 12px; }
 .affiliation-editor { display: grid; gap: 12px; padding: 14px; border: 1px solid #d3dade; background: #fff; }
 .affiliation-editor-head > div { display: flex; align-items: center; gap: 12px; }
@@ -393,5 +426,7 @@ input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-v
   .author-fields.two, .author-fields.three, .author-contributions > div { grid-template-columns: 1fr; }
   .author-detail { padding: 14px; }
   .affiliation-heading { align-items: flex-start; flex-direction: column; }
+  .affiliation-disclosure { align-items: flex-start; flex-direction: column; }
+  .affiliation-disclosure .author-command-button { width: 100%; justify-content: center; }
 }
 </style>

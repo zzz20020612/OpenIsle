@@ -6,7 +6,9 @@
           <FileText :size="20" />
           <div>
             <div class="submission-file-label">
-              {{ row.label }} <span aria-hidden="true">*</span>
+              {{ row.label }}
+              <span v-if="row.required" aria-hidden="true">*</span>
+              <small v-else>Optional</small>
             </div>
             <p>{{ row.description }}</p>
           </div>
@@ -248,6 +250,7 @@ const formatFileSize = (size) => {
 .submission-file-kind svg { flex: 0 0 auto; margin-top: 2px; color: #4c6576; }
 .submission-file-label { font-weight: 700; color: #17232c; }
 .submission-file-label span { color: #b42318; }
+.submission-file-label small { margin-left: 7px; color: #68747c; font-size: 11px; font-weight: 600; }
 .submission-file-kind p, .submission-subheading-row p { margin: 4px 0 0; color: #5f6b74; font-size: 13px; line-height: 1.45; }
 .submission-upload-button { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #1f5b78; background: #fff; color: #174b64; padding: 8px 14px; font-weight: 700; cursor: pointer; }
 .submission-upload-button.secondary { align-self: end; }

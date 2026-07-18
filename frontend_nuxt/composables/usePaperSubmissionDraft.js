@@ -168,6 +168,7 @@ export const usePaperSubmissionDraft = () => {
     files.value.sort((left, right) =>
       (left.sortOrder ?? 0) - (right.sortOrder ?? 0) || left.id - right.id,
     )
+    validation.value = { valid: false, issues: [] }
   }
 
   const uploadFile = async (file, metadata) => {
@@ -228,6 +229,7 @@ export const usePaperSubmissionDraft = () => {
   const removeFile = async (fileId) => {
     await api.removeSubmissionFile(draft.value.id, fileId)
     files.value = files.value.filter((item) => item.id !== fileId)
+    validation.value = { valid: false, issues: [] }
   }
 
   const validate = async () => {

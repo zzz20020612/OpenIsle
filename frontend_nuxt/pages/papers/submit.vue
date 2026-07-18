@@ -460,8 +460,7 @@ const localSectionComplete = (sectionId) => {
   if (sectionId === 'manuscript-type') return ['Research Article', 'Review'].includes(form.paperType)
   if (sectionId === 'file-upload') {
     return uploadedRole('MANUSCRIPT') === 1 &&
-      uploadedRole('COVER_LETTER') === 1 &&
-      uploadedRole('TOC_GRAPHIC') === 1
+      uploadedRole('COVER_LETTER') === 1
   }
   if (sectionId === 'manuscript-information') {
     return Boolean(form.title && form.abstractText && form.subjectArea && form.keywords.length)
