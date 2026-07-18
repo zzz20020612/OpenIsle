@@ -129,7 +129,9 @@ export const usePaperSubmissionDraft = () => {
       } else {
         saveState.value = 'error'
       }
-      lastError.value = error?.data?.error || error?.message || 'Unable to save changes.'
+      lastError.value = status
+        ? (error?.data?.error || 'Unable to save changes.')
+        : 'Draft autosave was interrupted. Check your connection and try again.'
       throw error
     }
   }

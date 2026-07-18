@@ -129,14 +129,32 @@
             </button>
           </div>
 
-          <div v-if="affiliationsExpanded(author)" class="affiliation-panel">
+          <div
+            v-if="affiliationsExpanded(author)"
+            class="affiliation-backdrop"
+            aria-hidden="true"
+            @click="closeAffiliations"
+          />
+          <aside
+            v-if="affiliationsExpanded(author)"
+            class="affiliation-panel"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="`Affiliations for ${authorName(author, index)}`"
+          >
             <div class="affiliation-heading">
               <div>
-                <strong>Institution details</strong>
+                <strong>{{ authorName(author, index) }}</strong>
                 <span>Each author needs at least one affiliation and exactly one primary affiliation.</span>
               </div>
-              <button class="author-command-button" type="button" @click="addAffiliation(index)">
-                <AddOne :size="17" /> Add affiliation
+              <button
+                class="author-icon-button"
+                type="button"
+                title="Close affiliations"
+                aria-label="Close affiliations"
+                @click="closeAffiliations"
+              >
+                <CloseOne :size="17" />
               </button>
             </div>
 
@@ -216,7 +234,10 @@
               </details>
               </article>
             </div>
-          </div>
+            <button class="author-command-button" type="button" @click="addAffiliation(index)">
+              <AddOne :size="17" /> Add affiliation
+            </button>
+          </aside>
         </div>
       </article>
     </div>
@@ -311,11 +332,21 @@ const primaryAffiliation = (author) =>
 const affiliationsExpanded = (author) => Boolean(expandedAffiliations.value[author._key])
 
 const toggleAffiliations = (author) => {
-  expandedAffiliations.value = {
-    ...expandedAffiliations.value,
-    [author._key]: !affiliationsExpanded(author),
+  expandedAffiliations.value = affiliationsExpanded(author) ? {} : { [author._key]: true }
+}
+
+const closeAffiliations = () => {
+  expandedAffiliations.value = {}
+}
+
+const handleKeydown = (event) => {
+  if (event.key === 'Escape' && Object.keys(expandedAffiliations.value).length) {
+    closeAffiliations()
   }
 }
+
+onMounted(() => window.addEventListener('keydown', handleKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
 
 const affiliationSummary = (author) => {
   const affiliation = primaryAffiliation(author)
@@ -413,7 +444,10 @@ const setPrimaryAffiliation = (authorIndex, affiliationIndex) => {
 .affiliation-disclosure { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px; border: 1px solid #d6dde1; background: #fff; }
 .affiliation-disclosure > div { display: grid; gap: 3px; min-width: 0; }
 .affiliation-disclosure span { color: #65727b; font-size: 12px; overflow-wrap: anywhere; }
-.affiliation-panel { display: grid; gap: 12px; padding: 14px; border: 1px solid #d6dde1; background: #f1f4f5; }
+.affiliation-backdrop { position: fixed; inset: 0; z-index: 1200; background: rgba(18, 31, 39, .38); }
+.affiliation-panel { position: fixed; z-index: 1201; top: 0; right: 0; bottom: 0; width: min(560px, 92vw); display: flex; flex-direction: column; gap: 16px; padding: 20px; overflow-y: auto; border-left: 1px solid #c8d1d6; background: #f4f6f7; box-shadow: -12px 0 28px rgba(18, 31, 39, .18); }
+.affiliation-panel > .affiliation-heading { position: sticky; top: -20px; z-index: 1; margin: -20px -20px 0; padding: 18px 20px; border-bottom: 1px solid #d3dade; background: #fff; }
+.affiliation-panel > .author-command-button { flex: 0 0 auto; }
 .affiliation-list { display: grid; gap: 12px; }
 .affiliation-editor { display: grid; gap: 12px; padding: 14px; border: 1px solid #d3dade; background: #fff; }
 .affiliation-editor-head > div { display: flex; align-items: center; gap: 12px; }
@@ -428,5 +462,7 @@ input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-v
   .affiliation-heading { align-items: flex-start; flex-direction: column; }
   .affiliation-disclosure { align-items: flex-start; flex-direction: column; }
   .affiliation-disclosure .author-command-button { width: 100%; justify-content: center; }
+  .affiliation-panel { width: 100vw; padding: 14px; }
+  .affiliation-panel > .affiliation-heading { top: -14px; margin: -14px -14px 0; padding: 14px; }
 }
 </style>
