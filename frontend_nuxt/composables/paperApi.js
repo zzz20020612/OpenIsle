@@ -2,6 +2,9 @@ import { getToken } from '~/utils/auth'
 
 export const usePaperApi = () => {
   const config = useRuntimeConfig()
+  const publicApiBaseUrl = process.server
+    ? (process.env.NUXT_PUBLIC_API_BASE_URL || config.public.apiBaseUrl)
+    : config.public.apiBaseUrl
   const apiBaseUrl =
     process.server && config.public.apiBaseUrlSsr
       ? config.public.apiBaseUrlSsr
@@ -136,10 +139,10 @@ export const usePaperApi = () => {
     })
 
   const paperFileContentUrl = (paperId, fileId, mode = 'download') =>
-    `${apiBaseUrl}/api/papers/${paperId}/files/${fileId}/content?mode=${encodeURIComponent(mode)}`
+    `${publicApiBaseUrl}/api/papers/${paperId}/files/${fileId}/content?mode=${encodeURIComponent(mode)}`
 
   const draftFileContentUrl = (draftId, fileId, inline = true) =>
-    `${apiBaseUrl}/api/paper-submission-drafts/${draftId}/files/${fileId}/content?inline=${inline}`
+    `${publicApiBaseUrl}/api/paper-submission-drafts/${draftId}/files/${fileId}/content?inline=${inline}`
 
   const ratePaper = (paperId, payload) =>
     $fetch(`${apiBaseUrl}/api/papers/${paperId}/ratings`, {

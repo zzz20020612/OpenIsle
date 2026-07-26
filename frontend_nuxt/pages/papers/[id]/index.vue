@@ -120,16 +120,12 @@
 
           <section v-if="article?.sections?.length" id="article-content" class="journal-section journal-full-article">
             <div class="journal-full-article-heading">
-              <div>
-                <h2>Article</h2>
-                <p>Read the structured online version of this manuscript.</p>
-              </div>
               <details class="article-contents-menu">
                 <summary>Contents</summary>
-                <nav><a v-for="section in article.sections" :key="section.key" :href="`#${section.key}`">{{ section.heading }}</a></nav>
+                <nav><a v-for="section in readerArticle.sections" :key="section.key" :href="`#${section.key}`">{{ section.heading }}</a></nav>
               </details>
             </div>
-            <PaperArticleRenderer :article="article" :figure-source="figureSource" />
+            <PaperArticleRenderer :article="readerArticle" :figure-source="figureSource" />
           </section>
 
           <section id="files" class="journal-section">
@@ -381,6 +377,7 @@ import DropdownMenu from '~/components/DropdownMenu.vue'
 import { authState, getToken } from '~/utils/auth'
 import TimeManager from '~/utils/time'
 import PaperArticleRenderer from '~/components/paper-article/PaperArticleRenderer.vue'
+import { normalizeReaderArticle } from '~/utils/paperArticleReader'
 import { toast } from '~/main'
 
 const route = useRoute()
@@ -416,6 +413,7 @@ const { data: articleData } = await useAsyncData(`paper-article:${paperId.value}
   getPaperArticle(paperId.value).catch(() => ({ sections: [] })),
 )
 const article = computed(() => articleData.value || { sections: [] })
+const readerArticle = computed(() => normalizeReaderArticle(article.value, paper.value.abstractText))
 const postCore = ref({})
 const postReactions = ref([])
 const paperComments = ref([])
@@ -940,8 +938,7 @@ const normalizeStatus = (value) => {
 .journal-toc-figure { width: min(720px, 100%); margin: 0; }
 .journal-toc-figure img { display: block; max-width: 100%; max-height: 520px; object-fit: contain; border: 1px solid #d5dbde; background: #fff; }
 .journal-toc-figure figcaption { margin-top: 8px; color: #66737a; font-size: 12px; line-height: 1.45; }
-.journal-full-article-heading { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
-.journal-full-article-heading p { margin: -10px 0 18px; color: #68747c; font-size: 13px; }
+.journal-full-article-heading { display: flex; justify-content: flex-end; margin-bottom: 18px; }
 .article-contents-menu { position: relative; flex: 0 0 auto; }
 .article-contents-menu summary { padding: 8px 10px; border: 1px solid #bdcbd0; color: #31586a; font-size: 12px; font-weight: 750; cursor: pointer; }
 .article-contents-menu nav { position: absolute; z-index: 2; right: 0; width: 230px; display: grid; gap: 2px; padding: 10px; border: 1px solid #cbd5d9; background: #fff; box-shadow: 0 6px 18px rgba(31, 48, 58, .12); }

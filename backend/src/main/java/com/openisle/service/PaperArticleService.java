@@ -7,17 +7,22 @@ import com.openisle.dto.PaperArticleValidationDto;
 import com.openisle.exception.DraftVersionConflictException;
 import com.openisle.exception.NotFoundException;
 import com.openisle.model.PaperArticleStatus;
+import com.openisle.model.PaperFile;
 import com.openisle.model.PaperProfile;
 import com.openisle.model.PaperSubmissionDraft;
 import com.openisle.model.PaperSubmissionDraftStatus;
 import com.openisle.model.PaperSubmissionFile;
 import com.openisle.model.User;
 import com.openisle.repository.PaperProfileRepository;
+import com.openisle.repository.PaperFileRepository;
 import com.openisle.repository.PaperSubmissionDraftRepository;
 import com.openisle.repository.PaperSubmissionFileRepository;
 import com.openisle.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -30,6 +35,7 @@ public class PaperArticleService {
   private final PaperSubmissionDraftRepository draftRepository;
   private final PaperSubmissionFileRepository fileRepository;
   private final PaperProfileRepository paperProfileRepository;
+  private final PaperFileRepository paperFileRepository;
   private final UserRepository userRepository;
   private final PaperArticleValidator validator;
   private final PaperAccessPolicy paperAccessPolicy;
@@ -119,7 +125,28 @@ public class PaperArticleService {
     if (!validation.isValid()) {
       throw new IllegalArgumentException("Article content is not ready for submission");
     }
+    remapFigureFileIds(article, files(draft), paperFileRepository.findByPaperIdOrderBySortOrderAscIdAsc(paper.getId()));
     paper.setArticleJson(write(article));
+  }
+
+  private static void remapFigureFileIds(
+    PaperArticleDto article,
+    List<PaperSubmissionFile> draftFiles,
+    List<PaperFile> publishedFiles
+  ) {
+    Map<Long, String> storageKeyByDraftId = draftFiles.stream()
+      .collect(Collectors.toMap(PaperSubmissionFile::getId, PaperSubmissionFile::getStorageKey));
+    Map<String, PaperFile> publishedByStorageKey = publishedFiles.stream()
+      .collect(Collectors.toMap(PaperFile::getStorageKey, Function.identity()));
+
+    article.getSections().stream()
+      .flatMap(section -> section.getBlocks().stream())
+      .filter(block -> "FIGURE".equals(block.getType()) && block.getFileId() != null)
+      .forEach(block -> {
+        String storageKey = storageKeyByDraftId.get(block.getFileId());
+        PaperFile published = storageKey == null ? null : publishedByStorageKey.get(storageKey);
+        if (published != null) block.setFileId(published.getId());
+      });
   }
 
   private PaperSubmissionDraft requireOwnedDraft(String username, Long draftId) {

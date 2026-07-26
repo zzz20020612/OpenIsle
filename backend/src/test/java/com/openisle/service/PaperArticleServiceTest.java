@@ -14,9 +14,14 @@ import com.openisle.dto.PaperArticleSectionDto;
 import com.openisle.dto.PaperArticleValidationDto;
 import com.openisle.exception.DraftVersionConflictException;
 import com.openisle.model.PaperArticleStatus;
+import com.openisle.model.PaperFile;
+import com.openisle.model.PaperFileRole;
 import com.openisle.model.PaperSubmissionDraft;
 import com.openisle.model.PaperSubmissionDraftStatus;
+import com.openisle.model.PaperSubmissionFile;
 import com.openisle.model.User;
+import com.openisle.model.PaperProfile;
+import com.openisle.repository.PaperFileRepository;
 import com.openisle.repository.PaperProfileRepository;
 import com.openisle.repository.PaperSubmissionDraftRepository;
 import com.openisle.repository.PaperSubmissionFileRepository;
@@ -36,6 +41,7 @@ class PaperArticleServiceTest {
   @Mock private PaperSubmissionDraftRepository draftRepository;
   @Mock private PaperSubmissionFileRepository fileRepository;
   @Mock private PaperProfileRepository paperProfileRepository;
+  @Mock private PaperFileRepository paperFileRepository;
   @Mock private UserRepository userRepository;
   @Mock private PaperArticleValidator validator;
   @Mock private PaperAccessPolicy paperAccessPolicy;
@@ -50,6 +56,7 @@ class PaperArticleServiceTest {
       draftRepository,
       fileRepository,
       paperProfileRepository,
+      paperFileRepository,
       userRepository,
       validator,
       paperAccessPolicy,
@@ -64,7 +71,7 @@ class PaperArticleServiceTest {
     draft.setStatus(PaperSubmissionDraftStatus.IN_PROGRESS);
     draft.setArticleStatus(PaperArticleStatus.NOT_STARTED);
     lenient().when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
-    when(draftRepository.findById(11L)).thenReturn(Optional.of(draft));
+    lenient().when(draftRepository.findById(11L)).thenReturn(Optional.of(draft));
   }
 
   @Test
@@ -109,6 +116,40 @@ class PaperArticleServiceTest {
     assertEquals(1L, ready.getVersion());
     assertEquals(PaperArticleStatus.READY, ready.getStatus());
     verify(draftRepository).saveAndFlush(draft);
+  }
+
+  @Test
+  void remapsDraftFigureIdsWhenCopyingArticleToPublishedPaper() throws Exception {
+    draft.setArticleStatus(PaperArticleStatus.READY);
+    PaperArticleDto article = article(1L);
+    PaperArticleBlockDto figure = new PaperArticleBlockDto();
+    figure.setKey("figure-1");
+    figure.setType("FIGURE");
+    figure.setFileId(9L);
+    article.getSections().get(0).setBlocks(List.of(figure));
+    draft.setArticleJson(new ObjectMapper().writeValueAsString(article));
+
+    PaperSubmissionFile source = new PaperSubmissionFile();
+    source.setId(9L);
+    source.setRole(PaperFileRole.FIGURE);
+    source.setStorageKey("figures/one.jpg");
+    PaperFile published = new PaperFile();
+    published.setId(105L);
+    published.setRole(PaperFileRole.FIGURE);
+    published.setStorageKey("figures/one.jpg");
+    PaperProfile paper = new PaperProfile();
+    paper.setId(5L);
+
+    when(fileRepository.findByDraftIdOrderBySortOrderAscIdAsc(11L)).thenReturn(List.of(source));
+    when(paperFileRepository.findByPaperIdOrderBySortOrderAscIdAsc(5L)).thenReturn(List.of(published));
+    PaperArticleValidationDto validation = new PaperArticleValidationDto();
+    validation.setValid(true);
+    when(validator.validate(any(PaperArticleDto.class), any())).thenReturn(validation);
+
+    service.copyToPaper(draft, paper);
+
+    PaperArticleDto saved = new ObjectMapper().readValue(paper.getArticleJson(), PaperArticleDto.class);
+    assertEquals(105L, saved.getSections().get(0).getBlocks().get(0).getFileId());
   }
 
   private PaperArticleDto article(long version) {
