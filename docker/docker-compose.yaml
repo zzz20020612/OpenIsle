@@ -190,6 +190,7 @@ services:
       - ${ENV_FILE:-../.env}
     environment:
       AI_SCREENING_PORT: ${AI_SCREENING_PORT:-8090}
+      AI_SCREENING_INTERNAL_BASE_URL: ${AI_SCREENING_INTERNAL_BASE_URL:-http://springboot:8080}
     networks:
       - openisle-network
     restart: unless-stopped

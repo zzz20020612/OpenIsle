@@ -31,7 +31,7 @@ def create_app(
 ) -> FastAPI:
     settings = settings or Settings()
     pipeline = pipeline or ScreeningPipeline(OpenAICompatibleModelClient(settings))
-    downloader = downloader or ManuscriptDownloader()
+    downloader = downloader or ManuscriptDownloader(internal_base_url=settings.internal_base_url)
     app = FastAPI(title="OpenIsle AI Screening", version="1.0.0")
 
     def require_token(authorization: str | None = Header(default=None)) -> None:

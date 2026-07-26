@@ -17,3 +17,6 @@ class Settings:
     request_timeout: float = field(
         default_factory=lambda: float(os.getenv("AI_SCREENING_REQUEST_TIMEOUT", "90"))
     )
+    internal_base_url: str = field(
+        default_factory=lambda: os.getenv("AI_SCREENING_INTERNAL_BASE_URL", "")
+    )

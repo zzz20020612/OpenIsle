@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from screening_service.api import create_app
 from screening_service.config import Settings
+from screening_service.downloader import ManuscriptDownloader
 
 
 class FakeDownloader:
@@ -16,6 +17,17 @@ class FakeDownloader:
         self.urls.append(url)
         self.filenames.append(filename)
         return self.path
+
+    def cleanup(self, path: Path):
+        pass
+
+
+def test_downloader_rewrites_backend_localhost_for_container_network():
+    downloader = ManuscriptDownloader(internal_base_url="http://springboot:8080")
+
+    assert downloader.rewrite_url("http://localhost:8080/api/upload/local/download/x") == (
+        "http://springboot:8080/api/upload/local/download/x"
+    )
 
 
 class FakePipeline:
