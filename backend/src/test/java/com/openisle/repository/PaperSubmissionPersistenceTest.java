@@ -10,6 +10,7 @@ import com.openisle.model.Category;
 import com.openisle.model.Institution;
 import com.openisle.model.PaperAuthor;
 import com.openisle.model.PaperAuthorAffiliation;
+import com.openisle.model.PaperArticleStatus;
 import com.openisle.model.PaperFile;
 import com.openisle.model.PaperFileRole;
 import com.openisle.model.PaperFileVisibility;
@@ -99,6 +100,10 @@ class PaperSubmissionPersistenceTest {
     assertNull(found.getSubmittedPaper());
     assertNull(found.getIdempotencyKey());
     assertEquals(0L, found.getVersion());
+    assertEquals(PaperArticleStatus.NOT_STARTED, found.getArticleStatus());
+    assertEquals(0L, found.getArticleVersion());
+    assertNull(found.getArticleJson());
+    assertNull(found.getArticleReadyAt());
     assertNotNull(found.getCreatedAt());
     assertNotNull(found.getUpdatedAt());
 
@@ -106,6 +111,34 @@ class PaperSubmissionPersistenceTest {
     draftRepository.saveAndFlush(found);
 
     assertEquals(1L, found.getVersion());
+  }
+
+  @Test
+  void persistsDraftArticleAndFinalArticleSnapshot() {
+    User owner = createUser("article-owner");
+    PaperSubmissionDraft draft = createDraft(owner, "Structured article draft");
+    String articleJson = "{\"sections\":[{\"key\":\"introduction\"}]}";
+    LocalDateTime readyAt = LocalDateTime.of(2026, 7, 26, 14, 30);
+
+    draft.setArticleJson(articleJson);
+    draft.setArticleStatus(PaperArticleStatus.READY);
+    draft.setArticleVersion(3L);
+    draft.setArticleReadyAt(readyAt);
+    draftRepository.saveAndFlush(draft);
+
+    PaperProfile paper = createPaper(owner, "Structured article paper");
+    paper.setArticleJson(articleJson);
+    paperProfileRepository.saveAndFlush(paper);
+    entityManager.clear();
+
+    PaperSubmissionDraft reloadedDraft = draftRepository.findById(draft.getId()).orElseThrow();
+    PaperProfile reloadedPaper = paperProfileRepository.findById(paper.getId()).orElseThrow();
+
+    assertEquals(articleJson, reloadedDraft.getArticleJson());
+    assertEquals(PaperArticleStatus.READY, reloadedDraft.getArticleStatus());
+    assertEquals(3L, reloadedDraft.getArticleVersion());
+    assertEquals(readyAt, reloadedDraft.getArticleReadyAt());
+    assertEquals(articleJson, reloadedPaper.getArticleJson());
   }
 
   @Test

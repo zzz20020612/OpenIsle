@@ -42,6 +42,9 @@ public class PaperProfile {
   @Column(name = "references_text", columnDefinition = "TEXT")
   private String referencesText;
 
+  @Column(name = "article_json", columnDefinition = "LONGTEXT")
+  private String articleJson;
+
   @Column(name = "manuscript_files", columnDefinition = "TEXT")
   private String manuscriptFiles;
 

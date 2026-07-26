@@ -86,14 +86,18 @@ public class PaperFilePolicy {
     if (role == PaperFileRole.COVER_LETTER || role == PaperFileRole.REVIEW_ONLY) {
       return PaperFileVisibility.PRIVATE;
     }
-    if (role == PaperFileRole.MANUSCRIPT || role == PaperFileRole.TOC_GRAPHIC) {
+    if (
+      role == PaperFileRole.MANUSCRIPT ||
+      role == PaperFileRole.TOC_GRAPHIC ||
+      role == PaperFileRole.FIGURE
+    ) {
       return PaperFileVisibility.PUBLIC;
     }
     return requested != null ? requested : PaperFileVisibility.PRIVATE;
   }
 
   public String storagePurpose(PaperFileRole role) {
-    if (role == PaperFileRole.TOC_GRAPHIC) {
+    if (role == PaperFileRole.TOC_GRAPHIC || role == PaperFileRole.FIGURE) {
       return "image";
     }
     if (
@@ -111,7 +115,7 @@ public class PaperFilePolicy {
     return switch (role) {
       case MANUSCRIPT -> Set.of("docx");
       case COVER_LETTER -> DOCUMENTS;
-      case TOC_GRAPHIC -> IMAGES;
+      case TOC_GRAPHIC, FIGURE -> IMAGES;
       case PDF_VERSION -> Set.of("pdf");
       case LATEX_SOURCE -> Set.of("tex", "bib", "zip");
       case DATASET -> Set.of("csv", "xlsx", "json", "zip");

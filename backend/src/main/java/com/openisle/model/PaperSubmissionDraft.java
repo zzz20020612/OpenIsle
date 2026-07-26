@@ -41,6 +41,19 @@ public class PaperSubmissionDraft {
   @Column(name = "current_section")
   private String currentSection;
 
+  @Column(name = "article_json", columnDefinition = "LONGTEXT")
+  private String articleJson;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "article_status", nullable = false)
+  private PaperArticleStatus articleStatus = PaperArticleStatus.NOT_STARTED;
+
+  @Column(name = "article_version", nullable = false)
+  private long articleVersion;
+
+  @Column(name = "article_ready_at")
+  private LocalDateTime articleReadyAt;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false)
   private PaperSubmissionDraftStatus status = PaperSubmissionDraftStatus.IN_PROGRESS;
