@@ -45,8 +45,11 @@ if (!token) {
 
 const headers = { authorization: `Bearer ${token}` }
 const jsonHeaders = { ...headers, 'content-type': 'application/json' }
-const draft = await request('/api/paper-submission-drafts', { method: 'POST', headers })
-console.log(`Created retained draft ${draft.id}.`)
+const requestedDraftId = process.env.OPENISLE_DRAFT_ID
+const draft = requestedDraftId
+  ? await request(`/api/paper-submission-drafts/${requestedDraftId}`, { headers })
+  : await request('/api/paper-submission-drafts', { method: 'POST', headers })
+console.log(`${requestedDraftId ? 'Resuming' : 'Created'} retained draft ${draft.id}.`)
 
 let savedDraft = await request(`/api/paper-submission-drafts/${draft.id}`, {
   method: 'PATCH',
@@ -66,12 +69,21 @@ const contentTypes = {
   '.jpeg': 'image/jpeg',
 }
 const uploadedIds = new Map()
+const existingFiles = new Map((savedDraft.files || [])
+  .filter((file) => file.uploadStatus === 'UPLOADED')
+  .map((file) => [`${file.role}:${file.originalFileName}`, file]))
 
 for (const descriptor of payload.files) {
   const localPath = descriptor.generated
     ? join(generatedDir, descriptor.path)
     : join(generatedDir, 'files', descriptor.sourceKey, basename(descriptor.path))
   const bytes = readFileSync(localPath)
+  const existing = existingFiles.get(`${descriptor.role}:${basename(localPath)}`)
+  if (existing) {
+    uploadedIds.set(descriptor.sourceKey, existing.id)
+    console.log(`Kept existing ${descriptor.role}: ${basename(localPath)}`)
+    continue
+  }
   const presign = await request(`/api/paper-submission-drafts/${draft.id}/files/presign`, {
     method: 'POST',
     headers: jsonHeaders,
@@ -101,6 +113,8 @@ for (const descriptor of payload.files) {
 }
 
 const article = structuredClone(payload.articleTemplate)
+const currentArticle = await request(`/api/paper-submission-drafts/${draft.id}/article`, { headers })
+article.version = currentArticle.version
 for (const block of article.sections.flatMap((section) => section.blocks)) {
   if (block.type !== 'FIGURE') continue
   block.fileId = uploadedIds.get(block.sourceKey)

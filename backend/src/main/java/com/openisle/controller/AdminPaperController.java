@@ -45,4 +45,19 @@ public class AdminPaperController {
   public PaperAdminSummaryDto retractPaper(@PathVariable Long paperId) {
     return paperAdminService.retractPaper(paperId);
   }
+
+  @PostMapping("/{paperId}/retry-screening")
+  @Operation(summary = "Retry AI screening", description = "Retry a failed paper screening.")
+  public PaperAdminSummaryDto retryScreening(@PathVariable Long paperId) {
+    return paperAdminService.retryScreening(paperId);
+  }
+
+  @PostMapping("/{paperId}/publish")
+  @Operation(
+    summary = "Publish paper after editorial review",
+    description = "Publish a paper that AI screening recommended for revision while preserving its screening result."
+  )
+  public PaperAdminSummaryDto publishPaper(@PathVariable Long paperId) {
+    return paperAdminService.publishPaper(paperId);
+  }
 }

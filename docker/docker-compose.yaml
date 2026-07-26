@@ -166,9 +166,7 @@ services:
         condition: service_healthy
       # opensearch:
       #   condition: service_healthy
-    command: >
-      sh -c "apt-get update && apt-get install -y --no-install-recommends curl &&
-             mvn clean spring-boot:run -Dmaven.test.skip=true"
+    command: mvn spring-boot:run -Dmaven.test.skip=true
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${SERVER_PORT:-8080}${SPRING_HEALTH_PATH:-/actuator/health} || exit 1"]
       interval: 10s

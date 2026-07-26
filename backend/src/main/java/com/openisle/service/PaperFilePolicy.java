@@ -45,6 +45,7 @@ public class PaperFilePolicy {
     Map.entry(PaperFileRole.MANUSCRIPT, 50 * MB),
     Map.entry(PaperFileRole.COVER_LETTER, 20 * MB),
     Map.entry(PaperFileRole.TOC_GRAPHIC, 10 * MB),
+    Map.entry(PaperFileRole.FIGURE, 20 * MB),
     Map.entry(PaperFileRole.SUPPORTING_INFORMATION, 100 * MB),
     Map.entry(PaperFileRole.REVIEW_ONLY, 100 * MB),
     Map.entry(PaperFileRole.PDF_VERSION, 100 * MB),

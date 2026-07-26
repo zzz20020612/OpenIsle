@@ -102,7 +102,7 @@ const addSection = (level, heading) => {
 const addBlock = (type, values = {}) => {
   const section = ensureSection()
   section.blocks.push({
-    key: stableKey(type.toLowerCase(), `${section.key}-${section.blocks.length + 1}`),
+    key: `${type.toLowerCase()}-${++blockCounter}`,
     type,
     displayOrder: section.blocks.length,
     ...values,

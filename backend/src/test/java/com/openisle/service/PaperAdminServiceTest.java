@@ -3,6 +3,7 @@ package com.openisle.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.openisle.model.PaperProfile;
@@ -34,7 +35,8 @@ class PaperAdminServiceTest {
       paperAuthorRepository,
       mock(AiScreeningResultRepository.class),
       paperScoreSnapshotRepository,
-      mock(PostService.class)
+      mock(PostService.class),
+      mock(AiScreeningService.class)
     );
 
     PaperProfile screeningPaper = buildPaper(
@@ -73,7 +75,8 @@ class PaperAdminServiceTest {
       mock(PaperAuthorRepository.class),
       mock(AiScreeningResultRepository.class),
       mock(PaperScoreSnapshotRepository.class),
-      mock(PostService.class)
+      mock(PostService.class),
+      mock(AiScreeningService.class)
     );
 
     PaperProfile paper = buildPaper(
@@ -106,7 +109,8 @@ class PaperAdminServiceTest {
       mock(PaperAuthorRepository.class),
       mock(AiScreeningResultRepository.class),
       mock(PaperScoreSnapshotRepository.class),
-      postService
+      postService,
+      mock(AiScreeningService.class)
     );
 
     PaperProfile paper = buildPaper(
@@ -124,6 +128,68 @@ class PaperAdminServiceTest {
 
     assertEquals(PaperPublicationStatus.RETRACTED, result.getPublicationStatus());
     org.mockito.Mockito.verify(postService).rejectPost(111L);
+  }
+
+  @Test
+  void retryScreeningResetsFailedPaperAndPublishesScreeningRequest() {
+    PaperProfileRepository paperProfileRepository = mock(PaperProfileRepository.class);
+    AiScreeningService aiScreeningService = mock(AiScreeningService.class);
+    PaperAdminService service = new PaperAdminService(
+      paperProfileRepository,
+      mock(PaperAuthorRepository.class),
+      mock(AiScreeningResultRepository.class),
+      mock(PaperScoreSnapshotRepository.class),
+      mock(PostService.class),
+      aiScreeningService
+    );
+    PaperProfile paper = buildPaper(
+      12L,
+      "Retry Paper",
+      PaperPublicationStatus.SCREENING,
+      PostStatus.PENDING
+    );
+    paper.setScreeningStatus(PaperScreeningStatus.FAILED);
+    when(paperProfileRepository.findById(12L)).thenReturn(java.util.Optional.of(paper));
+    when(paperProfileRepository.save(any(PaperProfile.class))).thenAnswer(invocation ->
+      invocation.getArgument(0)
+    );
+
+    var result = service.retryScreening(12L);
+
+    assertEquals(PaperScreeningStatus.SCREENING, result.getScreeningStatus());
+    assertEquals(PaperPublicationStatus.SCREENING, result.getPublicationStatus());
+    verify(aiScreeningService).requestScreening(paper);
+  }
+
+  @Test
+  void publishPaperAllowsEditorialOverrideAfterRevisionRecommendation() {
+    PaperProfileRepository paperProfileRepository = mock(PaperProfileRepository.class);
+    PostService postService = mock(PostService.class);
+    PaperAdminService service = new PaperAdminService(
+      paperProfileRepository,
+      mock(PaperAuthorRepository.class),
+      mock(AiScreeningResultRepository.class),
+      mock(PaperScoreSnapshotRepository.class),
+      postService,
+      mock(AiScreeningService.class)
+    );
+    PaperProfile paper = buildPaper(
+      13L,
+      "Reviewed Paper",
+      PaperPublicationStatus.NEEDS_REVISION,
+      PostStatus.PENDING
+    );
+    paper.setScreeningStatus(PaperScreeningStatus.NEEDS_REVISION);
+    when(paperProfileRepository.findById(13L)).thenReturn(java.util.Optional.of(paper));
+    when(paperProfileRepository.save(any(PaperProfile.class))).thenAnswer(invocation ->
+      invocation.getArgument(0)
+    );
+
+    var result = service.publishPaper(13L);
+
+    assertEquals(PaperPublicationStatus.PUBLISHED, result.getPublicationStatus());
+    assertEquals(PaperScreeningStatus.NEEDS_REVISION, result.getScreeningStatus());
+    verify(postService).approvePost(113L);
   }
 
   private PaperProfile buildPaper(

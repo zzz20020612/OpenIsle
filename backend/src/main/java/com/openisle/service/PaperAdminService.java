@@ -15,6 +15,7 @@ import com.openisle.repository.AiScreeningResultRepository;
 import com.openisle.repository.PaperAuthorRepository;
 import com.openisle.repository.PaperProfileRepository;
 import com.openisle.repository.PaperScoreSnapshotRepository;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class PaperAdminService {
   private final AiScreeningResultRepository aiScreeningResultRepository;
   private final PaperScoreSnapshotRepository paperScoreSnapshotRepository;
   private final PostService postService;
+  private final AiScreeningService aiScreeningService;
 
   @Transactional(readOnly = true)
   public List<PaperAdminSummaryDto> listPapers(
@@ -61,6 +63,31 @@ public class PaperAdminService {
     PaperProfile paper = getPaperOrThrow(paperId);
     paper.setPublicationStatus(PaperPublicationStatus.RETRACTED);
     postService.rejectPost(paper.getPost().getId());
+    return toAdminSummaryDto(paperProfileRepository.save(paper));
+  }
+
+  @Transactional
+  public PaperAdminSummaryDto retryScreening(Long paperId) {
+    PaperProfile paper = getPaperOrThrow(paperId);
+    if (paper.getScreeningStatus() != PaperScreeningStatus.FAILED) {
+      throw new IllegalStateException("Only failed paper screenings can be retried");
+    }
+    paper.setScreeningStatus(PaperScreeningStatus.SCREENING);
+    paper.setPublicationStatus(PaperPublicationStatus.SCREENING);
+    PaperProfile saved = paperProfileRepository.save(paper);
+    aiScreeningService.requestScreening(saved);
+    return toAdminSummaryDto(saved);
+  }
+
+  @Transactional
+  public PaperAdminSummaryDto publishPaper(Long paperId) {
+    PaperProfile paper = getPaperOrThrow(paperId);
+    if (paper.getPublicationStatus() != PaperPublicationStatus.NEEDS_REVISION) {
+      throw new IllegalStateException("Only papers awaiting revision can be manually published");
+    }
+    paper.setPublicationStatus(PaperPublicationStatus.PUBLISHED);
+    paper.setPublishedAt(LocalDateTime.now());
+    postService.approvePost(paper.getPost().getId());
     return toAdminSummaryDto(paperProfileRepository.save(paper));
   }
 

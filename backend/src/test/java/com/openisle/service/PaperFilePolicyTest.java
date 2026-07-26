@@ -33,6 +33,20 @@ class PaperFilePolicyTest {
   }
 
   @Test
+  void acceptsBrowserFiguresAndRejectsInvalidOrOversizedFigures() {
+    assertDoesNotThrow(() -> policy.validate(request("figure.jpg", 1024, PaperFileRole.FIGURE)));
+    assertDoesNotThrow(() -> policy.validate(request("figure.webp", 1024, PaperFileRole.FIGURE)));
+    assertThrows(
+      IllegalArgumentException.class,
+      () -> policy.validate(request("figure.tif", 1024, PaperFileRole.FIGURE))
+    );
+    assertThrows(
+      IllegalArgumentException.class,
+      () -> policy.validate(request("figure.png", 21L * 1024 * 1024, PaperFileRole.FIGURE))
+    );
+  }
+
+  @Test
   void forcesPrivateAndPublicRoleVisibility() {
     assertEquals(
       PaperFileVisibility.PRIVATE,
@@ -41,6 +55,10 @@ class PaperFilePolicyTest {
     assertEquals(
       PaperFileVisibility.PUBLIC,
       policy.resolveVisibility(PaperFileRole.TOC_GRAPHIC, PaperFileVisibility.PRIVATE)
+    );
+    assertEquals(
+      PaperFileVisibility.PUBLIC,
+      policy.resolveVisibility(PaperFileRole.FIGURE, PaperFileVisibility.PRIVATE)
     );
   }
 

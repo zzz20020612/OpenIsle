@@ -3,6 +3,7 @@ package com.openisle.service;
 import com.openisle.dto.AiScreeningServiceRequest;
 import com.openisle.dto.AiScreeningServiceResponse;
 import java.time.Duration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +19,7 @@ public class AiScreeningClient {
   private final String serviceToken;
   private final RestTemplate restTemplate;
 
+  @Autowired
   public AiScreeningClient(
     @Value("${ai-screening.service-url:http://ai-screening:8090}") String serviceUrl,
     @Value("${ai-screening.service-token:}") String serviceToken,
