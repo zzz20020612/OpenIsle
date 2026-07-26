@@ -427,12 +427,17 @@ const { data: paperData, error: paperError, refresh } = await useAsyncData(
 )
 
 onMounted(async () => {
-  if (!paperData.value) await refresh()
+  await Promise.all([
+    paperData.value ? Promise.resolve() : refresh(),
+    refreshArticle(),
+  ])
 })
 
 const paper = computed(() => paperData.value || {})
-const { data: articleData } = await useAsyncData(`paper-article:${paperId.value}`, () =>
-  getPaperArticle(paperId.value).catch(() => ({ sections: [] })),
+const { data: articleData, refresh: refreshArticle } = await useAsyncData(
+  `paper-article:${paperId.value}`,
+  () => getPaperArticle(paperId.value).catch(() => ({ sections: [] })),
+  { server: false },
 )
 const article = computed(() => articleData.value || { sections: [] })
 const readerArticle = computed(() => normalizeReaderArticle(article.value, paper.value.abstractText))

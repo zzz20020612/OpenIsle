@@ -28,6 +28,9 @@ export const usePaperApi = () => {
 
   const getPaperFilters = () => $fetch(`${apiBaseUrl}/api/papers/filters`)
 
+  const listMyPapers = () =>
+    $fetch(`${apiBaseUrl}/api/papers/mine`, { headers: authHeaders() })
+
   const getPaper = (paperId) =>
     $fetch(`${apiBaseUrl}/api/papers/${paperId}`, {
       headers: authHeaders(),
@@ -210,6 +213,7 @@ export const usePaperApi = () => {
 
   return {
     listPapers,
+    listMyPapers,
     getPaperFilters,
     getPaper,
     submitPaper,

@@ -234,6 +234,18 @@ public class PaperService {
   }
 
   @Transactional(readOnly = true)
+  public List<PaperSummaryDto> listMyPapers(String username) {
+    User user = userRepository
+      .findByUsername(username)
+      .orElseThrow(() -> new NotFoundException("User not found"));
+    return paperProfileRepository
+      .findByCreatedByIdOrderByCreatedAtDesc(user.getId())
+      .stream()
+      .map(this::toSummaryDto)
+      .toList();
+  }
+
+  @Transactional(readOnly = true)
   public PaperFilterOptionsDto getFilterOptions() {
     PaperFilterOptionsDto dto = new PaperFilterOptionsDto();
     dto.setSubjects(

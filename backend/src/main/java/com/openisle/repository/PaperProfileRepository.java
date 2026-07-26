@@ -12,6 +12,8 @@ import org.springframework.data.repository.query.Param;
 public interface PaperProfileRepository extends JpaRepository<PaperProfile, Long> {
   Optional<PaperProfile> findByPostId(Long postId);
 
+  List<PaperProfile> findByCreatedByIdOrderByCreatedAtDesc(Long createdById);
+
   List<PaperProfile> findByPublicationStatusOrderByPublishedAtDesc(
     PaperPublicationStatus status,
     Pageable pageable

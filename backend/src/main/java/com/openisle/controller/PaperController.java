@@ -65,6 +65,13 @@ public class PaperController {
     return paperService.getFilterOptions();
   }
 
+  @GetMapping("/mine")
+  @SecurityRequirement(name = "JWT")
+  @Operation(summary = "List my paper submissions")
+  public List<PaperSummaryDto> listMyPapers(Authentication authentication) {
+    return paperService.listMyPapers(authentication.getName());
+  }
+
   @GetMapping("/rankings/top-rated")
   @Operation(summary = "List top rated papers", description = "Return papers ranked by composite score.")
   public List<PaperRankingDto> listTopRatedPapers(
