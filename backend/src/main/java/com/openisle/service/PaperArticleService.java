@@ -108,9 +108,17 @@ public class PaperArticleService {
 
   @Transactional(readOnly = true)
   public PaperArticleDto getPublishedArticle(Long paperId) {
+    return getPublishedArticle(paperId, null);
+  }
+
+  @Transactional(readOnly = true)
+  public PaperArticleDto getPublishedArticle(Long paperId, String viewer) {
     PaperProfile paper = paperProfileRepository.findById(paperId)
       .orElseThrow(() -> new NotFoundException("Paper not found"));
-    if (!paperAccessPolicy.canAppearInFeed(paper)) {
+    User viewerUser = viewer == null
+      ? null
+      : userRepository.findByUsername(viewer).orElse(null);
+    if (!paperAccessPolicy.canViewDetail(viewerUser, paper)) {
       throw new NotFoundException("Paper not found");
     }
     return read(paper.getArticleJson());

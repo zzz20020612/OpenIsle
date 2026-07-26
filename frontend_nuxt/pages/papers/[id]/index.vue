@@ -13,7 +13,7 @@
         <div class="journal-record-meta">
           <span>{{ paper.paperType || 'Research Article' }}</span>
           <span>{{ paper.subjectArea || 'Research' }}</span>
-          <span>Published research record</span>
+          <span>{{ paper.publicationStatus === 'PUBLISHED' ? 'Published research record' : `Author submission · ${normalizeStatus(paper.screeningStatus)}` }}</span>
         </div>
         <h1>{{ paper.title }}</h1>
         <div class="paper-citation-authors" aria-label="Paper authors">
@@ -264,6 +264,7 @@
             <a href="#files">Files</a>
             <a href="#authors">Authors</a>
             <a href="#declarations">Declarations</a>
+            <a v-if="paper.screening" href="#screening">Initial screening</a>
             <a href="#discussion">Reader Discussion</a>
           </nav>
           <section class="paper-card paper-evaluation-card">
@@ -293,6 +294,29 @@
               <span class="paper-pill status">{{ normalizeStatus(paper.screeningStatus) }}</span>
               <span v-if="paper.featured" class="paper-pill featured">Featured</span>
               <span v-if="paperRssIncluded(paper)" class="paper-pill">RSS included</span>
+            </div>
+          </section>
+
+          <section v-if="paper.screening" id="screening" class="paper-card paper-screening-card">
+            <div class="paper-card-heading">
+              <h3 class="paper-section-title">Initial Screening</h3>
+              <span class="paper-mini-label">{{ normalizeStatus(paper.screening.status) }}</span>
+            </div>
+            <div class="paper-screening-summary">
+              <strong>{{ normalizeStatus(paper.screening.riskLevel) }} risk</strong>
+              <p>{{ paper.screening.summary }}</p>
+            </div>
+            <div v-if="screeningDimensions.length" class="paper-screening-dimensions">
+              <article v-for="dimension in screeningDimensions" :key="dimension.dimension_id || dimension.dimension_name">
+                <div>
+                  <strong>{{ dimension.dimension_name }}</strong>
+                  <span :class="`screening-status ${dimension.status}`">{{ normalizeStatus(dimension.status) }}</span>
+                </div>
+                <p v-for="finding in dimension.findings || []" :key="`${finding.item}-${finding.actual}`">
+                  <strong>{{ finding.item }}:</strong> {{ finding.actual }}
+                  <template v-if="finding.suggestion"> {{ finding.suggestion }}</template>
+                </p>
+              </article>
             </div>
           </section>
 
@@ -396,17 +420,15 @@ const API_BASE_URL = config.public.apiBaseUrl
 
 const paperId = computed(() => route.params.id)
 
-const { data: paperData, error: paperError, refresh } = await useAsyncData(`paper:${paperId.value}`, () =>
-  getPaper(paperId.value),
+const { data: paperData, error: paperError, refresh } = await useAsyncData(
+  `paper:${paperId.value}`,
+  () => getPaper(paperId.value),
+  { server: false },
 )
 
-if (paperError.value) {
-  throw createError({
-    statusCode: paperError.value.statusCode || 404,
-    statusMessage: paperError.value.statusMessage || 'Paper not found',
-    fatal: true,
-  })
-}
+onMounted(async () => {
+  if (!paperData.value) await refresh()
+})
 
 const paper = computed(() => paperData.value || {})
 const { data: articleData } = await useAsyncData(`paper-article:${paperId.value}`, () =>
@@ -549,6 +571,16 @@ const paperActionMenuItems = computed(() => {
     })
   }
   return items
+})
+const screeningDimensions = computed(() => {
+  try {
+    const dimensions = JSON.parse(paper.value.screening?.issuesJson || '[]')
+    return Array.isArray(dimensions)
+      ? dimensions.filter((dimension) => dimension?.findings?.length)
+      : []
+  } catch {
+    return []
+  }
 })
 
 const submitRating = async () => {
@@ -973,6 +1005,20 @@ const normalizeStatus = (value) => {
 .journal-jump-nav strong { margin-bottom: 7px; color: #2d414b; font-size: 12px; text-transform: uppercase; }
 .journal-jump-nav a { padding: 6px 0; color: #52646e; font-size: 12px; text-decoration: none; }
 .journal-jump-nav a:hover { color: #1f617f; }
+.paper-screening-card { display: grid; gap: 14px; }
+.paper-screening-summary { padding: 11px 12px; border-left: 3px solid #b27420; background: #fff7e8; }
+.paper-screening-summary strong { color: #7a4d0e; font-size: 12px; text-transform: uppercase; }
+.paper-screening-summary p { margin: 5px 0 0; color: #4c5356; font-size: 13px; line-height: 1.5; }
+.paper-screening-dimensions { display: grid; gap: 10px; }
+.paper-screening-dimensions article { padding-top: 10px; border-top: 1px solid #dce1e3; }
+.paper-screening-dimensions article > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.paper-screening-dimensions article > div > strong { color: #30434c; font-size: 12px; }
+.paper-screening-dimensions p { margin: 7px 0 0; color: #5c686e; font-size: 12px; line-height: 1.5; }
+.screening-status { padding: 2px 5px; font-size: 10px; text-transform: uppercase; }
+.screening-status.failed { background: #f9e8e7; color: #9a3430; }
+.screening-status.warning { background: #fff3db; color: #84540d; }
+.screening-status.skipped { background: #eef1f2; color: #627078; }
+.screening-status.passed { background: #e8f3ec; color: #28653d; }
 .journal-viewer-backdrop { position: fixed; z-index: 2000; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(18, 27, 32, .78); }
 .journal-viewer { width: min(1180px, 100%); height: min(900px, calc(100vh - 36px)); display: grid; grid-template-rows: auto minmax(0, 1fr); background: #fff; }
 .journal-viewer > header { min-height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 14px; border-bottom: 1px solid #d5dcdf; }

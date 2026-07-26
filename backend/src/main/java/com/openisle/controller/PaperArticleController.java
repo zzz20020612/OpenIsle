@@ -71,7 +71,8 @@ public class PaperArticleController {
 
   @GetMapping("/api/papers/{paperId}/article")
   @Operation(summary = "Get published structured article")
-  public PaperArticleDto getPublished(@PathVariable Long paperId) {
-    return articleService.getPublishedArticle(paperId);
+  public PaperArticleDto getPublished(@PathVariable Long paperId, Authentication authentication) {
+    String viewer = authentication != null ? authentication.getName() : null;
+    return articleService.getPublishedArticle(paperId, viewer);
   }
 }
