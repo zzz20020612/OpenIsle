@@ -8,6 +8,8 @@
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
+    "build:verbose": "nuxt build --logLevel verbose",
+    "test:reader": "node --test test/*.test.mjs",
     "start": "nuxt start",
     "generate": "nuxt generate"
   },

@@ -240,9 +240,7 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
-    command: >
-      sh -c "apt-get update && apt-get install -y --no-install-recommends curl &&
-             mvn clean spring-boot:run -Dmaven.test.skip=true"
+    command: mvn spring-boot:run -Dmaven.test.skip=true
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${WEBSOCKET_PORT:-8082}${WS_HEALTH_PATH:-/actuator/health} || exit 1"]
       interval: 10s
@@ -262,7 +260,10 @@ services:
     working_dir: /app
     env_file:
       - ${ENV_FILE:-../.env}
-    command: sh -c "npm install && npm run dev"
+    command: >
+      sh -c "if [ ! -f node_modules/.openisle-package-lock ] || ! cmp -s package-lock.json node_modules/.openisle-package-lock;
+             then npm ci --no-audit --no-fund && cp package-lock.json node_modules/.openisle-package-lock; fi;
+             npm run dev"
     volumes:
       - ../frontend_nuxt:/app
       - frontend-node-modules:/app/node_modules
@@ -284,7 +285,10 @@ services:
     working_dir: /app
     env_file:
       - ${ENV_FILE:-../.env}
-    command: sh -c "npm install && npm run dev"
+    command: >
+      sh -c "if [ ! -f node_modules/.openisle-package-lock ] || ! cmp -s package-lock.json node_modules/.openisle-package-lock;
+             then npm ci --no-audit --no-fund && cp package-lock.json node_modules/.openisle-package-lock; fi;
+             npm run dev"
     volumes:
       - ../frontend_nuxt:/app
       - frontend-node-modules:/app/node_modules
