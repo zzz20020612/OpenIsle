@@ -42,7 +42,7 @@ definePageMeta({ middleware: 'auth-client' })
 useHead({ title: 'Review Article Layout - OpenIsle' })
 const route = useRoute()
 const draftId = String(route.params.draftId)
-const api = usePaperApi()
+const draftFileUrls = useDraftFileObjectUrls(draftId)
 const articleDraft = usePaperArticleDraft(draftId)
 const submission = usePaperSubmissionDraft()
 const article = articleDraft.article
@@ -74,7 +74,7 @@ const reopen = async () => {
   working.value = true
   try { await articleDraft.reopen(); await navigateTo(`/papers/submit/${draftId}/content`) } finally { working.value = false }
 }
-const figureSource = (block) => block.fileId ? api.draftFileContentUrl(draftId, block.fileId, true) : ''
+const figureSource = (block) => draftFileUrls.source(block.fileId)
 </script>
 
 <style scoped>

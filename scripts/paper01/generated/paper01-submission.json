@@ -1,0 +1,1338 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "name": "paper01",
+    "manuscript": "paper_cnn1d_ai.docx",
+    "metadataSidecar": "paper_cnn1d_ai.qmd"
+  },
+  "formData": {
+    "title": "High-Resolution Disaggregation of Pollution Loads through Deep Learning Fusion of Multi-source Spatial Proxies",
+    "abstractText": "Precision environmental management demands high-resolution pollution source attribution, yet traditional emission inventory methods are fundamentally limited by their reliance on static, linear assumptions that fail to capture spatial heterogeneity.To bridge this gap, we propose a physics-constrained deep learning framework that transforms the emission inventory paradigm from deterministic estimation to verifiable intelligent disaggregation.A core methodological innovation is the embedding of a mass conservation constraint directly into the Convolutional Neural Network (CNN) architecture via a Softmax layer, ensuring rigorous physical consistency between grid-level predictions and aggregate-level supervision (wastewater treatment plant influent loads).By fusing multi-source spatial proxies—specifically building volume (VC) and cellular base station density (BS)—the model effectively captures the non-linear emission fingerprints of dynamic human activities.Validated in the Erhai Lake Basin, our model generates high-fidelity 500 m maps for wastewater (WW), chemical oxygen demand (COD), total nitrogen (TN), and total phosphorus (TP), achieving high predictive accuracy (R² = 0.82–0.98, RMSE < 0.045). The results reveal a fundamental characteristic of urban pollution: extreme spatial concentration, with the top 5% of grid cells contributing 60%–74% of total loads, predominantly in southern and western urban-tourism zones. Strong inter-pollutant synergies were uncovered, with WW and TN exhibiting near-perfect spatial correlation (r = 0.96). Model interpretability via Shapley Additive Explanations (SHAP) identifies VC and BS as the dominant drivers, accounting for over 80% of explanatory power, as they robustly proxy static population density and dynamic human activity, respectively. This study presents a transferable methodology for high-resolution pollution attribution, particularly valuable in data-scarce regions, and offers a transformative tool for advancing from coarse-scale mitigation to precision water resource management.",
+    "subjectArea": "Environmental Science",
+    "paperType": "Research Article",
+    "keywords": [
+      "Pollution source attribution",
+      "Deep learning",
+      "Spatial analysis",
+      "Environmental management",
+      "Convolutional neural network",
+      "Erhai Lake Basin"
+    ],
+    "references": [
+      "Policy relevance of IPCC reports for the Sustainable Development Goals and beyond",
+      "A first Chinese building height estimate at 10 m resolution (CNBH-10 m) using multi-source earth observations and machine learning",
+      "VIIRS night-time lights",
+      "Amap (Gaode) Location Based Services Web API",
+      "Cell Towers and the Ambient Population: a Spatial Analysis of Disaggregated Property Crime",
+      "Discovering the spatio-temporal impacts of built environment on metro ridership using smart card data",
+      "OpenCellID: The World's Largest Open Database of Cell Towers",
+      "GDP spatialization in Ningbo City based on NPP/VIIRS night-time light and auxiliary data using random forest regression",
+      "High-resolution anthropogenic emission inventories with deep learning in northern South America",
+      "Evaluation of the coordinated development of urbanization-resources-environment from the incremental perspective of Xinjiang, China",
+      "Six Transformations to achieve the Sustainable Development Goals",
+      "A Systematic Study of Sustainable Development Goal (SDG) Interactions",
+      "Dynamic nitrogen metabolism in urban environments: Cross-sectoral and cross-media insights for sustainable management",
+      "Environmental pollution and economic growth: Evidence of SO2 emissions and GDP in China",
+      "High-resolution maps of intensive and extensive livestock production in China",
+      "Combining source identification and risk assessment to uncover spatial risk patterns in an agricultural lake",
+      "Spatial variation and source apportionment of water pollution in Qiantang River (China) using statistical techniques",
+      "Graph-based machine learning for high-resolution assessment of pedestrian-weighted exposure to air pollution",
+      "Remote sensing of night lights: A review and an outlook for the future",
+      "Assessing ammonium pollution and mitigation measures through a modified watershed non-point source model",
+      "Improving the accuracy of nonpoint-source pollution estimates in inland waters with coupled satellite-UAV data",
+      "Periplasmic transport channels to accelerate the proton motive force for efficient groundwater bioelectrocatalytic Cr(VI) reduction",
+      "Groundwater and surface water quality characterization through positive matrix factorization combined with GIS approach",
+      "Uncertainty in simulation of land-use change impacts on catchment runoff with multi-timescales based on the comparison of the HSPF and SWAT models",
+      "Development of water basin pollution emission inventory: a preliminary literature review and Its implication for China",
+      "A comprehensive study on the formaldehyde emission characteristics in central China based on emission inventory and remote sensing inversion",
+      "An improved gridded polycyclic aromatic hydrocarbon emission inventory for the lower reaches of the Yangtze River Delta region from 2001 to 2015 using satellite data",
+      "A Review of Receptor Model and New Advances in Source Apportionment Techniques for Air Pollution Research",
+      "A high-resolution emission inventory of anthropogenic trace elements in Beijing-Tianjin-Hebei (BTH) region of China",
+      "Data-Driven Machine Learning in Environmental Pollution: Gains and Problems",
+      "ImageNet classification with deep convolutional neural networks",
+      "SoftmaxU: Open softmax to be aware of unknowns",
+      "Sustainable development and environmental restoration in Lake Erhai, China",
+      "Assessment and management of lake eutrophication: A case study in Lake Erhai, China",
+      "Self-organizing map algorithm for assessing spatial and temporal patterns of pollutants in environmental compartments: A review",
+      "Deep learning",
+      "Impacts of rural tourism-driven land use change on ecosystems services provision in Erhai Lake Basin, China",
+      "New Method for Improving Spatial Allocation Accuracy of Industrial Energy Consumption and Implications for Polycyclic Aromatic Hydrocarbon Emissions in China",
+      "A method coupled with remote sensing data to evaluate non-point source pollution in the Xin'anjiang catchment of China",
+      "Science of The Total Environment",
+      "Trajectory, drivers, and reduction of greenhouse gas emissions from urban water system in China during 1980{\\textendash",
+      "Using water and wastewater decentralization to enhance the resilience and sustainability of cities",
+      "Remote Sensing Big Data for Water Environment Monitoring: Current Status, Challenges, and Future Prospects",
+      "A review of remote sensing applications for water security: Quantity, quality, and extremes",
+      "Tourism and water use: Supply, demand, and security. An international review",
+      "Water Quality Monitoring Using Wireless Sensor Networks: Current Trends and Future Research Directions",
+      "Scalable, Adaptive and Risk-Informed Design of Hydrological Sensor Networks",
+      "Application of remote sensing technology in water quality monitoring: From traditional approaches to artificial intelligence",
+      "Development of a high-resolution integrated emission inventory of air pollutants for China",
+      "Enhancing water quality in urban areas: {A",
+      "Enhancing water quality in urban areas",
+      "Deep learning for water quality",
+      "Remote sensing of diverse urban environments: From the single city to multiple cities",
+      "Geospatial Variability of Fluorescent Dissolved Organic Matter in Urban Watersheds: Relationships with Land Cover and Wastewater Infrastructure",
+      "Spatial heterogeneity of low flow hydrological alterations in response to climate and land use within the Upper Mississippi River basin",
+      "Spatial response of water level and quality shows more significant heterogeneity during dry seasons in large river-connected lakes",
+      "Convolutional Neural Networks Facilitate Process Understanding of Megacity Ozone Temporal Variability",
+      "Agricultural and urban practices are correlated to changes in the resistome of riverine systems",
+      "Real-time water quality prediction in water distribution networks using graph neural networks with sparse monitoring data",
+      "Assessing post-fire water quality changes in reservoirs: Insights from a large dataset in Portugal",
+      "Organic Emissions of Volatile Chemical Products in Canada: Emission Inventories, Indoor-to-Outdoor Transfer, and Regional Impacts",
+      "Time series-based machine learning for forecasting multivariate water quality in full-scale drinking water treatment with various reagent dosages",
+      "Multiple data imputation methods advance risk analysis and treatability of co-occurring inorganic chemicals in groundwater",
+      "A differential game of water pollution management in the trans-jurisdictional river basin"
+    ],
+    "content": "",
+    "authors": [
+      {
+        "displayName": "Jiarui Zhang",
+        "givenName": "Jiarui",
+        "middleName": "",
+        "familyName": "Zhang",
+        "email": "jiarui.zhang@paper01.demo",
+        "orcid": "",
+        "authorRole": "Author",
+        "correspondingAuthor": false,
+        "equalContribution": false,
+        "contributionRoles": [],
+        "affiliations": [
+          {
+            "organizationName": "School of Geographical Sciences, Nanjing University of Information Science & Technology, Nanjing, 210044, China",
+            "department": "",
+            "addressLine1": "",
+            "addressLine2": "",
+            "country": "China",
+            "region": "Jiangsu",
+            "city": "Nanjing",
+            "postalCode": "",
+            "primaryAffiliation": true
+          },
+          {
+            "organizationName": "State Key Laboratory of Lake and Watershed Science for Water Security, Nanjing Institute of Geography and Limnology, Chinese Academy of Sciences, Nanjing, 211135, China.",
+            "department": "",
+            "addressLine1": "",
+            "addressLine2": "",
+            "country": "China",
+            "region": "Jiangsu",
+            "city": "Nanjing",
+            "postalCode": "",
+            "primaryAffiliation": false
+          }
+        ]
+      },
+      {
+        "displayName": "Xin Liu",
+        "givenName": "Xin",
+        "middleName": "",
+        "familyName": "Liu",
+        "email": "xin.liu@paper01.demo",
+        "orcid": "",
+        "authorRole": "Author",
+        "correspondingAuthor": false,
+        "equalContribution": false,
+        "contributionRoles": [],
+        "affiliations": [
+          {
+            "organizationName": "Jiangsu Key Laboratory of Soil and Water Processes in Watershed, College of Geography and Remote Sensing, Hohai University, Nanjing, 211100, China.",
+            "department": "",
+            "addressLine1": "",
+            "addressLine2": "",
+            "country": "China",
+            "region": "Jiangsu",
+            "city": "Nanjing",
+            "postalCode": "",
+            "primaryAffiliation": true
+          }
+        ]
+      },
+      {
+        "displayName": "Fang Wang",
+        "givenName": "Fang",
+        "middleName": "",
+        "familyName": "Wang",
+        "email": "fang.wang@paper01.demo",
+        "orcid": "",
+        "authorRole": "Author",
+        "correspondingAuthor": false,
+        "equalContribution": false,
+        "contributionRoles": [],
+        "affiliations": [
+          {
+            "organizationName": "Nanjing University Lishui Institute of Ecology and Environment, Nanjing, 212200, China.",
+            "department": "",
+            "addressLine1": "",
+            "addressLine2": "",
+            "country": "China",
+            "region": "Jiangsu",
+            "city": "Nanjing",
+            "postalCode": "",
+            "primaryAffiliation": true
+          }
+        ]
+      },
+      {
+        "displayName": "Xiangmin Wu",
+        "givenName": "Xiangmin",
+        "middleName": "",
+        "familyName": "Wu",
+        "email": "xiangmin.wu@paper01.demo",
+        "orcid": "",
+        "authorRole": "Author",
+        "correspondingAuthor": false,
+        "equalContribution": false,
+        "contributionRoles": [],
+        "affiliations": [
+          {
+            "organizationName": "State Key Laboratory of Water Pollution Control and Green Resource Recycling, School of the Environment, Nanjing University, Nanjing, 210023, China.",
+            "department": "",
+            "addressLine1": "",
+            "addressLine2": "",
+            "country": "China",
+            "region": "Jiangsu",
+            "city": "Nanjing",
+            "postalCode": "",
+            "primaryAffiliation": true
+          }
+        ]
+      },
+      {
+        "displayName": "Wenjie Zhang",
+        "givenName": "Wenjie",
+        "middleName": "",
+        "familyName": "Zhang",
+        "email": "wenjie.zhang@paper01.demo",
+        "orcid": "",
+        "authorRole": "Author",
+        "correspondingAuthor": false,
+        "equalContribution": false,
+        "contributionRoles": [],
+        "affiliations": [
+          {
+            "organizationName": "School of Geographical Sciences, Nanjing University of Information Science & Technology, Nanjing, 210044, China",
+            "department": "",
+            "addressLine1": "",
+            "addressLine2": "",
+            "country": "China",
+            "region": "Jiangsu",
+            "city": "Nanjing",
+            "postalCode": "",
+            "primaryAffiliation": true
+          }
+        ]
+      },
+      {
+        "displayName": "Hu Sheng",
+        "givenName": "Hu",
+        "middleName": "",
+        "familyName": "Sheng",
+        "email": "hsheng@niglas.ac.cn",
+        "orcid": "",
+        "authorRole": "Corresponding Author",
+        "correspondingAuthor": true,
+        "equalContribution": false,
+        "contributionRoles": [],
+        "affiliations": [
+          {
+            "organizationName": "State Key Laboratory of Lake and Watershed Science for Water Security, Nanjing Institute of Geography and Limnology, Chinese Academy of Sciences, Nanjing, 210008, China.",
+            "department": "",
+            "addressLine1": "",
+            "addressLine2": "",
+            "country": "China",
+            "region": "Jiangsu",
+            "city": "Nanjing",
+            "postalCode": "",
+            "primaryAffiliation": true
+          }
+        ]
+      },
+      {
+        "displayName": "Zengwei Yuan",
+        "givenName": "Zengwei",
+        "middleName": "",
+        "familyName": "Yuan",
+        "email": "zengwei.yuan@paper01.demo",
+        "orcid": "",
+        "authorRole": "Author",
+        "correspondingAuthor": false,
+        "equalContribution": false,
+        "contributionRoles": [],
+        "affiliations": [
+          {
+            "organizationName": "State Key Laboratory of Water Pollution Control and Green Resource Recycling, School of the Environment, Nanjing University, Nanjing, 210023, China.",
+            "department": "",
+            "addressLine1": "",
+            "addressLine2": "",
+            "country": "China",
+            "region": "Jiangsu",
+            "city": "Nanjing",
+            "postalCode": "",
+            "primaryAffiliation": true
+          },
+          {
+            "organizationName": "Nanjing University Lishui Institute of Ecology and Environment, Nanjing, 212200, China.",
+            "department": "",
+            "addressLine1": "",
+            "addressLine2": "",
+            "country": "China",
+            "region": "Jiangsu",
+            "city": "Nanjing",
+            "postalCode": "",
+            "primaryAffiliation": false
+          }
+        ]
+      }
+    ],
+    "funding": [
+      {
+        "funderName": "Key Science and Technology Program of Yunnan Province",
+        "awardNumber": "202202AE090034"
+      },
+      {
+        "funderName": "State Key Laboratory of Lake and Watershed Science for Water Security",
+        "awardNumber": "NKL2023-QN05"
+      }
+    ],
+    "noFundingReceived": false,
+    "fundingStatement": "Key Science and Technology Program of Yunnan Province (202202AE090034); Erhai Academy of Green Development; State Key Laboratory of Lake and Watershed Science for Water Security (NKL2023-QN05).",
+    "conflictOfInterest": "The authors declare no known competing financial interests or personal relationships that could have influenced this work.",
+    "dataAvailability": "All data generated or analyzed during this study are included in the article and its supporting information.",
+    "ethicsStatement": "Not applicable.",
+    "preprintStatement": "This manuscript has not been posted as a preprint.",
+    "aiUseDisclosure": "AI-assisted language editing was used during manuscript preparation; all scientific content was reviewed and approved by the authors.",
+    "allAuthorsConsent": true,
+    "originalityConfirmed": true,
+    "rightsConfirmed": true,
+    "correspondingAuthorContactConfirmed": true,
+    "privateComments": "Deterministic paper01 end-to-end demonstration submission."
+  },
+  "articleTemplate": {
+    "version": 0,
+    "status": "IN_PROGRESS",
+    "readyAt": null,
+    "sections": [
+      {
+        "key": "section-1-article",
+        "parentKey": null,
+        "heading": "Article",
+        "level": 1,
+        "displayOrder": 0,
+        "blocks": [
+          {
+            "key": "paragraph-section-1-article-1",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "Abstract"
+          },
+          {
+            "key": "paragraph-section-1-article-2",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "Precision environmental management demands high-resolution pollution source attribution, yet traditional emission inventory methods are fundamentally limited by their reliance on static, linear assumptions that fail to capture spatial heterogeneity.To bridge this gap, we propose a physics-constrained deep learning framework that transforms the emission inventory paradigm from deterministic estimation to verifiable intelligent disaggregation.A core methodological innovation is the embedding of a mass conservation constraint directly into the Convolutional Neural Network (CNN) architecture via a Softmax layer, ensuring rigorous physical consistency between grid-level predictions and aggregate-level supervision (wastewater treatment plant influent loads).By fusing multi-source spatial proxies—specifically building volume (VC) and cellular base station density (BS)—the model effectively captures the non-linear “emission fingerprints” of dynamic human activities.Validated in the Erhai Lake Basin, our model generates high-fidelity 500 m maps for wastewater (WW), chemical oxygen demand (COD), total nitrogen (TN), and total phosphorus (TP), achieving high predictive accuracy (R² = 0.82–0.98, RMSE < 0.045). The results reveal a fundamental characteristic of urban pollution: extreme spatial concentration, with the top 5% of grid cells contributing 60%–74% of total loads, predominantly in southern and western urban-tourism zones. Strong inter-pollutant synergies were uncovered, with WW and TN exhibiting near-perfect spatial correlation (r = 0.96). Model interpretability via Shapley Additive Explanations (SHAP) identifies VC and BS as the dominant drivers, accounting for over 80% of explanatory power, as they robustly proxy static population density and dynamic human activity, respectively. This study presents a transferable methodology for high-resolution pollution attribution, particularly valuable in data-scarce regions, and offers a transformative tool for advancing from coarse-scale mitigation to precision water resource management."
+          }
+        ]
+      },
+      {
+        "key": "section-2-1-introduction",
+        "parentKey": null,
+        "heading": "1. Introduction",
+        "level": 1,
+        "displayOrder": 1,
+        "blocks": [
+          {
+            "key": "paragraph-section-2-1-introduction-1",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "Achieving water security and ecosystem sustainability in the face of escalating anthropogenic pressures represents a critical global challenge, central to the United Nations Sustainable Development Goals (SDGs), particularly SDG 6 and SDG 11 (Pradhan et al., 2017, 2025; Sachs et al., 2019). Effective environmental governance is fundamentally contingent upon the precise identification and quantification of pollution sources, which directly determines the efficiency of resource allocation and the efficacy of control measures. However, as global urbanization accelerates and human activities intensify, pollution sources exhibit increasingly dynamic and heterogeneous spatiotemporal patterns (Bahtebay et al., 2021; Yan et al., 2022; Batista-Andrade et al., 2024; Chen et al., 2024; Nolan, 2024; Lin et al., 2025). Traditional management approaches, often predicated on static and homogeneous assumptions, are insufficient for the demands of modern, precision-oriented environmental management (Liu and Chen, 2024; Mohammed and Hansen., 2024). Consequently, high-resolution spatiotemporal attribution of pollution sources has emerged as an indispensable scientific prerequisite for optimizing management interventions (Jiang and Ma, 2025)."
+          },
+          {
+            "key": "paragraph-section-2-1-introduction-2",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "To achieve high-resolution source attribution, the gridded emission inventory (EI) method has emerged as the most prevalent approach(Cheng et al., 2023), which allocates pollution loads using spatial proxies (Li et al., 2018; Zhao et al., 2021; Askari and Chan, 2024; Yuan, 2024; Wang et al., 2025). However, this traditional paradigm is fundamentally constrained by three theoretical limitations that impede high-fidelity mapping (Wu et al., 2024). First, it predominantly relies on simplified linear homogeneity assumptions, which fail to capture the complex, non-linear relationships between proxies and discharge intensity inherent in diverse urban functional zones (Zhu et al., 2018; Liang et al., 2020; Yang et al., 2025). Second, these models often depend on single, static proxies (e.g., nighttime light), which are insufficient to resolve the multidimensional facets of human activities (Levin et al., 2020). Third, and most critically, traditional approaches operate as deterministic forward calculations lacking intrinsic verification mechanisms; without high-resolution ground truth, they remain unverified estimations rather than scientifically validated predictions (Zhi et al., 2024)."
+          },
+          {
+            "key": "paragraph-section-2-1-introduction-3",
+            "type": "PARAGRAPH",
+            "displayOrder": 2,
+            "text": "Addressing these limitations, this study presents a paradigm shift by developing a physics-constrained deep learning framework that hybridizes the physical rigor of mass balance with the non-linear fitting power of neural networks (Li, 2024; Mai et al., 2024; Sun et al., 2024; Pang, 2025). Unlike purely data-driven approaches, we integrate a physical mass conservation constraint directly into a one-dimensional convolutional neural network (1-D CNN) via an embedded Softmax layer.This methodological innovation transforms the traditional static allocation coefficient into a learnable, spatially variant function driven by multi-source proxies—specifically building volume (VC) and cellular base station density (BS)—to capture the “emission fingerprints” of human activity. Crucially, we introduce a rigorous training-testing protocol using aggregate-level wastewater treatment plant (WWTP) influent loads as supervision, effectively upgrading emission inventorying from an unverifiable estimation task to a statistically validatable scientific computation. (Lin et al., 2021; Ye et al., 2024). This allows for the quantifiable assessment of model generalization and predictive reliability even in the absence of grid-level monitoring, advancing emission inventorying from static estimation to verifiable scientific computation."
+          },
+          {
+            "key": "paragraph-section-2-1-introduction-4",
+            "type": "PARAGRAPH",
+            "displayOrder": 3,
+            "text": "We validated this framework in the Erhai Lake Basin, a representative and ecologically critical watershed in Southwest China facing significant water quality pressures (Lin et al., 2020). By generating 500 m × 500 m spatial distribution maps of pollution loads, this study provides direct scientific support for precision management in the Erhai Lake Basin. More broadly, it offers a transferable and scalable methodology for other ecologically sensitive watersheds globally that face similar data scarcity challenges, thereby advancing the field toward more robust, evidence-based environmental policy formulation and contributing to the achievement of multiple SDG targets."
+          }
+        ]
+      },
+      {
+        "key": "section-3-2-materials-and-methods",
+        "parentKey": null,
+        "heading": "2. Materials and Methods",
+        "level": 1,
+        "displayOrder": 2,
+        "blocks": []
+      },
+      {
+        "key": "section-4-2-1-study-area",
+        "parentKey": "section-3-2-materials-and-methods",
+        "heading": "2.1 Study Area",
+        "level": 2,
+        "displayOrder": 3,
+        "blocks": [
+          {
+            "key": "paragraph-section-4-2-1-study-area-1",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "The Erhai Lake Basin (25°36′–26°00′ N, 99°32′–100°27′ E) in Dali City, Yunnan Province, is a representative plateau watershed in Southwest China, serving as a critical water source and supporting a vibrant tourism economy (Li et al., 2020). As a nationally protected ecosystem, the basin faces escalating environmental pressures from rapid urbanization, agricultural intensification, and expanding tourism, making it an ideal case study for precision pollution management (Lin et al., 2020). To facilitate both model development and policy-relevant analysis, we established a dual spatial framework (Fig. 1). First, an administrative division subdivides the basin into 18 townships (see Table S1 for full names and abbreviations), which are further grouped into four functional zones: Zone 1 (Northern Erhai), Zone 2 (Southern Erhai), Zone 3 (Western Erhai), and Zone 4 (Eastern Erhai) to support governance (Fig. 1b). Second, a functional division based on wastewater treatment plant (WWTP) service areas delineates 15 spatial units (detailed correspondence provided in Table S2), providing the spatial constraints essential for supervised model training (Fig. 1c). Although the basin contains 17 WWTPs in total, overlapping service areas were merged, resulting in 15 non-overlapping spatial units. In cases where service areas overlap, the combined influent load from the corresponding WWTPs was used. Additionally, a 10 m resolution land use map was integrated as the geospatial background (Fig. 1c) to characterize the underlying landscape, revealing a pronounced concentration of developed land in the southern and western regions, contrasting with the agricultural and ecological dominance in the northern and eastern zones (Fig. S1)."
+          },
+          {
+            "key": "figure-section-4-2-1-study-area-2",
+            "type": "FIGURE",
+            "displayOrder": 1,
+            "fileId": null,
+            "sourceKey": "image1",
+            "label": "",
+            "caption": "Fig. 1. Overview of the study area. (a) Geographic location of the Erhai Lake Basin in China. (b) Administrative divisions and functional zones. (c) Land use types, WWTP locations, and service area boundaries.",
+            "altText": "Fig. 1. Overview of the study area. (a) Geographic location of the Erhai Lake Basin in China. (b) Administrative divisions and functional zones. (c) Land use types, WWTP locations, and service area boundaries.",
+            "sourceNote": ""
+          }
+        ]
+      },
+      {
+        "key": "section-5-2-2-data-acquisition-and-preprocessing",
+        "parentKey": "section-3-2-materials-and-methods",
+        "heading": "2.2 Data Acquisition and Preprocessing",
+        "level": 2,
+        "displayOrder": 4,
+        "blocks": [
+          {
+            "key": "paragraph-section-5-2-2-data-acquisition-and-preprocessing-1",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "To capture the complex spatial dynamics of anthropogenic activities, we integrated four high-resolution, multi-source spatial proxies, all resampled to a unified 500 m × 500 m grid (Fig. S2). This multi-proxy approach is novel in its comprehensive characterization of different facets of human activity (Lin et al., 2025)."
+          },
+          {
+            "key": "paragraph-section-5-2-2-data-acquisition-and-preprocessing-2",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "NL were obtained from the monthly Visible Infrared Imaging Radiometer Suite (VIIRS) product (500 m resolution) from January 2021 to December 2023 (36 periods), sourced from the National Oceanic and Atmospheric Administration (NOAA) (Elvidge et al., 2017). These data serve as a robust proxy for overall economic activity and energy consumption (Antezana Lopez et al., 2025). H was derived by acquiring the geographic locations of all hotels via Amap (Gaode) Web Service API for the years 2021–2023 (AutoNavi Software Co., Ltd., 2023). Annual kernel density estimation (KDE) was then applied to generate 500 m raster layers, specifically targeting tourism-related pollution hotspots. BS was calculated using coordinates of 2G, 3G, and 4G base stations sourced from the OpenCellID database (Unwired Labs, 2023). KDE was used to produce density layers, providing a dynamic indicator of population density and communication infrastructure usage. VC was estimated by combining 10 m resolution building height data from the National Earth System Science Data Center, National Science & Technology Infrastructure of China with building footprint area to calculate 3D volume, which was subsequently aggregated and resampled to 500m (http://www.geodata.cn) (Wu et al., 2023). This proxy represents the physical intensity of urban development."
+          },
+          {
+            "key": "paragraph-section-5-2-2-data-acquisition-and-preprocessing-3",
+            "type": "PARAGRAPH",
+            "displayOrder": 2,
+            "text": "For model input, we implemented a critical spatial normalization strategy. At each monthly timestep, the value of any feature at grid $(i,j)$ was transformed into its relative contribution across the entire basin (Eq. 1):"
+          },
+          {
+            "key": "equation-section-5-2-2-data-acquisition-and-preprocessing-4",
+            "type": "EQUATION",
+            "displayOrder": 3,
+            "latex": "X_{ij} = \\frac{V_{ij}}{\\sum_{i,j}^{}V_{ij}}\\quad\\quad(1)",
+            "numbered": true
+          },
+          {
+            "key": "paragraph-section-5-2-2-data-acquisition-and-preprocessing-5",
+            "type": "PARAGRAPH",
+            "displayOrder": 4,
+            "text": "where $V_{i,j}$ is the original feature value. This reframes the task from predicting absolute pollution loads to allocating relative contributions, significantly enhancing model interpretability and aligning the input structure with the model’s physical objective."
+          },
+          {
+            "key": "paragraph-section-5-2-2-data-acquisition-and-preprocessing-6",
+            "type": "PARAGRAPH",
+            "displayOrder": 5,
+            "text": "The pollution load data from the 17 WWTPs were not used as direct grid-level labels. Instead, after quality control and monthly aggregation, they served as area-level mass constraints. The model’s task is to predict a high-resolution spatial distribution whose aggregate within each WWTP service area matches the observed monthly total load for wastewater (WW), chemical oxygen demand (COD), total nitrogen (TN), and total phosphorus (TP)."
+          }
+        ]
+      },
+      {
+        "key": "section-6-2-3-neural-network-allocation-algorithm",
+        "parentKey": "section-3-2-materials-and-methods",
+        "heading": "2.3 Neural Network Allocation Algorithm",
+        "level": 2,
+        "displayOrder": 5,
+        "blocks": [
+          {
+            "key": "paragraph-section-6-2-3-neural-network-allocation-algorithm-1",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "To overcome the inherent limitations of traditional emission inventories—namely, linear assumptions, reliance on single proxies, and an inability to be spatially verified (detailed in the Supplementary Information)—we developed a novel neural network allocation algorithm (LeCun et al., 2015; Zhi et al., 2024). Based on the monitoring results $y_{s}$ at the wastewater treatment plant (WWTP) level (where $S$ represents the set of grid cells $(i,j)$ within the service area $s$ of a specific WWTP), we select relevant spatial variables $x_{ij}^{(k)}$. We establish a spatial allocation function $v_{ij} = f_{\\theta}\\left(x_{ij}^{(k)} \\right)$, subject to the strict physical constraints $\\sum_{ij}^{}v_{ij} = 1$ and $v_{ij} > 0$. Consequently, the emission load $h_{ij}$ at any given grid cell is calculated as Equation 2:"
+          },
+          {
+            "key": "paragraph-section-6-2-3-neural-network-allocation-algorithm-2",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "$$h_{ij} = v_{ij}\\sum_{s}^{}y_{s}\\quad\\quad(2)$$"
+          },
+          {
+            "key": "paragraph-section-6-2-3-neural-network-allocation-algorithm-3",
+            "type": "PARAGRAPH",
+            "displayOrder": 2,
+            "text": "This formulation establishes a quantitative relationship between the aggregate monitoring results at the WWTP service area level and the micro-level grid emissions, thereby enabling the reliable estimation of spatially explicit emission patterns."
+          },
+          {
+            "key": "paragraph-section-6-2-3-neural-network-allocation-algorithm-4",
+            "type": "PARAGRAPH",
+            "displayOrder": 3,
+            "text": "To quantify the allocation function $v_{ij}$, we construct a one-dimensional convolutional neural network (1-D CNN) denoted as $g_{\\theta}$. The model takes as input a flattened feature matrix of shape $(N,4)$, where $N$ is the number of valid grid cells and 4 is the number of normalized spatial proxies. The network architecture consists of three 1-D convolutional layers operating on the feature dimension, with channel dimensions progressing from 4 (input) to 356, then to 128, and finally to 4 (output). Each layer is followed by a Rectified Linear Unit (ReLU) activation function to introduce non-linearity."
+          },
+          {
+            "key": "paragraph-section-6-2-3-neural-network-allocation-algorithm-5",
+            "type": "PARAGRAPH",
+            "displayOrder": 4,
+            "text": "To ensure the network learns a unique and physically meaningful allocation function, $g_{\\theta}$ serves as a universal function across all grid cells $(i,j)$, sharing an identical set of parameters $\\theta$ (implemented via 1-D convolutions with a kernel size of 1). The network outputs unnormalized logits $z_{ij} = g_{\\theta}\\left(x_{ij}^{(k)} \\right)$. These logits are then transformed via an embedded Softmax normalization layer Equation 3:"
+          },
+          {
+            "key": "paragraph-section-6-2-3-neural-network-allocation-algorithm-6",
+            "type": "PARAGRAPH",
+            "displayOrder": 5,
+            "text": "$$v_{ij} = f_{\\theta}\\left(x_{ij}^{(k)} \\right) = \\frac{e^{z_{ij}}}{\\sum_{ij}^{}e^{z_{ij}}}\\quad\\quad(3)$$"
+          },
+          {
+            "key": "paragraph-section-6-2-3-neural-network-allocation-algorithm-7",
+            "type": "PARAGRAPH",
+            "displayOrder": 6,
+            "text": "This functional design mathematically enforces the conditions $v_{ij} > 0$ and $\\sum_{ij}^{}v_{ij} = 1$, serving as a differentiable implementation of the mass conservation law. Unlike standard classification tasks, this explicit functional constraint ensures that the aggregated distributed loads precisely match the observed influent, thereby encoding the domain knowledge of emission inventories into the deep learning architecture."
+          },
+          {
+            "key": "figure-section-6-2-3-neural-network-allocation-algorithm-8",
+            "type": "FIGURE",
+            "displayOrder": 7,
+            "fileId": null,
+            "sourceKey": "image2",
+            "label": "",
+            "caption": "Fig. 2. Schematic diagram of the model architecture. The framework utilizes a 1-D CNN with an embedded Softmax layer to enforce mass conservation for high-resolution pollution load disaggregation.",
+            "altText": "Fig. 2. Schematic diagram of the model architecture. The framework utilizes a 1-D CNN with an embedded Softmax layer to enforce mass conservation for high-resolution pollution load disaggregation.",
+            "sourceNote": ""
+          }
+        ]
+      },
+      {
+        "key": "section-7-2-4-model-training-and-evaluation",
+        "parentKey": "section-3-2-materials-and-methods",
+        "heading": "2.4 Model Training and Evaluation",
+        "level": 2,
+        "displayOrder": 6,
+        "blocks": [
+          {
+            "key": "paragraph-section-7-2-4-model-training-and-evaluation-1",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "The model was implemented in PyTorch and trained using a dataset split of 70% for training, 15% for validation, and 15% for testing. An early stopping mechanism, which halted training if the validation loss did not improve for 10 consecutive epochs, was employed to prevent overfitting."
+          },
+          {
+            "key": "paragraph-section-7-2-4-model-training-and-evaluation-2",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "To enable verifiable predictions in a data-scarce environment without high-resolution ground truth, we implemented an aggregate-to-grid weakly supervised learning strategy. Instead of relying on non-existent grid-level labels, the model is trained exclusively on aggregate-level constraints (observed WWTP loads). To achieve stable convergence and physically meaningful outputs, we designed a composite loss function ($\\mathcal{L}_{\\text{total}}$) that balances data fidelity with spatial rationality Equation 4:"
+          },
+          {
+            "key": "paragraph-section-7-2-4-model-training-and-evaluation-3",
+            "type": "PARAGRAPH",
+            "displayOrder": 2,
+            "text": "$$\\mathcal{L}_{\\text{total}}(\\theta) = \\mathcal{L}_{\\text{MSE}}(\\theta) + \\lambda\\mathcal{L}_{\\text{reg}}(\\theta)\\quad\\quad(4)$$"
+          },
+          {
+            "key": "paragraph-section-7-2-4-model-training-and-evaluation-4",
+            "type": "PARAGRAPH",
+            "displayOrder": 3,
+            "text": "We define the regional weight $w_{s}$, representing the proportion of the observed load $y_{s}$ in a given WWTP service area ($s$) relative to the entire basin, as $w_{s} = y_{s}/\\sum_{s}^{}y_{s}$. The primary supervision loss ($\\mathcal{L}_{\\text{MSE}}$) is explicitly designed to minimize the discrepancy between the aggregated spatial predictions within each WWTP service area ($S$) and the observed regional proportions Equation 5:"
+          },
+          {
+            "key": "paragraph-section-7-2-4-model-training-and-evaluation-5",
+            "type": "PARAGRAPH",
+            "displayOrder": 4,
+            "text": "$$\\mathcal{L}_{\\text{MSE}}(\\theta) = \\sum_{s}^{}\\left(\\sum_{(i,j) \\in S}^{}v_{ij} - w_{s} \\right)^{2}\\quad\\quad(5)$$"
+          },
+          {
+            "key": "paragraph-section-7-2-4-model-training-and-evaluation-6",
+            "type": "PARAGRAPH",
+            "displayOrder": 5,
+            "text": "The regularization loss ($\\mathcal{L}_{\\text{reg}}$) is an auxiliary penalty term that applies a squared penalty to any grid cell where its predicted weight for a pollutant exceeds a predefined threshold (0.04). This suppresses unrealistic local outliers and promotes spatial smoothness in the distribution maps."
+          },
+          {
+            "key": "paragraph-section-7-2-4-model-training-and-evaluation-7",
+            "type": "PARAGRAPH",
+            "displayOrder": 6,
+            "text": "The optimal hyperparameters were determined through extensive validation: an Adam optimizer (learning rate = 0.01), a batch size of 16, 150 training epochs, and a regularization coefficient $\\lambda = 150$. Model performance was rigorously evaluated using the coefficient of determination ($R^{2}$) and root mean square error (RMSE) to assess explanatory power and prediction accuracy, respectively. # 3. Results"
+          }
+        ]
+      },
+      {
+        "key": "section-8-3-1-model-performance-and-validation",
+        "parentKey": "section-3-2-materials-and-methods",
+        "heading": "3.1 Model Performance and Validation",
+        "level": 2,
+        "displayOrder": 7,
+        "blocks": [
+          {
+            "key": "paragraph-section-8-3-1-model-performance-and-validation-1",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "The deep learning framework demonstrated high performance in generating high-resolution spatial distribution maps of pollution loads processed by wastewater treatment plants (WWTPs) across the Erhai Lake Basin. The model achieved high coefficients of determination ($R^{2}$) ranging from 0.82 to 0.98 and maintained low root mean square errors (RMSE) below 0.045 for all four pollutants (WW, COD, TN, TP) on both training and test datasets (Fig. 3). This strong performance validates the model’s robust capability to capture the complex spatial patterns of domestic wastewater-derived pollution, as the model was supervised and constrained by observed WWTP influent loads, which predominantly originate from domestic wastewater sources. The minimal performance gap between training and testing sets indicates effective generalization without significant overfitting, confirming that the model learned robust spatial patterns representative of underlying anthropogenic activities rather than memorizing specific data instances."
+          },
+          {
+            "key": "paragraph-section-8-3-1-model-performance-and-validation-2",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "A detailed examination of individual pollutant predictions reveals nuanced performance characteristics that reflect the model’s sophisticated learning of domestic wastewater patterns. For COD load allocation, the model achieved the highest prediction accuracy, with both training and test set $R^{2}$ reaching 0.98 and RMSE maintained at only 0.020(Fig. 3b). This high performance suggests that the spatial distribution of organic pollution in domestic wastewater, likely from household activities and commercial establishments, is effectively captured by the integrated multi-source proxies of urban intensity. The TP load prediction also demonstrated excellent performance, with training and test set $R^{2}$ values of 0.95 and 0.92 respectively, accompanied by RMSE values of 0.023 and 0.028 (Fig. 3d). This strong performance indicates that phosphorus sources within the domestic wastewater stream are well-characterized by the model’s input features."
+          },
+          {
+            "key": "paragraph-section-8-3-1-model-performance-and-validation-3",
+            "type": "PARAGRAPH",
+            "displayOrder": 2,
+            "text": "The WW load allocation prediction results proved robust and reliable, with training and test set $R^{2}$ of 0.94 and 0.92 respectively, and RMSE values of 0.022 and 0.028 (Fig. 3a). This consistent performance confirms the model’s effective characterization of wastewater volume distribution, which is directly linked to population density, water consumption patterns, and sewage infrastructure coverage. Although TN load prediction showed slightly lower performance compared to other pollutants, it still demonstrated strong predictive capability with training and test set $R^{2}$ of 0.86 and 0.82 respectively, and RMSE values of 0.038 and 0.045 (Fig. 3c). The comparatively lower performance for TN may be attributed to more variable concentrations in domestic wastewater or potential minor contributions from non-point sources not fully captured by the WWTP monitoring data."
+          },
+          {
+            "key": "paragraph-section-8-3-1-model-performance-and-validation-4",
+            "type": "PARAGRAPH",
+            "displayOrder": 3,
+            "text": "The marginal density distribution plots in Fig. 3 provide further validation of the model’s performance by demonstrating that the model not only accurately fits average trends of pollutant loads but also effectively reproduces the probability distribution characteristics and extreme value ranges of observed WWTP data. This precise restoration capability for distribution patterns is particularly significant for subsequent pollution hotspots identification and risk assessment, as it ensures that the model captures both central tendencies and tail events in domestic wastewater discharge."
+          },
+          {
+            "key": "figure-section-8-3-1-model-performance-and-validation-5",
+            "type": "FIGURE",
+            "displayOrder": 4,
+            "fileId": null,
+            "sourceKey": "image3",
+            "label": "",
+            "caption": "Fig. 3. Evaluation of model predictive performance. (a)–(d) Comparison between predicted and observed values for WW, COD, TN, and TP, respectively. Blue and red points represent training and test sets, solid lines indicate the 1:1 reference line, and shaded areas represent 95% confidence intervals. Marginal density plots illustrate the frequency distributions of predicted versus observed values.",
+            "altText": "Fig. 3. Evaluation of model predictive performance. (a)–(d) Comparison between predicted and observed values for WW, COD, TN, and TP, respectively. Blue and red points represent training and test sets, solid lines indicate the 1:1 reference line, and shaded areas represent 95% confidence intervals. Marginal density plots illustrate the frequency distributions of predicted versus observed values.",
+            "sourceNote": ""
+          }
+        ]
+      },
+      {
+        "key": "section-9-3-2-spatiotemporal-heterogeneity-of-pollution-loads",
+        "parentKey": "section-3-2-materials-and-methods",
+        "heading": "3.2 Spatiotemporal Heterogeneity of Pollution Loads",
+        "level": 2,
+        "displayOrder": 8,
+        "blocks": [
+          {
+            "key": "paragraph-section-9-3-2-spatiotemporal-heterogeneity-of-pollution-",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "The high-resolution prediction results revealed significant spatiotemporal heterogeneity in the distribution of pollution loads processed by WWTPs across the basin from 2021 to 2023 (Fig. 4). The annual aggregation of monthly prediction results provides comprehensive insights into domestic wastewater dynamics at multiple temporal scales while maintaining fine spatial resolution. The four pollution indicators exhibit distinct yet interconnected spatiotemporal patterns that reflect the complex interplay between urban development, human activities, and wastewater generation."
+          },
+          {
+            "key": "paragraph-section-9-3-2-spatiotemporal-heterogeneity-of-pollution-",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "From a spatial perspective, the most striking finding is that high-load areas are not uniformly distributed across the basin but exhibit pronounced clustering characteristics, forming distinct pollution corridors centered on urban centers.Significantly high-intensity pollution zones are primarily concentrated in Zones 2 (Southern Erhai) and 3 (Western Erhai), which consistently serve as core hotspots for all four pollution load types throughout the entire study period. These persistent hotspots are mainly located in the built-up areas of DL, XG, TH, MJ, and FYi, which are characterized by dense construction land, high population aggregation, and intensive tourism and commercial activities (Lin et al., 2021). The spatial concentration of pollution in these areas directly reflects the intense anthropogenic pressures associated with urban domestic wastewater generation and the corresponding sewage collection infrastructure."
+          },
+          {
+            "key": "paragraph-section-9-3-2-spatiotemporal-heterogeneity-of-pollution-",
+            "type": "PARAGRAPH",
+            "displayOrder": 2,
+            "text": "In contrast, Zones 4 (Eastern Erhai) and 1 (Northern Erhai) exhibit relatively lower pollution load intensities but demonstrate a clear trend of gradual enhancement over the three-year study period.Temporal evolution analysis indicates that pollution loads for all four indicators generally increase from 2021 to 2023, with Zone 1 (Northern Erhai) displaying particularly notable growth of emerging hotspots. Areas that initially showed relatively low pollution loads in 2021, such as SY, YS, SG, DC, and CBH, gradually evolved into secondary hotspots by 2023. This pattern suggests a spatial diffusion of domestic wastewater pressures from established urban cores to peripheral areas, which may be attributed to urban expansion, new residential developments, and the extension of sewage collection networks to previously underserved areas."
+          },
+          {
+            "key": "paragraph-section-9-3-2-spatiotemporal-heterogeneity-of-pollution-",
+            "type": "PARAGRAPH",
+            "displayOrder": 3,
+            "text": "The core hotspots in Zones 2 (Southern Erhai) and 3 (Western Erhai) maintain relatively stable spatial patterns during the three-year period, with limited fluctuations in pollution load intensity. This stability suggests that these areas have reached a certain equilibrium in terms of wastewater generation, likely due to established infrastructure and relatively stable population patterns. In contrast, newly emerging hotspots in Zones 4 (Eastern Erhai) and 1 (Northern Erhai) are more dynamic and are mainly associated with infrastructure expansion zones and areas experiencing rapid urbanization.Overlay analysis with township administrative boundaries demonstrates that Zones 3 (Western Erhai) and 2 (Southern Erhai) and their adjacent expansion belts occupy key positions in the spatial distribution of all four pollution loads."
+          },
+          {
+            "key": "paragraph-section-9-3-2-spatiotemporal-heterogeneity-of-pollution-",
+            "type": "PARAGRAPH",
+            "displayOrder": 4,
+            "text": "From the perspective of spatial continuity, high-load areas show pronounced clustering characteristics, forming continuous domestic wastewater corridors along construction land belts and developed urban areas. These corridors likely represent the cumulative impact of high population density and comprehensive sewage coverage. Low-load areas are mainly distributed in ecological land types such as forestlands and grasslands, exhibiting a clear correspondence with the absence of dense urban development and sewage infrastructure."
+          },
+          {
+            "key": "figure-section-9-3-2-spatiotemporal-heterogeneity-of-pollution-",
+            "type": "FIGURE",
+            "displayOrder": 5,
+            "fileId": null,
+            "sourceKey": "image4",
+            "label": "",
+            "caption": "Fig. 4. Spatiotemporal distribution of pollution loads (2021–2023). Maps display the high-resolution (500 m × 500 m) distribution of (a)–(c) WW, (d)–(f) COD, (g)–(i) TN, and (j)–(l) TP for the years 2021, 2022, and 2023, respectively. Township administrative boundaries are overlaid to facilitate spatial comparison.",
+            "altText": "Fig. 4. Spatiotemporal distribution of pollution loads (2021–2023). Maps display the high-resolution (500 m × 500 m) distribution of (a)–(c) WW, (d)–(f) COD, (g)–(i) TN, and (j)–(l) TP for the years 2021, 2022, and 2023, respectively. Township administrative boundaries are overlaid to facilitate spatial comparison.",
+            "sourceNote": ""
+          }
+        ]
+      },
+      {
+        "key": "section-10-3-3-extreme-spatial-concentration-of-pollution-loads",
+        "parentKey": "section-3-2-materials-and-methods",
+        "heading": "3.3 Extreme Spatial Concentration of Pollution Loads",
+        "level": 2,
+        "displayOrder": 9,
+        "blocks": [
+          {
+            "key": "paragraph-section-10-3-3-extreme-spatial-concentration-of-pollutio",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "Quantitative hotspot analysis confirmed that the observed spatial patterns were not just visually distinct but also statistically extreme, revealing a fundamental characteristic of domestic wastewater distribution in the Erhai Lake Basin. The pollution loads processed by WWTPs exhibited a highly concentrated spatial distribution, where a small fraction of the land area contributed a disproportionately large share of the total pollution burden (Fig. 5). From 2021 to 2023, the top 5% of grid cells consistently contributed 60%–74% of the total pollution loads for all four indicators."
+          },
+          {
+            "key": "paragraph-section-10-3-3-extreme-spatial-concentration-of-pollutio",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "Among the pollutants, COD showed the most significant spatial clustering, with the top 5% of grids contributing 74%, 73%, and 71% of the total COD load in 2021, 2022, and 2023, respectively. The absolute COD load was 9.02 kt in 2021, increased to 10.89 kt in 2022, and slightly decreased to 8.95 kt in 2023. The peak in spatial clustering during 2022 may reflect specific economic or demographic factors that intensified organic wastewater concentration in that year. TN and TP pollution loads exhibited similar spatial clustering patterns, with the top 5% of grid contribution ratios stable around 60-70%. The absolute TN load showed consistent year-over-year growth, reaching 1.29 kt in 2023, reflecting increasing population and wastewater generation. TP reached its peak load of 159.43 t in 2022."
+          },
+          {
+            "key": "paragraph-section-10-3-3-extreme-spatial-concentration-of-pollutio",
+            "type": "PARAGRAPH",
+            "displayOrder": 2,
+            "text": "Although WW also demonstrated a highly concentrated spatial distribution, its contribution from the top 5% of grids was slightly lower, around 60%, with minimal variation across three years for all pollution indicators. This relative balance in WW distribution compared to other indicators may reflect the more distributed nature of wastewater generation sources across the basin’s urban and peri-urban areas. The stability of hotspot area pollution contributions across the three-year period provides a scientific basis for formulating long-term, targeted control strategies, as it suggests that domestic wastewater hotspots are persistent features of the urban landscape rather than random occurrences."
+          },
+          {
+            "key": "paragraph-section-10-3-3-extreme-spatial-concentration-of-pollutio",
+            "type": "PARAGRAPH",
+            "displayOrder": 3,
+            "text": "The identification of these extreme concentration patterns has significant implications for wastewater management strategies, as it suggests that targeted infrastructure upgrades and pollution control interventions in relatively small urban areas could yield substantial pollution reduction benefits across the entire watershed."
+          },
+          {
+            "key": "figure-section-10-3-3-extreme-spatial-concentration-of-pollutio",
+            "type": "FIGURE",
+            "displayOrder": 4,
+            "fileId": null,
+            "sourceKey": "image5",
+            "label": "",
+            "caption": "Fig. 5. Analysis of cumulative load contributions and spatial clustering. (a)–(c) Cumulative pollution load percentages for WW, COD, TN, and TP against cumulative area percentages for 2021, 2022, and 2023, respectively. Inset bar charts display the contribution from the top 5% hotspot grids for each pollutant. The y-axis represents contribution percentage, and values above bars indicate absolute loads (WW: Mt; COD/TN: kt; TP: t).",
+            "altText": "Fig. 5. Analysis of cumulative load contributions and spatial clustering. (a)–(c) Cumulative pollution load percentages for WW, COD, TN, and TP against cumulative area percentages for 2021, 2022, and 2023, respectively. Inset bar charts display the contribution from the top 5% hotspot grids for each pollutant. The y-axis represents contribution percentage, and values above bars indicate absolute loads (WW: Mt; COD/TN: kt; TP: t).",
+            "sourceNote": ""
+          }
+        ]
+      },
+      {
+        "key": "section-11-3-4-spatial-correlation-and-inter-pollutant-synergy",
+        "parentKey": "section-3-2-materials-and-methods",
+        "heading": "3.4 Spatial Correlation and Inter-Pollutant Synergy",
+        "level": 2,
+        "displayOrder": 10,
+        "blocks": [
+          {
+            "key": "paragraph-section-11-3-4-spatial-correlation-and-inter-pollutant-s",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "To investigate the underlying emission mechanisms and source relationships within the domestic wastewater stream, we performed a comprehensive pixel-by-pixel correlation analysis using the 36-month time-series prediction results (Fig. 6). All six pairs of pollutants exhibited strong positive correlations, with Pearson correlation coefficients ranging from 0.510 to 0.957 (p < 0.01 for all), indicating a high degree of spatial co-occurrence and synchronized emission patterns across the basin."
+          },
+          {
+            "key": "paragraph-section-11-3-4-spatial-correlation-and-inter-pollutant-s",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "A key finding was the very high positive correlation between WW and TN (r = 0.957). The spatial correlation map for this pair shows nearly the entire study area in deep red, with frequency distribution plots confirming that r-values are overwhelmingly concentrated between 0.9 and 1.0. This high correlation provides strong evidence that wastewater volume and total nitrogen share nearly identical emission sources and transport pathways, originating predominantly from domestic sewage in high-density urban areas where nitrogen compounds are major components of household wastewater."
+          },
+          {
+            "key": "paragraph-section-11-3-4-spatial-correlation-and-inter-pollutant-s",
+            "type": "PARAGRAPH",
+            "displayOrder": 2,
+            "text": "Strong correlations were also observed between TP and COD (r = 0.911) and between TP and TN (r = 0.886), with high-correlation regions concentrated in built-up areas. This synchronous relationship positions TP as a “hub” pollutant, linking both nutrient pollution (with TN) and organic pollution (with COD), both of which are characteristic constituents of domestic wastewater."
+          },
+          {
+            "key": "paragraph-section-11-3-4-spatial-correlation-and-inter-pollutant-s",
+            "type": "PARAGRAPH",
+            "displayOrder": 3,
+            "text": "In contrast, the correlations between WW and COD (r = 0.510) and between TN and COD (r = 0.642) were moderate. Their flatter frequency distributions and more heterogeneous spatial maps suggest that the relative concentration of COD varies within the domestic wastewater stream across different urban areas. This nuanced finding is critical: it indicates that while the total volume of wastewater (WW) and its nutrient content (TN) are strongly coupled, the organic load (COD) has more complex spatial patterns. This may reflect variations in wastewater composition across different urban zones—for instance, commercial and tourism-intensive areas might generate disproportionately higher COD loads relative to their wastewater volume compared to purely residential areas."
+          },
+          {
+            "key": "paragraph-section-11-3-4-spatial-correlation-and-inter-pollutant-s",
+            "type": "PARAGRAPH",
+            "displayOrder": 4,
+            "text": "These nuanced correlation structures provide critical insights for pollution management strategy development. In regions of high inter-pollutant synergy, such as the southern and western urban cores, integrated management of the entire wastewater stream is most effective. Conversely, in areas where COD shows more heterogeneity, interventions targeting specific sectors contributing to organic loads, such as the food service industry or commercial districts, may be necessary complements to general wastewater infrastructure improvements."
+          },
+          {
+            "key": "figure-section-11-3-4-spatial-correlation-and-inter-pollutant-s",
+            "type": "FIGURE",
+            "displayOrder": 5,
+            "fileId": null,
+            "sourceKey": "image6",
+            "label": "",
+            "caption": "Fig. 6. Spatial correlation analysis among pollution indicators. (a)–(f) Spatial distribution maps of Pearson correlation coefficients for the pairs: WW–COD, TN–COD, WW–TN, TP–COD, WW–TP, and TP–TN. Nested subplots show the frequency distribution of correlation coefficients across all grid cells for each pair (x-axis: correlation coefficient; y-axis: grid count).",
+            "altText": "Fig. 6. Spatial correlation analysis among pollution indicators. (a)–(f) Spatial distribution maps of Pearson correlation coefficients for the pairs: WW–COD, TN–COD, WW–TN, TP–COD, WW–TP, and TP–TN. Nested subplots show the frequency distribution of correlation coefficients across all grid cells for each pair (x-axis: correlation coefficient; y-axis: grid count).",
+            "sourceNote": ""
+          }
+        ]
+      },
+      {
+        "key": "section-12-4-discussion",
+        "parentKey": null,
+        "heading": "4. Discussion",
+        "level": 1,
+        "displayOrder": 11,
+        "blocks": []
+      },
+      {
+        "key": "section-13-4-1-redefining-the-high-resolution-spatial-patterns-o",
+        "parentKey": "section-12-4-discussion",
+        "heading": "4.1 Redefining the High-Resolution Spatial Patterns of Domestic Wastewater Loads",
+        "level": 2,
+        "displayOrder": 12,
+        "blocks": [
+          {
+            "key": "paragraph-section-13-4-1-redefining-the-high-resolution-spatial-pa",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "This study presents a novel high-resolution, data-driven attribution of domestic wastewater loads within a complex watershed, revealing patterns that were previously obscured by coarse-scale assessment methods (Nitzsche et al., 2024). Our deep learning framework demonstrates that pollution from domestic sources is not uniformly distributed but exhibits extreme spatial heterogeneity, with the top 5% of grid cells contributing 60%–74% of the total WWTP-influent loads (Fig. 5). This finding fundamentally challenges the conventional assumption underlying many emission inventory approaches, which often rely on uniform per-capita coefficients or simple linear proxies (Li et al., 2018). When compared against the traditional Uniform Per Capita Coefficient (UPCC) method (with reference parameter ranges detailed in Table S3), our model reveals substantial spatial disparities: in critical pollution hotspots (Zone 3 (Western Erhai)), the per capita loads for WW and COD were underestimated by the UPCC method by up to 200% and 197%, respectively. Conversely, in lower-pollution zones (Zones 1 (Northern Erhai) and 4 (Eastern Erhai)), the UPCC method overestimated loads by up to 82% and 78%. This demonstrates that traditional methods, predicated on spatially homogeneous assumptions, are inadequate for characterizing the complex reality of urban wastewater systems (Fig. 7)."
+          },
+          {
+            "key": "paragraph-section-13-4-1-redefining-the-high-resolution-spatial-pa",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "The identified hotspots are concentrated in Zones 2 (Southern Erhai) and 3 (Western Erhai) (DL, XG, TH, MJ, FYi), which correspond to the Dali main urban area and the core tourism zones (Li et al., 2020).These areas are characterized by high-density construction land and intense anthropogenic activities. This high-resolution mapping moves beyond simply identifying “which townships are polluting” to pinpointing the specific urban blocks and neighborhoods where interventions would be most effective, thereby enabling a paradigm shift from administrative-unit-based management to precise, location-specific targeting."
+          },
+          {
+            "key": "figure-section-13-4-1-redefining-the-high-resolution-spatial-pa",
+            "type": "FIGURE",
+            "displayOrder": 2,
+            "fileId": null,
+            "sourceKey": "image7",
+            "label": "",
+            "caption": "Fig. 7. Deviation of per capita pollution loads from uniform coefficients. (a)–(d) Calculated deviations for WW, COD, TN, and TP, respectively. Red dashed lines indicate the baseline derived from the upper and lower limits of reference uniform per capita coefficients.Percentage annotations highlight townships significantly exceeding or falling below the baseline.",
+            "altText": "Fig. 7. Deviation of per capita pollution loads from uniform coefficients. (a)–(d) Calculated deviations for WW, COD, TN, and TP, respectively. Red dashed lines indicate the baseline derived from the upper and lower limits of reference uniform per capita coefficients.Percentage annotations highlight townships significantly exceeding or falling below the baseline.",
+            "sourceNote": ""
+          }
+        ]
+      },
+      {
+        "key": "section-14-4-2-physical-interpretation-of-multi-source-data-fusi",
+        "parentKey": "section-12-4-discussion",
+        "heading": "4.2 Physical Interpretation of Multi-Source Data Fusion and Model Advantages",
+        "level": 2,
+        "displayOrder": 13,
+        "blocks": [
+          {
+            "key": "paragraph-section-14-4-2-physical-interpretation-of-multi-source-d",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "The high performance of our model is rooted in its innovative fusion of multi-source spatial proxies and a physically constrained architecture. The Shapley Additive Explanations (SHAP) analysis provides crucial insights into why this fusion is so powerful, particularly for domestic wastewater sources (Fig. 8). BS emerged as the dominant predictor, accounting for approximately 45% of the model’s explanatory power. This proxy effectively captures the dynamic intensity of human activity that static infrastructure data might miss (Johnson et al., 2021). It reflects real-time population aggregation and economic activity, making it particularly sensitive to the transient population fluctuations characteristic of tourism-heavy areas like the Erhai Lake Basin."
+          },
+          {
+            "key": "paragraph-section-14-4-2-physical-interpretation-of-multi-source-d",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "VC, the second most important feature, followed closely. Physically, this dominance reflects a complementarity between static urban capacity and dynamic population intensity. While VC quantifies the potential carrying capacity of the built environment (residential and commercial space), BS captures the real-time intensity of human presence and flow. The model effectively learns that pollution discharge is not a function of infrastructure alone, but of the infrastructure-activity interaction, a nuance that static linear proxies fail to capture (Wu et al., 2023). This explains why our model significantly outperforms methods relying on single, static proxies like nighttime light, which can be influenced by economic activity type and may not correlate linearly with residential population in mixed-use areas (Li et al., 2019; Liang et al., 2020)."
+          },
+          {
+            "key": "paragraph-section-14-4-2-physical-interpretation-of-multi-source-d",
+            "type": "PARAGRAPH",
+            "displayOrder": 2,
+            "text": "Complementing the robust spatial proxies described above, the methodological innovation of embedding a Softmax layer to enforce mass conservation is a critical advancement. This design ensures that the model’s high-resolution predictions are not merely statistically optimal but are also physically consistent with the fundamental principle of mass balance (Mahmood, 2024). The predicted loads at the grid level, when aggregated to the WWTP service area scale, are constrained to match the observed total loads. This prevents the model from generating physically implausible distributions, a common issue in unconstrained data-driven models, and enhances the credibility of the high-resolution maps for practical application by stakeholders and environmental managers."
+          },
+          {
+            "key": "figure-section-14-4-2-physical-interpretation-of-multi-source-d",
+            "type": "FIGURE",
+            "displayOrder": 3,
+            "fileId": null,
+            "sourceKey": "image8",
+            "label": "",
+            "caption": "Fig. 8. Feature importance analysis based on Deep SHAP. The plot illustrates the relative contribution of each spatial proxy to the model’s predictions, identifying key drivers of pollution load distribution.",
+            "altText": "Fig. 8. Feature importance analysis based on Deep SHAP. The plot illustrates the relative contribution of each spatial proxy to the model’s predictions, identifying key drivers of pollution load distribution.",
+            "sourceNote": ""
+          }
+        ]
+      },
+      {
+        "key": "section-15-4-3-management-implications-and-policy-value",
+        "parentKey": "section-12-4-discussion",
+        "heading": "4.3 Management Implications and Policy Value",
+        "level": 2,
+        "displayOrder": 14,
+        "blocks": [
+          {
+            "key": "paragraph-section-15-4-3-management-implications-and-policy-value-",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "The findings of this study have direct and significant implications for environmental management and policy formulation in the Erhai Lake Basin and similar urban-ecosystems. The extreme concentration of pollution loads in small areas provides a clear, evidence-based rationale for prioritizing management resources (Garrido-Baserba et al., 2024).Our analysis demonstrates that comprehensive integrated management targeting hotspot areas holds significant potential for pollution reduction, a conclusion underscored by the fact that the top 5% of grid cells alone contribute the vast majority of the total load (Fig. 5)."
+          },
+          {
+            "key": "paragraph-section-15-4-3-management-implications-and-policy-value-",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "Furthermore, the strong inter-pollutant correlations, especially the high correlation between WW and TN (r = 0.957), suggest that in these urban hotspots, management strategies can be streamlined. Instead of separate control measures for different pollutants, integrated approaches targeting the common domestic wastewater source—such as upgrading sewer networks, enhancing wastewater treatment capacity, and implementing source reduction programs for households and businesses—are likely to yield the most significant co-benefits across all pollutant categories (Pei et al., 2025). The model’s output maps can directly inform urban planning decisions, such as identifying priority neighborhoods for sewer system reconstruction, guiding the location of new wastewater infrastructure, and defining zones requiring stricter stormwater management to control inflow and infiltration. This supports a transition from reactive, pollution-control-focused management to proactive, source-oriented urban planning."
+          }
+        ]
+      },
+      {
+        "key": "section-16-4-4-limitations-and-future-research-directions",
+        "parentKey": "section-12-4-discussion",
+        "heading": "4.4 Limitations and Future Research Directions",
+        "level": 2,
+        "displayOrder": 15,
+        "blocks": [
+          {
+            "key": "paragraph-section-16-4-4-limitations-and-future-research-direction",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "It is crucial to recognize that the success of this framework is demonstrated for the specific, yet critically important, context of domestic wastewater loads as monitored at WWTPs. The model’s inputs and constraints are tailored to capture the spatial dynamics of sewage from residential, commercial, and tourism-related sources. It was not designed to account for agricultural non-point source pollution or independent industrial point sources, which are not captured in the WWTP influent data. This focused scope is a strength, as it provides a specialized and highly accurate solution for a major pollution sector, but it also defines the boundary of the current study’s applicability."
+          },
+          {
+            "key": "paragraph-section-16-4-4-limitations-and-future-research-direction",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "Future research should focus on expanding this framework’s scope and capabilities. First, to address the heterogeneity within domestic wastewater itself, future models could integrate additional data sources—such as water consumption records, business electricity usage, or tourism statistics—to deconvolute the mixed signals and differentiate between purely residential, commercial, and tourism-related wastewater contributions (Chawla et al., 2020; Chen et al., 2022). This would enable even more targeted management, such as developing tourism-specific water conservation policies (Gössling et al., 2012). Second, to achieve a comprehensive watershed assessment, this domestic wastewater model could be coupled with a separate model designed for agricultural non-point sources, such as a process-based model like SWAT, creating an integrated system that captures the full spectrum of pollution drivers. Third, the lack of independent high-resolution pollution measurements remains a key limitation for validation. The deployment of novel in-situ sensor networks (Adu-Manu et al., 2017; Oh and Bartos, 2025) or the use of high-frequency satellite remote sensing for water quality parameters could provide the necessary independent data to further validate and refine the model, enhancing its robustness and transferability to other data-scarce regions (Sun et al., 2024). These developments will build upon the solid foundation laid by this study, moving toward a truly integrated and precision-based approach to watershed management (Chawla et al., 2020)."
+          }
+        ]
+      },
+      {
+        "key": "section-17-5-conclusions",
+        "parentKey": null,
+        "heading": "5. Conclusions",
+        "level": 1,
+        "displayOrder": 16,
+        "blocks": [
+          {
+            "key": "paragraph-section-17-5-conclusions-1",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "This study successfully developed and validated a novel deep learning framework for the high-resolution spatial attribution of pollution loads by fusing multi-source spatial proxies under a physical mass conservation constraint. The 1-D CNN architecture with an embedded Softmax layer proved highly effective in disaggregating WWTP-influent loads for WW, COD, TN, and TP at a 500 m resolution in the Erhai Lake Basin, achieving high predictive accuracy ($R^{2}$ = 0.82–0.98). The application revealed that domestic wastewater pollution is extremely spatially concentrated, with the top 5% of grid cells contributing the majority of the total load, a finding that challenges traditional homogeneous allocation methods. Strong inter-pollutant correlations, particularly between WW and TN, support the implementation of integrated control strategies in identified urban hotspots. The framework’s reliance on readily available big data proxies makes it a highly transferable and valuable tool for precision environmental management in data-scarce regions worldwide, offering robust scientific support for achieving sustainable water management goals."
+          }
+        ]
+      },
+      {
+        "key": "section-18-acknowledgements",
+        "parentKey": null,
+        "heading": "Acknowledgements",
+        "level": 1,
+        "displayOrder": 17,
+        "blocks": [
+          {
+            "key": "paragraph-section-18-acknowledgements-1",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "This work was supported by the Key Science and Technology Program of Yunnan Province (202202AE090034), the Erhai Academy of Green Development (EAGD), and the State Key Laboratory of Lake and Watershed Science for Water Security (NKL2023-QN05)."
+          }
+        ]
+      },
+      {
+        "key": "section-19-credit-authorship-contribution-statement",
+        "parentKey": null,
+        "heading": "Credit authorship contribution statement",
+        "level": 1,
+        "displayOrder": 18,
+        "blocks": [
+          {
+            "key": "paragraph-section-19-credit-authorship-contribution-statement-1",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "Jiarui Zhang: Conceptualization, Methodology, Data curation, Formal analysis, Writing-Original draft, Visualization. Xin Liu: Investigation, Formal analysis, Writing - Review & Editing. Fang Wang: Investigation, Data curation, Formal analysis, Validation. Xiangmin Wu: Investigation, Data curation. Wenjie Zhang: Writing Review & Editing. Hu Sheng: Project administration,Investigation, Conceptualization, Methodology, Data curation, Formal analysis, Validation, Writing - Review & Editing, Funding acquisition. Zengwei Yuan: Writing Review & Editing."
+          }
+        ]
+      },
+      {
+        "key": "section-20-declaration-of-competing-interest",
+        "parentKey": null,
+        "heading": "Declaration of competing interest",
+        "level": 1,
+        "displayOrder": 19,
+        "blocks": [
+          {
+            "key": "paragraph-section-20-declaration-of-competing-interest-1",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper."
+          }
+        ]
+      },
+      {
+        "key": "section-21-data-availability",
+        "parentKey": null,
+        "heading": "Data availability",
+        "level": 1,
+        "displayOrder": 20,
+        "blocks": [
+          {
+            "key": "paragraph-section-21-data-availability-1",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "All data generated or analyzed during this study are included in this published article (and its supplementary information files)."
+          }
+        ]
+      },
+      {
+        "key": "section-22-references",
+        "parentKey": null,
+        "heading": "References",
+        "level": 1,
+        "displayOrder": 21,
+        "blocks": [
+          {
+            "key": "paragraph-section-22-references-1",
+            "type": "PARAGRAPH",
+            "displayOrder": 0,
+            "text": "Adu-Manu, K.S., Tapparello, C., Heinzelman, W., Katsriku, F.A., Abdulai, J.-D., 2017. Water Quality Monitoring Using Wireless Sensor Networks: Current Trends and Future Research Directions. ACM Transactions on Sensor Networks 13 (1), 1–41."
+          },
+          {
+            "key": "paragraph-section-22-references-2",
+            "type": "PARAGRAPH",
+            "displayOrder": 1,
+            "text": "Antezana Lopez, F.P., Casallas, A., Zhou, G., Zhang, K., Jing, G., Ali, A., Lopez-Barrera, E., Belalcazar, L.C., Rojas, N., Jiang, H., 2025. High-resolution anthropogenic emission inventories with deep learning in northern south america. Remote Sensing of Environment 324, 114761."
+          },
+          {
+            "key": "paragraph-section-22-references-3",
+            "type": "PARAGRAPH",
+            "displayOrder": 2,
+            "text": "Askari, A., Chan, A.W.H., 2024. Organic emissions of volatile chemical products in canada: Emission inventories, indoor-to-outdoor transfer, and regional impacts. Environmental Science & Technology 58 (25), 11074–11083."
+          },
+          {
+            "key": "paragraph-section-22-references-4",
+            "type": "PARAGRAPH",
+            "displayOrder": 3,
+            "text": "AutoNavi Software Co., Ltd., 2023. Amap (gaode) location based services web API."
+          },
+          {
+            "key": "paragraph-section-22-references-5",
+            "type": "PARAGRAPH",
+            "displayOrder": 4,
+            "text": "Bahtebay, J., Zhang, F., Ariken, M., Chan, N.W., Tan, M.L., 2021. Evaluation of the coordinated development of urbanization-resources-environment from the incremental perspective of Xinjiang, China. Journal of Cleaner Production 325, 129309."
+          },
+          {
+            "key": "paragraph-section-22-references-6",
+            "type": "PARAGRAPH",
+            "displayOrder": 5,
+            "text": "Batista-Andrade, J.A., Welty, C., Iglesias Vega, D., McClain, A., Blaney, L., 2024. Geospatial variability of fluorescent dissolved organic matter in urban watersheds: Relationships with land cover and wastewater infrastructure. Environmental Science & Technology 58 (17), 7529–7542."
+          },
+          {
+            "key": "paragraph-section-22-references-7",
+            "type": "PARAGRAPH",
+            "displayOrder": 6,
+            "text": "Chawla, I., Karthikeyan, L., Mishra, A.K., 2020. A review of remote sensing applications for water security: Quantity, quality, and extremes. Journal of Hydrology 585, 124826."
+          },
+          {
+            "key": "paragraph-section-22-references-8",
+            "type": "PARAGRAPH",
+            "displayOrder": 7,
+            "text": "Chen, G., Zhou, Y., Voogt, J.A., Stokes, E.C., 2024. Remote sensing of diverse urban environments: From the single city to multiple cities. Remote Sensing of Environment 305, 114108."
+          },
+          {
+            "key": "paragraph-section-22-references-9",
+            "type": "PARAGRAPH",
+            "displayOrder": 8,
+            "text": "Chen, J., Chen, S., Fu, R., Li, D., Jiang, H., Wang, C., Peng, Y., Jia, K., Hicks, B.J., 2022. Remote Sensing Big Data for Water Environment Monitoring: Current Status, Challenges, and Future Prospects. Earth’s Future 10 (2), e2021EF002289."
+          },
+          {
+            "key": "paragraph-section-22-references-10",
+            "type": "PARAGRAPH",
+            "displayOrder": 9,
+            "text": "Cheng, M., Quan, J., Yin, J., Liu, X., Yuan, Z., Ma, L., 2023. High-resolution maps of intensive and extensive livestock production in China. Resources, Environment and Sustainability 12, 100104."
+          },
+          {
+            "key": "paragraph-section-22-references-11",
+            "type": "PARAGRAPH",
+            "displayOrder": 10,
+            "text": "Elvidge, C.D., Baugh, K., Zhizhin, M., Hsu, F.C., Ghosh, T., 2017. VIIRS night-time lights. International Journal of Remote Sensing 38 (21), 5860–5879."
+          },
+          {
+            "key": "paragraph-section-22-references-12",
+            "type": "PARAGRAPH",
+            "displayOrder": 11,
+            "text": "Garrido-Baserba, M., Sedlak, D.L., Molinos-Senante, M., Barnosell, I., Schraa, O., Rosso, D., Verdaguer, M., Poch, M., 2024. Using water and wastewater decentralization to enhance the resilience and sustainability of cities. Nature Water 2 (10), 953–974."
+          },
+          {
+            "key": "paragraph-section-22-references-13",
+            "type": "PARAGRAPH",
+            "displayOrder": 12,
+            "text": "Gössling, S., Peeters, P., Hall, C.M., Ceron, J.-P., Dubois, G., Lehmann, L.V., Scott, D., 2012. Tourism and water use: Supply, demand, and security. An international review. Tourism Management 33 (1), 1–15."
+          },
+          {
+            "key": "paragraph-section-22-references-14",
+            "type": "PARAGRAPH",
+            "displayOrder": 13,
+            "text": "Jiang, F., Ma, J., 2025. Graph-based machine learning for high-resolution assessment of pedestrian-weighted exposure to air pollution. Resources, Environment and Sustainability 20, 100219."
+          },
+          {
+            "key": "paragraph-section-22-references-15",
+            "type": "PARAGRAPH",
+            "displayOrder": 14,
+            "text": "Johnson, P., Andresen, M.A., Malleson, N., 2021. Cell Towers and the Ambient Population: a Spatial Analysis of Disaggregated Property Crime. European Journal on Criminal Policy and Research 27 (3), 313–333."
+          },
+          {
+            "key": "paragraph-section-22-references-16",
+            "type": "PARAGRAPH",
+            "displayOrder": 15,
+            "text": "LeCun, Y., Bengio, Y., Hinton, G., 2015. Deep learning. Nature 521 (7553), 436–444."
+          },
+          {
+            "key": "paragraph-section-22-references-17",
+            "type": "PARAGRAPH",
+            "displayOrder": 16,
+            "text": "Levin, N., Kyba, C.C.M., Zhang, Q., Sánchez De Miguel, A., Román, M.O., Li, X., Portnov, B.A., Molthan, A.L., Jechow, A., Miller, S.D., Wang, Z., Shrestha, R.M., Elvidge, C.D., 2020. Remote sensing of night lights: A review and an outlook for the future. Remote Sensing of Environment 237, 111443."
+          },
+          {
+            "key": "paragraph-section-22-references-18",
+            "type": "PARAGRAPH",
+            "displayOrder": 17,
+            "text": "Li, B., Wang, J., Wu, S., Jia, Z., Li, Y., Wang, T., Zhou, S., 2019. New Method for Improving Spatial Allocation Accuracy of Industrial Energy Consumption and Implications for Polycyclic Aromatic Hydrocarbon Emissions in China. Environmental Science & Technology 53 (8), 4326–4334."
+          },
+          {
+            "key": "paragraph-section-22-references-19",
+            "type": "PARAGRAPH",
+            "displayOrder": 18,
+            "text": "Li, B., Zhou, S., Wang, T., Sui, X., Jia, Z., Li, Y., Wang, J., Wu, S., 2018. An improved gridded polycyclic aromatic hydrocarbon emission inventory for the lower reaches of the Yangtze River Delta region from 2001 to 2015 using satellite data. Journal of Hazardous Materials 360, 329–339."
+          },
+          {
+            "key": "paragraph-section-22-references-20",
+            "type": "PARAGRAPH",
+            "displayOrder": 19,
+            "text": "Li, J., Bai, Y., Alatalo, J.M., 2020. Impacts of rural tourism-driven land use change on ecosystems services provision in Erhai Lake Basin, China. Ecosystem Services 42, 101081."
+          },
+          {
+            "key": "paragraph-section-22-references-21",
+            "type": "PARAGRAPH",
+            "displayOrder": 20,
+            "text": "Li, Z., 2024. Real-time water quality prediction in water distribution networks using graph neural networks with sparse monitoring data. Water Research 250, 121018."
+          },
+          {
+            "key": "paragraph-section-22-references-22",
+            "type": "PARAGRAPH",
+            "displayOrder": 21,
+            "text": "Liang, H., Guo, Z., Wu, J., Chen, Z., 2020. GDP spatialization in Ningbo City based on NPP/VIIRS night-time light and auxiliary data using random forest regression. Advances in Space Research 65 (1), 481–493."
+          },
+          {
+            "key": "paragraph-section-22-references-23",
+            "type": "PARAGRAPH",
+            "displayOrder": 22,
+            "text": "Lin, S.-S., Shen, S.-L., Zhou, A., Lyu, H.-M., 2020. Sustainable development and environmental restoration in Lake Erhai, China. Journal of Cleaner Production 258, 120758."
+          },
+          {
+            "key": "paragraph-section-22-references-24",
+            "type": "PARAGRAPH",
+            "displayOrder": 23,
+            "text": "Lin, S.-S., Shen, S.-L., Zhou, A., Lyu, H.-M., 2021. Assessment and management of lake eutrophication: A case study in Lake Erhai, China. Science of The Total Environment 751, 141618."
+          },
+          {
+            "key": "paragraph-section-22-references-25",
+            "type": "PARAGRAPH",
+            "displayOrder": 24,
+            "text": "Lin, Y., Lv, H., Ke, J., Song, Q., Sheng, N., Chen, C., Wen, Z., 2025. Dynamic nitrogen metabolism in urban environments: Cross-sectoral and cross-media insights for sustainable management. Resources, Environment and Sustainability 19, 100193."
+          },
+          {
+            "key": "paragraph-section-22-references-26",
+            "type": "PARAGRAPH",
+            "displayOrder": 25,
+            "text": "Liu, X., Chen, Y., 2024. Spatial response of water level and quality shows more significant heterogeneity during dry seasons in large river-connected lakes. Scientific Reports 14, 8373."
+          },
+          {
+            "key": "paragraph-section-22-references-27",
+            "type": "PARAGRAPH",
+            "displayOrder": 26,
+            "text": "Mahmood, A.U., 2024. Multiple data imputation methods advance risk analysis and treatability of co-occurring inorganic chemicals in groundwater. Environmental Science & Technology 58 (46), 20513–20524."
+          },
+          {
+            "key": "paragraph-section-22-references-28",
+            "type": "PARAGRAPH",
+            "displayOrder": 27,
+            "text": "Mai, Z., Shen, H., Zhang, A., Sun, H.Z., Zheng, L., Guo, J., Liu, C., Chen, Y., Wang, C., Ye, J., 2024. Convolutional neural networks facilitate process understanding of megacity ozone temporal variability. Environmental Science & Technology 58 (35), 15691–15701."
+          },
+          {
+            "key": "paragraph-section-22-references-29",
+            "type": "PARAGRAPH",
+            "displayOrder": 28,
+            "text": "Mohammed, Hadi, Hansen., A.T., 2024. Spatial heterogeneity of low flow hydrological alterations in response to climate and land use within the upper mississippi river basin. Journal of Hydrology 632, 130872."
+          },
+          {
+            "key": "paragraph-section-22-references-30",
+            "type": "PARAGRAPH",
+            "displayOrder": 29,
+            "text": "Nitzsche, N., Nunes, J.P., Parente, J., 2024. Assessing post-fire water quality changes in reservoirs: Insights from a large dataset in portugal. Science of The Total Environment 912, 169463."
+          },
+          {
+            "key": "paragraph-section-22-references-31",
+            "type": "PARAGRAPH",
+            "displayOrder": 30,
+            "text": "Nolan, T.M., 2024. Agricultural and urban practices are correlated to changes in the resistome of riverine systems. Science of The Total Environment 927, 172261."
+          },
+          {
+            "key": "paragraph-section-22-references-32",
+            "type": "PARAGRAPH",
+            "displayOrder": 31,
+            "text": "Oh, J., Bartos, M., 2025. Scalable, adaptive and risk-informed design of hydrological sensor networks. Nature Water 3, 1144–1154."
+          },
+          {
+            "key": "paragraph-section-22-references-33",
+            "type": "PARAGRAPH",
+            "displayOrder": 32,
+            "text": "Pang, H., 2025. Time series-based machine learning for forecasting multivariate water quality in full-scale drinking water treatment with various reagent dosages. Water Research 268, 122777."
+          },
+          {
+            "key": "paragraph-section-22-references-34",
+            "type": "PARAGRAPH",
+            "displayOrder": 33,
+            "text": "Pei, S., Li, Z., Liu, Y., Wang, C., Wu, H., Liu, S., Huang, Y., 2025. Trajectory, drivers, and reduction of greenhouse gas emissions from urban water system in China during 19802030. Resources, Environment and Sustainability 21, 100244."
+          },
+          {
+            "key": "paragraph-section-22-references-35",
+            "type": "PARAGRAPH",
+            "displayOrder": 34,
+            "text": "Pradhan, P., Costa, L., Rybski, D., Lucht, W., Kropp, J.P., 2017. A Systematic Study of Sustainable Development Goal (SDG) Interactions. Earth’s Future 5 (11), 1169–1179."
+          },
+          {
+            "key": "paragraph-section-22-references-36",
+            "type": "PARAGRAPH",
+            "displayOrder": 35,
+            "text": "Pradhan, P., Joshi, S., Dahal, K., Hu, Y., Subedi, D.R., Putra, M.P.I.F., Vaidya, S., Pant, L.P., Dhakal, S., Hubacek, K., Rupakheti, M., Roberts, D.C., Van Den Hurk, B., 2025. Policy relevance of IPCC reports for the Sustainable Development Goals and beyond. Resources, Environment and Sustainability 19, 100192."
+          },
+          {
+            "key": "paragraph-section-22-references-37",
+            "type": "PARAGRAPH",
+            "displayOrder": 36,
+            "text": "Sachs, J.D., Schmidt-Traub, G., Mazzucato, M., Messner, D., Nakicenovic, N., Rockström, J., 2019. Six Transformations to achieve the Sustainable Development Goals. Nature Sustainability 2 (9), 805–814."
+          },
+          {
+            "key": "paragraph-section-22-references-38",
+            "type": "PARAGRAPH",
+            "displayOrder": 37,
+            "text": "Sun, Y., Wang, D., Li, L., Ning, R., Yu, S., Gao, N., 2024. Application of remote sensing technology in water quality monitoring: From traditional approaches to artificial intelligence. Water Research 267, 122546."
+          },
+          {
+            "key": "paragraph-section-22-references-39",
+            "type": "PARAGRAPH",
+            "displayOrder": 38,
+            "text": "Unwired Labs, 2023. OpenCellID: The world’s largest open database of cell towers."
+          },
+          {
+            "key": "paragraph-section-22-references-40",
+            "type": "PARAGRAPH",
+            "displayOrder": 39,
+            "text": "Wang, W., Yin, S., Wang, L., Lu, X., Li, J., Chen, K., Li, Z., Su, C., Tao, J., 2025. A comprehensive study on the formaldehyde emission characteristics in central China based on emission inventory and remote sensing inversion. Atmospheric Environment 361, 121462."
+          },
+          {
+            "key": "paragraph-section-22-references-41",
+            "type": "PARAGRAPH",
+            "displayOrder": 40,
+            "text": "Wu, N., Geng, G., Xu, R., Liu, S., Liu, X., Shi, Q., Zhou, Y., Zhao, Y., Liu, H., Song, Y., Zheng, J., Zhang, Q., He, K., 2024. Development of a high-resolution integrated emission inventory of air pollutants for china. Earth System Science Data 16 (6), 2893–2915."
+          },
+          {
+            "key": "paragraph-section-22-references-42",
+            "type": "PARAGRAPH",
+            "displayOrder": 41,
+            "text": "Wu, W.-B., Ma, J., Banzhaf, E., Meadows, M.E., Yu, Z.-W., Guo, F.-X., Sengupta, D., Cai, X.-X., Zhao, B., 2023. A first Chinese building height estimate at 10 m resolution (CNBH-10 m) using multi-source earth observations and machine learning. Remote Sensing of Environment 291, 113578."
+          },
+          {
+            "key": "paragraph-section-22-references-43",
+            "type": "PARAGRAPH",
+            "displayOrder": 42,
+            "text": "Yan, C., Li, H., Li, Z., 2022. Environmental pollution and economic growth: Evidence of SO2 emissions and GDP in china. Frontiers in Public Health 10, 930780."
+          },
+          {
+            "key": "paragraph-section-22-references-44",
+            "type": "PARAGRAPH",
+            "displayOrder": 43,
+            "text": "Yang, M., Zhang, X., Qin, C., Meng, F., Long, J., Dong, X., Liu, Y., 2025. Enhancing water quality in urban areas: A spatiotemporal optimization framework for green-gray infrastructure. Water Research 272, 122921."
+          },
+          {
+            "key": "paragraph-section-22-references-45",
+            "type": "PARAGRAPH",
+            "displayOrder": 44,
+            "text": "Ye, X., Zhao, J., Qian, J., Li, Y., 2024. SoftmaxU: Open softmax to be aware of unknowns. Engineering Applications of Artificial Intelligence 133, 108594."
+          },
+          {
+            "key": "paragraph-section-22-references-46",
+            "type": "PARAGRAPH",
+            "displayOrder": 45,
+            "text": "Yuan, L., 2024. A differential game of water pollution management in the trans-jurisdictional river basin. Journal of Cleaner Production 438, 140823."
+          },
+          {
+            "key": "paragraph-section-22-references-47",
+            "type": "PARAGRAPH",
+            "displayOrder": 46,
+            "text": "Zhao, S., Liu, Y., Liu, Y., Gong, M., 2021. Development of water basin pollution emission inventory: a preliminary literature review and Its implication for China. Journal of Water Supply: Research and Technology-Aqua 70 (1), 1–19."
+          },
+          {
+            "key": "paragraph-section-22-references-48",
+            "type": "PARAGRAPH",
+            "displayOrder": 47,
+            "text": "Zhi, W., Appling, A.P., Golden, H.E., Podgorski, J., Li, L., 2024. Deep learning for water quality. Nature Water 2 (3), 228–241."
+          },
+          {
+            "key": "paragraph-section-22-references-49",
+            "type": "PARAGRAPH",
+            "displayOrder": 48,
+            "text": "Zhu, C., Tian, H., Hao, Y., Gao, J., Hao, J., Wang, Y., Hua, S., Wang, K., Liu, H., 2018. A high-resolution emission inventory of anthropogenic trace elements in Beijing-Tianjin-Hebei (BTH) region of China. Atmospheric Environment 191, 452–462."
+          }
+        ]
+      }
+    ]
+  },
+  "files": [
+    {
+      "sourceKey": "manuscript",
+      "role": "MANUSCRIPT",
+      "path": "paper_cnn1d_ai.docx",
+      "visibility": "PUBLIC",
+      "required": true
+    },
+    {
+      "sourceKey": "cover-letter",
+      "role": "COVER_LETTER",
+      "path": "cover-letter.txt",
+      "visibility": "PRIVATE",
+      "required": true,
+      "generated": true
+    },
+    {
+      "sourceKey": "supporting-information",
+      "role": "SUPPORTING_INFORMATION",
+      "path": "si.docx",
+      "visibility": "PUBLIC",
+      "required": false,
+      "description": "Methods, mathematical proof, and supplementary figures and tables."
+    },
+    {
+      "sourceKey": "toc-graphic",
+      "role": "TOC_GRAPHIC",
+      "path": "images/media/abstract.png",
+      "visibility": "PUBLIC",
+      "required": false
+    },
+    {
+      "sourceKey": "image1",
+      "role": "FIGURE",
+      "path": "images/media/image1.jpg",
+      "visibility": "PUBLIC",
+      "required": true
+    },
+    {
+      "sourceKey": "image2",
+      "role": "FIGURE",
+      "path": "images/media/image2.jpg",
+      "visibility": "PUBLIC",
+      "required": true
+    },
+    {
+      "sourceKey": "image3",
+      "role": "FIGURE",
+      "path": "images/media/image3.jpg",
+      "visibility": "PUBLIC",
+      "required": true
+    },
+    {
+      "sourceKey": "image4",
+      "role": "FIGURE",
+      "path": "images/media/image4.jpg",
+      "visibility": "PUBLIC",
+      "required": true
+    },
+    {
+      "sourceKey": "image5",
+      "role": "FIGURE",
+      "path": "images/media/image5.jpg",
+      "visibility": "PUBLIC",
+      "required": true
+    },
+    {
+      "sourceKey": "image6",
+      "role": "FIGURE",
+      "path": "images/media/image6.jpg",
+      "visibility": "PUBLIC",
+      "required": true
+    },
+    {
+      "sourceKey": "image7",
+      "role": "FIGURE",
+      "path": "images/media/image7.jpg",
+      "visibility": "PUBLIC",
+      "required": true
+    },
+    {
+      "sourceKey": "image8",
+      "role": "FIGURE",
+      "path": "images/media/image8.jpg",
+      "visibility": "PUBLIC",
+      "required": true
+    }
+  ]
+}

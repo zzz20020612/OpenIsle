@@ -1,0 +1,8 @@
+Dear Editors,
+
+Please consider our Research Article, "High-Resolution Disaggregation of Pollution Loads through Deep Learning Fusion of Multi-source Spatial Proxies", for publication. The study presents a physics-constrained deep learning framework for high-resolution pollution-load attribution and demonstrates its application in the Erhai Lake Basin.
+
+All authors approved this submission. The work is original and is not under consideration elsewhere.
+
+Sincerely,
+Hu Sheng

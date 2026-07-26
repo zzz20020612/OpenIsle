@@ -56,7 +56,7 @@ useHead({ title: 'Article Content - OpenIsle' })
 const route = useRoute()
 const router = useRouter()
 const draftId = String(route.params.draftId)
-const api = usePaperApi()
+const draftFileUrls = useDraftFileObjectUrls(draftId)
 const {
   article, loading, saveLabel, saveState, error, load, scheduleSave, flush,
 } = usePaperArticleDraft(draftId)
@@ -123,7 +123,7 @@ const uploadFigure = async (event) => {
 }
 const figureSource = (block) => {
   if (!block.fileId) return ''
-  return api.draftFileContentUrl(draftId, block.fileId, true)
+  return draftFileUrls.source(block.fileId)
 }
 </script>
 
