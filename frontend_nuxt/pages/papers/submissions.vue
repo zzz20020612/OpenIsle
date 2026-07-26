@@ -11,7 +11,15 @@
 
     <p v-if="pending" class="state-message">Loading your submissions...</p>
     <p v-else-if="error" class="state-message error">Unable to load submissions.</p>
-    <section v-else-if="papers.length" class="submission-list">
+    <template v-else>
+      <div v-if="submittedPaper" class="submission-success" role="status">
+        <div>
+          <strong>Submission received</strong>
+          <p>Your paper has been submitted and is now in initial screening. This page is your private author workspace.</p>
+        </div>
+        <NuxtLink :to="`/papers/${submittedPaper.id}`">Open submission</NuxtLink>
+      </div>
+      <section v-if="papers.length" class="submission-list">
       <NuxtLink v-for="paper in papers" :key="paper.id" :to="`/papers/${paper.id}`" class="submission-row">
         <div>
           <span class="type">{{ paper.paperType || 'Research Article' }}</span>
@@ -23,8 +31,9 @@
           <span>{{ formatStatus(paper.screeningStatus) }}</span>
         </div>
       </NuxtLink>
-    </section>
-    <p v-else class="state-message">You have not submitted a paper yet.</p>
+      </section>
+      <p v-else class="state-message">You have not submitted a paper yet.</p>
+    </template>
   </main>
 </template>
 
@@ -33,8 +42,13 @@ definePageMeta({ middleware: 'auth-client', keepalive: false })
 useHead({ title: 'My Submissions - OpenIsle' })
 
 const { listMyPapers } = usePaperApi()
+const route = useRoute()
 const { data, pending, error } = await useAsyncData('my-paper-submissions', listMyPapers, { server: false })
 const papers = computed(() => data.value || [])
+const submittedPaper = computed(() => {
+  const submittedId = String(route.query.submitted || '')
+  return papers.value.find((paper) => String(paper.id) === submittedId)
+})
 const formatStatus = (value) => String(value || 'NOT_SCREENED').replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())
 const statusClass = (value) => `status-${String(value || '').toLowerCase()}`
 </script>
@@ -47,6 +61,10 @@ h1 { margin: 8px 0 6px; font-size: 30px; }
 header p { margin: 0; color: #65747b; }
 .submit-link { padding: 10px 14px; border: 1px solid #2f6178; background: #2f6178; color: #fff; white-space: nowrap; }
 .submission-list { border-top: 1px solid #d7dee1; }
+.submission-success { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 24px 0; padding: 16px 18px; border: 1px solid #9fc7ad; background: #f1f8f3; color: #214b2e; }
+.submission-success strong { font-size: 15px; }
+.submission-success p { margin: 5px 0 0; color: #40624a; font-size: 13px; line-height: 1.5; }
+.submission-success a { flex: 0 0 auto; padding: 8px 10px; border: 1px solid #327044; background: #327044; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .submission-row { display: grid; grid-template-columns: minmax(0, 1fr) 170px; gap: 24px; padding: 20px 0; border-bottom: 1px solid #d7dee1; color: inherit; text-decoration: none; }
 .submission-row:hover h2 { color: #1f617f; }
 .type, .status-column span { color: #68777e; font-size: 12px; }
@@ -56,5 +74,5 @@ h2 { margin: 7px 0; font-size: 18px; line-height: 1.35; }
 .status-column strong { padding: 4px 7px; font-size: 11px; text-transform: uppercase; }
 .status-published { color: #24633c; background: #e8f3ec; }.status-needs_revision { color: #8a560d; background: #fff3dd; }.status-screening { color: #245f7d; background: #e6f0f5; }.status-rejected { color: #983632; background: #f9e8e7; }
 .state-message { padding: 36px 0; color: #65747b; }.state-message.error { color: #9b3b35; }
-@media (max-width: 640px) { .submission-list-page { padding: 28px 18px; } header { align-items: start; flex-direction: column; }.submission-row { grid-template-columns: 1fr; gap: 12px; }.status-column { justify-items: start; text-align: left; } }
+@media (max-width: 640px) { .submission-list-page { padding: 28px 18px; } header, .submission-success { align-items: start; flex-direction: column; }.submission-row { grid-template-columns: 1fr; gap: 12px; }.status-column { justify-items: start; text-align: left; } }
 </style>

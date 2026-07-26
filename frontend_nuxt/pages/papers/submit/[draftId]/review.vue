@@ -221,7 +221,10 @@ const submitFinal = async () => {
       idempotencyKey: idempotencyKey.value,
       ...confirmations,
     })
-    await router.push(`/papers/${result.paperId}`)
+    await router.push({
+      path: '/papers/submissions',
+      query: { submitted: result.paperId },
+    })
   } catch (error) {
     errorMessage.value = error?.data?.error || error?.message || 'Unable to submit this manuscript.'
     if (error?.statusCode === 409 || error?.response?.status === 409) {
