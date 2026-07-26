@@ -147,6 +147,7 @@ services:
       MYSQL_PORT: 3306
       REDIS_PORT: 6379
       JAVA_OPTS: "-Duser.timezone=Asia/Shanghai"
+      AI_SCREENING_SERVICE_URL: http://ai-screening:${AI_SCREENING_PORT:-8090}
     ports:
       - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
     volumes:
@@ -161,6 +162,8 @@ services:
         condition: service_started
       websocket-service:
         condition: service_healthy
+      ai-screening:
+        condition: service_healthy
       # opensearch:
       #   condition: service_healthy
     command: >
@@ -174,6 +177,22 @@ services:
       start_period: 60s
     networks:
       - openisle-network
+    profiles:
+      - dev
+      - prod
+
+  ai-screening:
+    build:
+      context: ..
+      dockerfile: docker/ai-screening.Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME}-openisle-ai-screening
+    env_file:
+      - ${ENV_FILE:-../.env}
+    environment:
+      AI_SCREENING_PORT: ${AI_SCREENING_PORT:-8090}
+    networks:
+      - openisle-network
+    restart: unless-stopped
     profiles:
       - dev
       - prod

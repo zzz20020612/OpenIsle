@@ -60,7 +60,7 @@ class PaperServiceTest {
     AiScreeningResultRepository aiScreeningResultRepository = mock(
       AiScreeningResultRepository.class
     );
-    MockAiScreeningService mockAiScreeningService = new MockAiScreeningService();
+    AiScreeningService aiScreeningService = mock(AiScreeningService.class);
     PaperScoreSnapshotRepository paperScoreSnapshotRepository = mock(
       PaperScoreSnapshotRepository.class
     );
@@ -78,7 +78,7 @@ class PaperServiceTest {
       mock(PaperFileRepository.class),
       institutionRepository,
       aiScreeningResultRepository,
-      mockAiScreeningService,
+      aiScreeningService,
       paperScoreSnapshotRepository,
       categoryRepository,
       tagRepository,
@@ -138,7 +138,7 @@ class PaperServiceTest {
       mock(PaperFileRepository.class),
       mock(InstitutionRepository.class),
       mock(AiScreeningResultRepository.class),
-      new MockAiScreeningService(),
+      mock(AiScreeningService.class),
       paperScoreSnapshotRepository,
       mock(CategoryRepository.class),
       mock(TagRepository.class),
@@ -178,7 +178,7 @@ class PaperServiceTest {
       mock(PaperFileRepository.class),
       mock(InstitutionRepository.class),
       mock(AiScreeningResultRepository.class),
-      new MockAiScreeningService(),
+      mock(AiScreeningService.class),
       paperScoreSnapshotRepository,
       mock(CategoryRepository.class),
       mock(TagRepository.class),
@@ -208,7 +208,7 @@ class PaperServiceTest {
   }
 
   @Test
-  void submitPaperCreatesPublishedPaperAfterMockScreening() {
+  void submitPaperStartsAsynchronousScreening() {
     PostService postService = mock(PostService.class);
     PaperProfileRepository paperProfileRepository = mock(PaperProfileRepository.class);
     PaperAuthorRepository paperAuthorRepository = mock(PaperAuthorRepository.class);
@@ -216,7 +216,7 @@ class PaperServiceTest {
     AiScreeningResultRepository aiScreeningResultRepository = mock(
       AiScreeningResultRepository.class
     );
-    MockAiScreeningService mockAiScreeningService = new MockAiScreeningService();
+    AiScreeningService aiScreeningService = mock(AiScreeningService.class);
     PaperScoreSnapshotRepository paperScoreSnapshotRepository = mock(
       PaperScoreSnapshotRepository.class
     );
@@ -234,7 +234,7 @@ class PaperServiceTest {
       mock(PaperFileRepository.class),
       institutionRepository,
       aiScreeningResultRepository,
-      mockAiScreeningService,
+      aiScreeningService,
       paperScoreSnapshotRepository,
       categoryRepository,
       tagRepository,
@@ -339,9 +339,10 @@ class PaperServiceTest {
 
     assertNotNull(result.getId());
     assertEquals(10L, result.getPostId());
-    assertEquals(PaperPublicationStatus.PUBLISHED, result.getPublicationStatus());
-    assertEquals(PaperScreeningStatus.PASSED, result.getScreeningStatus());
-    assertEquals("LOW", result.getScreening().getRiskLevel());
+    assertEquals(PaperPublicationStatus.SCREENING, result.getPublicationStatus());
+    assertEquals(PaperScreeningStatus.SCREENING, result.getScreeningStatus());
+    assertEquals(null, result.getScreening());
+    verify(aiScreeningService).requestScreening(any(PaperProfile.class));
     assertEquals(1, result.getAuthors().size());
     assertEquals(1, result.getAuthors().get(0).getAuthorOrder());
     assertEquals("Alice Researcher", result.getAuthors().get(0).getDisplayName());
@@ -415,7 +416,7 @@ class PaperServiceTest {
       mock(PaperFileRepository.class),
       institutionRepository,
       aiScreeningResultRepository,
-      new MockAiScreeningService(),
+      mock(AiScreeningService.class),
       mock(PaperScoreSnapshotRepository.class),
       categoryRepository,
       tagRepository,
@@ -579,7 +580,7 @@ class PaperServiceTest {
       mock(PaperFileRepository.class),
       institutionRepository,
       aiScreeningResultRepository,
-      new MockAiScreeningService(),
+      mock(AiScreeningService.class),
       mock(PaperScoreSnapshotRepository.class),
       categoryRepository,
       tagRepository,
@@ -714,7 +715,7 @@ class PaperServiceTest {
       mock(PaperFileRepository.class),
       institutionRepository,
       aiScreeningResultRepository,
-      new MockAiScreeningService(),
+      mock(AiScreeningService.class),
       mock(PaperScoreSnapshotRepository.class),
       categoryRepository,
       tagRepository,
@@ -859,7 +860,7 @@ class PaperServiceTest {
       mock(PaperFileRepository.class),
       institutionRepository,
       aiScreeningResultRepository,
-      new MockAiScreeningService(),
+      mock(AiScreeningService.class),
       paperScoreSnapshotRepository,
       categoryRepository,
       tagRepository,
@@ -894,7 +895,7 @@ class PaperServiceTest {
       mock(PaperFileRepository.class),
       mock(InstitutionRepository.class),
       mock(AiScreeningResultRepository.class),
-      new MockAiScreeningService(),
+      mock(AiScreeningService.class),
       paperScoreSnapshotRepository,
       mock(CategoryRepository.class),
       mock(TagRepository.class),
@@ -960,7 +961,7 @@ class PaperServiceTest {
       mock(PaperFileRepository.class),
       mock(InstitutionRepository.class),
       mock(AiScreeningResultRepository.class),
-      new MockAiScreeningService(),
+      mock(AiScreeningService.class),
       mock(PaperScoreSnapshotRepository.class),
       mock(CategoryRepository.class),
       mock(TagRepository.class),

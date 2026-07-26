@@ -125,6 +125,14 @@
                     Detected: {{ selectedPaper.screening?.detectedSubjectArea || 'Not set' }}
                   </span>
                 </div>
+                <ul v-if="screeningCoverage.length" class="paper-screening-coverage">
+                  <li v-for="item in screeningCoverage" :key="item.id">
+                    {{ item.label }}: not run in the text-screening MVP
+                  </li>
+                </ul>
+                <p v-if="selectedPaper.screeningStatus === 'FAILED'" class="paper-screening-error">
+                  The screening service failed. The paper was not published or rejected.
+                </p>
               </section>
 
               <section class="paper-admin-section">
@@ -218,6 +226,21 @@ const {
 )
 
 const papers = computed(() => (Array.isArray(paperData.value) ? paperData.value : []))
+
+const screeningCoverage = computed(() => {
+  const raw = selectedPaper.value?.screening?.issuesJson
+  if (!raw) return []
+  try {
+    const dimensions = typeof raw === 'string' ? JSON.parse(raw) : raw
+    if (!Array.isArray(dimensions)) return []
+    const labels = { '02': 'Plagiarism check', '03': 'Image integrity check' }
+    return dimensions
+      .filter((item) => item?.status === 'skipped' && labels[item.dimension_id])
+      .map((item) => ({ id: item.dimension_id, label: labels[item.dimension_id] }))
+  } catch {
+    return []
+  }
+})
 
 watch(
   papers,

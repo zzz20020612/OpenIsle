@@ -76,7 +76,7 @@ public class PaperService {
   private final PaperFileRepository paperFileRepository;
   private final InstitutionRepository institutionRepository;
   private final AiScreeningResultRepository aiScreeningResultRepository;
-  private final MockAiScreeningService mockAiScreeningService;
+  private final AiScreeningService aiScreeningService;
   private final PaperScoreSnapshotRepository paperScoreSnapshotRepository;
   private final CategoryRepository categoryRepository;
   private final TagRepository tagRepository;
@@ -182,17 +182,8 @@ public class PaperService {
     saveFunding(paper, request.getFunding());
     saveFiles(paper, uploadedFiles);
 
-    AiScreeningResult screening = mockAiScreeningService.screen(paper);
-    screening = aiScreeningResultRepository.save(screening);
-
-    if (screening.getStatus() == PaperScreeningStatus.PASSED) {
-      paper.setScreeningStatus(PaperScreeningStatus.PASSED);
-      paper.setPublicationStatus(PaperPublicationStatus.PUBLISHED);
-      paper.setPublishedAt(LocalDateTime.now());
-      paper = paperProfileRepository.save(paper);
-    }
-
-    return toDetailDto(paper, screening, username);
+    aiScreeningService.requestScreening(paper);
+    return toDetailDto(paper, null, username);
   }
 
   @Transactional(readOnly = true)

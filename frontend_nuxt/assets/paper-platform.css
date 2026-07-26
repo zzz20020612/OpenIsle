@@ -2184,3 +2184,13 @@
     justify-content: flex-start;
   }
 }
+.paper-screening-coverage,
+.paper-screening-error {
+  margin: 0.85rem 0 0;
+  color: var(--paper-muted, #667085);
+  font-size: 0.875rem;
+}
+
+.paper-screening-error {
+  color: #b42318;
+}
