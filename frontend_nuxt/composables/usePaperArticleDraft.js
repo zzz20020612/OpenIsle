@@ -11,6 +11,12 @@ export const usePaperArticleDraft = (draftId) => {
   let saveTimer = null
   let hydrating = false
 
+  const replaceFromServer = (value) => {
+    hydrating = true
+    article.value = value
+    hydrating = false
+  }
+
   const saveLabel = computed(() => ({
     idle: 'All changes saved',
     dirty: 'Unsaved changes',
@@ -25,7 +31,7 @@ export const usePaperArticleDraft = (draftId) => {
     error.value = ''
     try {
       hydrating = true
-      article.value = { ...createEmptyArticle(), ...(await api.getDraftArticle(draftId)) }
+      replaceFromServer({ ...createEmptyArticle(), ...(await api.getDraftArticle(draftId)) })
       dirty.value = false
       saveState.value = 'idle'
     } catch (cause) {
@@ -45,7 +51,7 @@ export const usePaperArticleDraft = (draftId) => {
     error.value = ''
     try {
       const saved = await api.updateDraftArticle(draftId, article.value)
-      article.value = saved
+      replaceFromServer(saved)
       dirty.value = false
       saveState.value = 'saved'
       return saved
@@ -82,7 +88,7 @@ export const usePaperArticleDraft = (draftId) => {
   const markReady = async () => {
     await flush()
     const result = await api.markDraftArticleReady(draftId, article.value)
-    article.value = result
+    replaceFromServer(result)
     validation.value = { valid: true, issues: [] }
     dirty.value = false
     saveState.value = 'saved'
@@ -90,12 +96,11 @@ export const usePaperArticleDraft = (draftId) => {
   }
 
   const reopen = async () => {
-    article.value = await api.reopenDraftArticle(draftId)
+    replaceFromServer(await api.reopenDraftArticle(draftId))
     validation.value = { valid: false, issues: [] }
     return article.value
   }
 
-  watch(article, scheduleSave, { deep: true })
   onBeforeUnmount(() => { if (saveTimer) clearTimeout(saveTimer) })
 
   return {
