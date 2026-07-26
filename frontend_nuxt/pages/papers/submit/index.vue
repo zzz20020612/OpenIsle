@@ -411,7 +411,7 @@ const SectionHeading = defineComponent({
   },
 })
 
-definePageMeta({ middleware: 'auth-client' })
+definePageMeta({ middleware: 'auth-client', keepalive: false })
 
 useHead({ title: 'Submit a Manuscript - OpenIsle' })
 

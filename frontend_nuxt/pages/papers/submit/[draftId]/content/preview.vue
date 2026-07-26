@@ -38,7 +38,7 @@
 </template>
 
 <script setup>
-definePageMeta({ middleware: 'auth-client' })
+definePageMeta({ middleware: 'auth-client', keepalive: false })
 useHead({ title: 'Review Article Layout - OpenIsle' })
 const route = useRoute()
 const draftId = String(route.params.draftId)

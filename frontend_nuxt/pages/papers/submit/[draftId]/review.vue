@@ -173,7 +173,7 @@ const ReviewSection = defineComponent({
   },
 })
 
-definePageMeta({ middleware: 'auth-client' })
+definePageMeta({ middleware: 'auth-client', keepalive: false })
 useHead({ title: 'Review Your Submission - OpenIsle' })
 
 const route = useRoute()

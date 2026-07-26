@@ -55,9 +55,11 @@
 
 <script setup>
 import { UploadOne } from '@icon-park/vue-next'
+import ArticleBlockEditor from '~/components/paper-article/ArticleBlockEditor.vue'
+import ArticleOutline from '~/components/paper-article/ArticleOutline.vue'
 import { createArticleBlock, createArticleSection } from '~/config/paperArticleConfig'
 
-definePageMeta({ middleware: 'auth-client' })
+definePageMeta({ middleware: 'auth-client', keepalive: false })
 useHead({ title: 'Article Content - OpenIsle' })
 
 const route = useRoute()
