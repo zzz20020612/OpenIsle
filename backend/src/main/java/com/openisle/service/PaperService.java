@@ -36,6 +36,7 @@ import com.openisle.model.PaperUploadStatus;
 import com.openisle.model.Post;
 import com.openisle.model.PostType;
 import com.openisle.model.PostVisibleScopeType;
+import com.openisle.model.User;
 import com.openisle.model.Role;
 import com.openisle.model.Tag;
 import com.openisle.repository.AiScreeningResultRepository;
@@ -259,7 +260,10 @@ public class PaperService {
     PaperProfile paper = paperProfileRepository
       .findById(paperId)
       .orElseThrow(() -> new NotFoundException("Paper not found"));
-    if (!paperAccessPolicy.canAppearInFeed(paper)) {
+    User viewerUser = viewer == null
+      ? null
+      : userRepository.findByUsername(viewer).orElse(null);
+    if (!paperAccessPolicy.canViewDetail(viewerUser, paper)) {
       throw new NotFoundException("Paper not found");
     }
     AiScreeningResult screening = aiScreeningResultRepository

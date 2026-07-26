@@ -18,6 +18,10 @@ public class PaperAccessPolicy {
     return isPublished(paper);
   }
 
+  public boolean canViewDetail(User viewer, PaperProfile paper) {
+    return isPublished(paper) || isPaperAuthor(viewer, paper);
+  }
+
   public boolean canEnterRanking(PaperProfile paper) {
     return isPublished(paper);
   }

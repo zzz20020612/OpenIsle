@@ -50,6 +50,17 @@ class PaperAccessPolicyTest {
   }
 
   @Test
+  void authorsCanViewTheirScreeningPaperButOtherUsersCannot() {
+    PaperAccessPolicy policy = new PaperAccessPolicy(mock(PaperAuthorRepository.class));
+    User creator = user(1L);
+    PaperProfile paper = paper(PaperPublicationStatus.SCREENING);
+    paper.setCreatedBy(creator);
+
+    assertTrue(policy.canViewDetail(creator, paper));
+    assertFalse(policy.canViewDetail(user(2L), paper));
+  }
+
+  @Test
   void unpublishedPapersCannotBeRatedEvenByNormalReader() {
     PaperAccessPolicy policy = new PaperAccessPolicy(mock(PaperAuthorRepository.class));
 
