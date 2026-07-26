@@ -99,8 +99,47 @@ export const usePaperApi = () => {
       headers: authHeaders(),
     })
 
+  const getDraftArticle = (draftId) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}/article`, {
+      headers: authHeaders(),
+    })
+
+  const updateDraftArticle = (draftId, payload) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}/article`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: payload,
+    })
+
+  const validateDraftArticle = (draftId) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}/article/validate`, {
+      method: 'POST',
+      headers: authHeaders(),
+    })
+
+  const markDraftArticleReady = (draftId, payload) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}/article/ready`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: payload,
+    })
+
+  const reopenDraftArticle = (draftId) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}/article/reopen`, {
+      method: 'POST',
+      headers: authHeaders(),
+    })
+
+  const getPaperArticle = (paperId) =>
+    $fetch(`${apiBaseUrl}/api/papers/${paperId}/article`, {
+      headers: authHeaders(),
+    })
+
   const paperFileContentUrl = (paperId, fileId, mode = 'download') =>
     `${apiBaseUrl}/api/papers/${paperId}/files/${fileId}/content?mode=${encodeURIComponent(mode)}`
+
+  const draftFileContentUrl = (draftId, fileId, inline = true) =>
+    `${apiBaseUrl}/api/paper-submission-drafts/${draftId}/files/${fileId}/content?inline=${inline}`
 
   const ratePaper = (paperId, payload) =>
     $fetch(`${apiBaseUrl}/api/papers/${paperId}/ratings`, {
@@ -181,7 +220,14 @@ export const usePaperApi = () => {
     presignSubmissionFile,
     updateSubmissionFile,
     removeSubmissionFile,
+    getDraftArticle,
+    updateDraftArticle,
+    validateDraftArticle,
+    markDraftArticleReady,
+    reopenDraftArticle,
+    getPaperArticle,
     paperFileContentUrl,
+    draftFileContentUrl,
     ratePaper,
     getTopRatedPapers,
     getAuthorRankings,

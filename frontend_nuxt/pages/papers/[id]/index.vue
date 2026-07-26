@@ -118,6 +118,20 @@
             </figure>
           </section>
 
+          <section v-if="article?.sections?.length" id="article-content" class="journal-section journal-full-article">
+            <div class="journal-full-article-heading">
+              <div>
+                <h2>Article</h2>
+                <p>Read the structured online version of this manuscript.</p>
+              </div>
+              <details class="article-contents-menu">
+                <summary>Contents</summary>
+                <nav><a v-for="section in article.sections" :key="section.key" :href="`#${section.key}`">{{ section.heading }}</a></nav>
+              </details>
+            </div>
+            <PaperArticleRenderer :article="article" :figure-source="figureSource" />
+          </section>
+
           <section id="files" class="journal-section">
             <h2>Manuscript & Supporting Information</h2>
             <div v-if="allPublicFiles.length" class="journal-file-list">
@@ -366,6 +380,7 @@ import '~/assets/paper-platform.css'
 import DropdownMenu from '~/components/DropdownMenu.vue'
 import { authState, getToken } from '~/utils/auth'
 import TimeManager from '~/utils/time'
+import PaperArticleRenderer from '~/components/paper-article/PaperArticleRenderer.vue'
 import { toast } from '~/main'
 
 const route = useRoute()
@@ -377,6 +392,7 @@ const {
   runPostAction,
   clearPublicPaperCache,
   paperFileContentUrl,
+  getPaperArticle,
 } = usePaperApi()
 const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
@@ -396,6 +412,10 @@ if (paperError.value) {
 }
 
 const paper = computed(() => paperData.value || {})
+const { data: articleData } = await useAsyncData(`paper-article:${paperId.value}`, () =>
+  getPaperArticle(paperId.value).catch(() => ({ sections: [] })),
+)
+const article = computed(() => articleData.value || { sections: [] })
 const postCore = ref({})
 const postReactions = ref([])
 const paperComments = ref([])
@@ -421,6 +441,7 @@ const allPublicFiles = computed(() => {
       return file.fileRole !== 'TOC_GRAPHIC'
     })
 })
+const figureFiles = computed(() => [...(paper.value.manuscriptFiles || []), ...(paper.value.supplementaryFiles || [])])
 const primaryManuscript = computed(() =>
   (paper.value.manuscriptFiles || []).find((file) =>
     file.fileRole === 'MANUSCRIPT' || /manuscript/i.test(file.fileRole || ''),
@@ -824,6 +845,10 @@ const contentUrl = (file, mode = 'download') => {
   if (!file?.id) return ''
   return paperFileContentUrl(paperId.value, file.id, mode)
 }
+const figureSource = (block) => {
+  const file = figureFiles.value.find((item) => String(item.id) === String(block.fileId))
+  return file ? contentUrl(file, 'preview') : ''
+}
 const closePreview = () => {
   previewFile.value = null
   previewUrl.value = ''
@@ -915,6 +940,13 @@ const normalizeStatus = (value) => {
 .journal-toc-figure { width: min(720px, 100%); margin: 0; }
 .journal-toc-figure img { display: block; max-width: 100%; max-height: 520px; object-fit: contain; border: 1px solid #d5dbde; background: #fff; }
 .journal-toc-figure figcaption { margin-top: 8px; color: #66737a; font-size: 12px; line-height: 1.45; }
+.journal-full-article-heading { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
+.journal-full-article-heading p { margin: -10px 0 18px; color: #68747c; font-size: 13px; }
+.article-contents-menu { position: relative; flex: 0 0 auto; }
+.article-contents-menu summary { padding: 8px 10px; border: 1px solid #bdcbd0; color: #31586a; font-size: 12px; font-weight: 750; cursor: pointer; }
+.article-contents-menu nav { position: absolute; z-index: 2; right: 0; width: 230px; display: grid; gap: 2px; padding: 10px; border: 1px solid #cbd5d9; background: #fff; box-shadow: 0 6px 18px rgba(31, 48, 58, .12); }
+.article-contents-menu a { padding: 5px 3px; color: #52646e; font-size: 12px; text-decoration: none; }
+.article-contents-menu a:hover { color: #1f617f; }
 .journal-file-list { border: 1px solid #d2d9dc; border-bottom: 0; }
 .journal-file-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 11px; align-items: start; padding: 14px; border-bottom: 1px solid #d2d9dc; }
 .journal-file-row > svg { margin-top: 2px; color: #4c6877; }

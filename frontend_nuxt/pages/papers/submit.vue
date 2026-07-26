@@ -147,13 +147,32 @@
                 </div>
               </section>
 
+              <section id="article-content" class="submission-section" data-submission-section>
+                <SectionHeading
+                  number="4"
+                  title="Article Content"
+                  description="Build the online HTML article with sections, figures, equations, and tables."
+                  :issues="issuesForSection('article-content')"
+                />
+                <div class="article-content-launch">
+                  <div>
+                    <strong>{{ articleStatus === 'READY' ? 'Online article ready' : 'Prepare the online article' }}</strong>
+                    <span>{{ articleStatus === 'READY' ? 'The article preview is ready for final submission review.' : 'The DOCX remains archived, while this structured version becomes the reader-facing article.' }}</span>
+                  </div>
+                  <NuxtLink class="submission-secondary-button" :to="`/papers/submit/${draft.id}/content`">
+                    {{ articleStatus === 'READY' ? 'Edit Article' : 'Open Article Editor' }}
+                    <Right :size="16" />
+                  </NuxtLink>
+                </div>
+              </section>
+
               <section
                 id="author-information"
                 class="submission-section"
                 data-submission-section
               >
                 <SectionHeading
-                  number="4"
+                  number="5"
                   title="Author Information"
                   description="Add every author in publication order and assign exactly one corresponding author."
                   :issues="issuesForSection('author-information')"
@@ -167,7 +186,7 @@
                 data-submission-section
               >
                 <SectionHeading
-                  number="5"
+                  number="6"
                   title="Funding Information"
                   description="Record each funder and grant identifier, or confirm that no funding was received."
                   :issues="issuesForSection('funding-information')"
@@ -215,7 +234,7 @@
                 data-submission-section
               >
                 <SectionHeading
-                  number="6"
+                  number="7"
                   title="Details & Comments"
                   description="Complete the public declarations and final author confirmations."
                   :issues="issuesForSection('details-comments')"
@@ -401,6 +420,8 @@ const router = useRouter()
 const keywordInput = ref(null)
 const keywordDraft = ref('')
 const continuing = ref(false)
+const articleStatus = ref('NOT_STARTED')
+const articleApi = usePaperApi()
 
 const {
   draft,
@@ -437,6 +458,11 @@ watch(
 onMounted(async () => {
   try {
     const record = await loadOrCreate(route.query.draft || null)
+    try {
+      articleStatus.value = (await articleApi.getDraftArticle(record.id))?.status || 'NOT_STARTED'
+    } catch {
+      articleStatus.value = 'NOT_STARTED'
+    }
     if (String(route.query.draft || '') !== String(record.id)) {
       await router.replace({ query: { ...route.query, draft: record.id } })
     }
@@ -465,6 +491,7 @@ const localSectionComplete = (sectionId) => {
   if (sectionId === 'manuscript-information') {
     return Boolean(form.title && form.abstractText && form.subjectArea && form.keywords.length)
   }
+  if (sectionId === 'article-content') return articleStatus.value === 'READY'
   if (sectionId === 'author-information') {
     if (!form.authors.length) return false
     const corresponding = form.authors.filter((author) => author.correspondingAuthor).length
@@ -680,6 +707,10 @@ button.invalid .submission-progress-node { border-color: #b34a40; background: #f
 .submission-text-button.danger { color: #a23c34; }
 .submission-primary-button { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 10px 18px; border: 1px solid #164d67; background: #1f617f; color: #fff; font-weight: 800; cursor: pointer; }
 .submission-primary-button:disabled { opacity: .55; cursor: not-allowed; }
+.article-content-launch { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px; border: 1px solid #d0dce0; background: #f5f8f8; }
+.article-content-launch > div { display: grid; gap: 5px; }
+.article-content-launch span { color: #68747c; font-size: 13px; line-height: 1.5; }
+.article-content-launch .submission-secondary-button { flex: 0 0 auto; text-decoration: none; }
 input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid rgba(32, 109, 147, .25); outline-offset: 1px; }
 @keyframes submission-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .submission-save-state.saving .submission-save-dot { animation: none; } }
@@ -704,5 +735,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
   .submission-action-bar { min-height: 88px; padding: 10px 12px; }
   .submission-action-bar > div span { display: none; }
   .submission-primary-button { flex: 1; max-width: 240px; }
+  .article-content-launch { align-items: stretch; flex-direction: column; }
+  .article-content-launch .submission-secondary-button { justify-content: center; }
 }
 </style>
