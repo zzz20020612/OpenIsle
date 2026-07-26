@@ -14,6 +14,7 @@ import com.openisle.exception.DraftVersionConflictException;
 import com.openisle.exception.NotFoundException;
 import com.openisle.model.PaperSubmissionDraft;
 import com.openisle.model.PaperSubmissionDraftStatus;
+import com.openisle.model.PaperArticleStatus;
 import com.openisle.model.PaperSubmissionFile;
 import com.openisle.model.PaperProfile;
 import com.openisle.model.User;
@@ -40,6 +41,7 @@ public class PaperSubmissionDraftService {
   private final PaperProfileRepository paperProfileRepository;
   private final UserRepository userRepository;
   private final PaperSubmissionValidator validator;
+  private final PaperArticleService articleService;
   private final PaperService paperService;
   private final ObjectMapper objectMapper;
 
@@ -133,6 +135,9 @@ public class PaperSubmissionDraftService {
       return toSubmissionResult(draft.getSubmittedPaper());
     }
     requireEditable(draft);
+    if (draft.getArticleStatus() != PaperArticleStatus.READY) {
+      throw new IllegalArgumentException("Complete and approve the online article before submitting");
+    }
     if (request == null || request.getVersion() != draft.getVersion()) {
       throw new DraftVersionConflictException(draft.getVersion());
     }
@@ -160,6 +165,8 @@ public class PaperSubmissionDraftService {
     PaperProfile paper = paperProfileRepository
       .findById(submitted.getId())
       .orElseThrow(() -> new IllegalStateException("Submitted paper could not be loaded"));
+    articleService.copyToPaper(draft, paper);
+    paperProfileRepository.saveAndFlush(paper);
     draft.setSubmittedPaper(paper);
     draft.setIdempotencyKey(clean(request.getIdempotencyKey()));
     draft.setStatus(PaperSubmissionDraftStatus.SUBMITTED);
@@ -211,6 +218,9 @@ public class PaperSubmissionDraftService {
     );
     dto.setCreatedAt(draft.getCreatedAt());
     dto.setUpdatedAt(draft.getUpdatedAt());
+    dto.setArticleStatus(draft.getArticleStatus());
+    dto.setArticleVersion(draft.getArticleVersion());
+    dto.setArticleReadyAt(draft.getArticleReadyAt());
     return dto;
   }
 
