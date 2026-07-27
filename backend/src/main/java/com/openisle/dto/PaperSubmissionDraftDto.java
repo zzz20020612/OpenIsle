@@ -16,6 +16,8 @@ public class PaperSubmissionDraftDto {
   private PaperSubmitRequest formData;
   private List<PaperSubmissionFileDto> files;
   private Long submittedPaperId;
+  private Long revisionSourcePaperId;
+  private String revisionSourcePaperTitle;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
   private PaperArticleStatus articleStatus;

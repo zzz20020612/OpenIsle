@@ -62,6 +62,10 @@ public class PaperSubmissionDraft {
   @JoinColumn(name = "submitted_paper_id", unique = true)
   private PaperProfile submittedPaper;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "revision_source_paper_id")
+  private PaperProfile revisionSourcePaper;
+
   @Column(name = "idempotency_key", unique = true)
   private String idempotencyKey;
 

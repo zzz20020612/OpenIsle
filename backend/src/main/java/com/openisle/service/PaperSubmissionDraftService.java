@@ -13,6 +13,7 @@ import com.openisle.dto.PaperSubmitRequest;
 import com.openisle.exception.DraftVersionConflictException;
 import com.openisle.exception.NotFoundException;
 import com.openisle.model.PaperSubmissionDraft;
+import com.openisle.model.PaperSubmissionDraftKind;
 import com.openisle.model.PaperSubmissionDraftStatus;
 import com.openisle.model.PaperArticleStatus;
 import com.openisle.model.PaperSubmissionFile;
@@ -61,14 +62,30 @@ public class PaperSubmissionDraftService {
   }
 
   @Transactional(readOnly = true)
-  public Optional<PaperSubmissionDraftDto> getCurrentDraft(String username) {
+  public Optional<PaperSubmissionDraftDto> getCurrentDraft(
+    String username,
+    PaperSubmissionDraftKind kind
+  ) {
     User user = requireUser(username);
-    return draftRepository
-      .findFirstByCreatedByIdAndStatusOrderByUpdatedAtDescIdDesc(
+    Optional<PaperSubmissionDraft> draft = switch (
+      kind != null ? kind : PaperSubmissionDraftKind.ANY
+    ) {
+      case ORIGINAL -> draftRepository
+        .findFirstByCreatedByIdAndStatusAndRevisionSourcePaperIsNullOrderByUpdatedAtDescIdDesc(
+          user.getId(),
+          PaperSubmissionDraftStatus.IN_PROGRESS
+        );
+      case REVISION -> draftRepository
+        .findFirstByCreatedByIdAndStatusAndRevisionSourcePaperIsNotNullOrderByUpdatedAtDescIdDesc(
+          user.getId(),
+          PaperSubmissionDraftStatus.IN_PROGRESS
+        );
+      case ANY -> draftRepository.findFirstByCreatedByIdAndStatusOrderByUpdatedAtDescIdDesc(
         user.getId(),
         PaperSubmissionDraftStatus.IN_PROGRESS
-      )
-      .map(this::toDto);
+      );
+    };
+    return draft.map(this::toDto);
   }
 
   @Transactional(readOnly = true)
@@ -215,6 +232,12 @@ public class PaperSubmissionDraftService {
     );
     dto.setSubmittedPaperId(
       draft.getSubmittedPaper() != null ? draft.getSubmittedPaper().getId() : null
+    );
+    dto.setRevisionSourcePaperId(
+      draft.getRevisionSourcePaper() != null ? draft.getRevisionSourcePaper().getId() : null
+    );
+    dto.setRevisionSourcePaperTitle(
+      draft.getRevisionSourcePaper() != null ? draft.getRevisionSourcePaper().getTitle() : null
     );
     dto.setCreatedAt(draft.getCreatedAt());
     dto.setUpdatedAt(draft.getUpdatedAt());

@@ -78,13 +78,13 @@ export const usePaperSubmissionDraft = () => {
     })
   }
 
-  const loadOrCreate = async (draftId) => {
+  const loadOrCreate = async (draftId, { currentKind = 'ANY' } = {}) => {
     loading.value = true
     lastError.value = ''
     try {
       let record = draftId ? await api.getSubmissionDraft(draftId) : null
       if (!record) {
-        record = await api.getCurrentSubmissionDraft()
+        record = await api.getCurrentSubmissionDraft(currentKind)
       }
       if (!record) {
         record = await api.createSubmissionDraft()

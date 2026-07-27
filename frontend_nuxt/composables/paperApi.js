@@ -49,9 +49,10 @@ export const usePaperApi = () => {
       headers: authHeaders(),
     })
 
-  const getCurrentSubmissionDraft = () =>
+  const getCurrentSubmissionDraft = (kind = 'ANY') =>
     $fetch(`${apiBaseUrl}/api/paper-submission-drafts/current`, {
       headers: authHeaders(),
+      params: { kind },
     })
 
   const getSubmissionDraft = (draftId) =>

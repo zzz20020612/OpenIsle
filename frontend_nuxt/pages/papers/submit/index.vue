@@ -4,8 +4,8 @@
       <header class="submission-header">
         <div>
           <NuxtLink class="submission-back-link" to="/papers">Papers</NuxtLink>
-          <h1>Submit a Manuscript</h1>
-          <p>Prepare the files, metadata, authors, funding, and declarations for one research record.</p>
+          <h1>{{ isRevisionDraft ? 'Revise Manuscript' : 'Submit a Manuscript' }}</h1>
+          <p>{{ submissionDescription }}</p>
         </div>
         <div class="submission-save-state" :class="saveState">
           <span class="submission-save-dot" aria-hidden="true"></span>
@@ -16,6 +16,18 @@
       <div v-if="loading" class="submission-loading">Opening your submission draft...</div>
 
       <template v-else-if="draft">
+        <div v-if="isRevisionDraft" class="submission-alert revision" role="status">
+          <Attention :size="20" />
+          <div>
+            <strong>Revision draft</strong>
+            <span>
+              You are revising “{{ draft.revisionSourcePaperTitle || `Paper #${draft.revisionSourcePaperId}` }}”.
+              Starting a new submission from the global Submit action will not replace this draft.
+            </span>
+          </div>
+          <NuxtLink :to="`/papers/${draft.revisionSourcePaperId}`">Open paper</NuxtLink>
+        </div>
+
         <div v-if="conflict" class="submission-alert warning" role="alert">
           <Attention :size="20" />
           <div>
@@ -444,6 +456,12 @@ const {
   issuesForSection,
 } = usePaperSubmissionDraft()
 
+const isRevisionDraft = computed(() => Boolean(draft.value?.revisionSourcePaperId))
+const submissionDescription = computed(() => isRevisionDraft.value
+  ? 'Update the manuscript, article content, metadata, and declarations requested in the screening decision.'
+  : 'Prepare the files, metadata, authors, funding, and declarations for one research record.'
+)
+
 const sectionIds = SUBMISSION_SECTIONS.map((section) => section.id)
 const { activeSection, start: startScrollspy, scrollTo } = useSubmissionScrollspy(sectionIds)
 
@@ -455,9 +473,9 @@ watch(
   },
 )
 
-onMounted(async () => {
+const openSubmissionDraft = async (requestedDraftId, { initializeWorkspace = false } = {}) => {
   try {
-    const record = await loadOrCreate(route.query.draft || null)
+    const record = await loadOrCreate(requestedDraftId || null, { currentKind: 'ORIGINAL' })
     try {
       articleStatus.value = (await articleApi.getDraftArticle(record.id))?.status || 'NOT_STARTED'
     } catch {
@@ -467,7 +485,7 @@ onMounted(async () => {
       await router.replace({ query: { ...route.query, draft: record.id } })
     }
     await nextTick()
-    startScrollspy()
+    if (initializeWorkspace) startScrollspy()
     const hashSection = route.hash?.replace('#', '')
     if (hashSection && sectionIds.includes(hashSection)) {
       setTimeout(() => scrollTo(hashSection), 50)
@@ -477,6 +495,19 @@ onMounted(async () => {
   } catch {
     // The composable exposes the actionable error in the page.
   }
+}
+
+watch(
+  () => route.query.draft,
+  (requestedDraftId) => {
+    if (!draft.value) return
+    if (String(requestedDraftId || '') === String(draft.value.id)) return
+    void openSubmissionDraft(requestedDraftId)
+  },
+)
+
+onMounted(async () => {
+  await openSubmissionDraft(route.query.draft, { initializeWorkspace: true })
 })
 
 const uploadedRole = (role) =>
@@ -644,8 +675,10 @@ const formatSavedTime = (value) => {
 .submission-alert { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border: 1px solid; background: #fff; font-size: 13px; }
 .submission-alert > div { display: grid; gap: 2px; flex: 1; }
 .submission-alert.warning { border-color: #d7b36c; color: #684d20; background: #fffaf0; }
+.submission-alert.revision { border-color: #9ebdca; color: #244f63; background: #f2f8fa; }
 .submission-alert.error { border-color: #d7a29d; color: #8d3028; background: #fff7f6; }
 .submission-alert button { min-height: 38px; display: inline-flex; align-items: center; gap: 7px; border: 1px solid currentColor; background: transparent; padding: 7px 10px; color: inherit; font-weight: 700; cursor: pointer; }
+.submission-alert > a { flex: 0 0 auto; padding: 8px 10px; border: 1px solid currentColor; color: inherit; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .submission-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 24px; align-items: start; }
 .submission-main-column { display: grid; gap: 16px; min-width: 0; }
 .submission-section { scroll-margin-top: 92px; padding: 24px; border: 1px solid #d2d9dd; background: #fff; }

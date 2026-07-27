@@ -9,6 +9,7 @@ import com.openisle.dto.PaperSubmissionFileUpdateRequest;
 import com.openisle.dto.PaperSubmissionResultDto;
 import com.openisle.dto.PaperSubmissionSubmitRequest;
 import com.openisle.dto.PaperSubmissionValidationDto;
+import com.openisle.model.PaperSubmissionDraftKind;
 import com.openisle.service.PaperSubmissionDraftService;
 import com.openisle.service.PaperSubmissionFileService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,9 +52,12 @@ public class PaperSubmissionDraftController {
   @GetMapping("/current")
   @Operation(summary = "Restore current paper submission draft")
   @ApiResponse(responseCode = "204", description = "No active submission draft")
-  public ResponseEntity<PaperSubmissionDraftDto> getCurrentDraft(Authentication authentication) {
+  public ResponseEntity<PaperSubmissionDraftDto> getCurrentDraft(
+    @RequestParam(defaultValue = "ANY") PaperSubmissionDraftKind kind,
+    Authentication authentication
+  ) {
     return draftService
-      .getCurrentDraft(authentication.getName())
+      .getCurrentDraft(authentication.getName(), kind)
       .map(ResponseEntity::ok)
       .orElseGet(() -> ResponseEntity.noContent().build());
   }

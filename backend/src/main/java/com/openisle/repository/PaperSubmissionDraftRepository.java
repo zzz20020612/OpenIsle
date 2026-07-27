@@ -16,6 +16,18 @@ public interface PaperSubmissionDraftRepository
     PaperSubmissionDraftStatus status
   );
 
+  Optional<PaperSubmissionDraft>
+    findFirstByCreatedByIdAndStatusAndRevisionSourcePaperIsNullOrderByUpdatedAtDescIdDesc(
+      Long createdById,
+      PaperSubmissionDraftStatus status
+    );
+
+  Optional<PaperSubmissionDraft>
+    findFirstByCreatedByIdAndStatusAndRevisionSourcePaperIsNotNullOrderByUpdatedAtDescIdDesc(
+      Long createdById,
+      PaperSubmissionDraftStatus status
+    );
+
   Optional<PaperSubmissionDraft> findByIdAndCreatedById(Long id, Long createdById);
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
