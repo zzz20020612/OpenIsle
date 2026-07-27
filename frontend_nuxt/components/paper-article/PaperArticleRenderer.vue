@@ -18,6 +18,7 @@ import katex from 'katex'
 import PaperEquation from './PaperEquation.vue'
 import PaperFigure from './PaperFigure.vue'
 import PaperTable from './PaperTable.vue'
+import { renderInlineMath } from '~/utils/paperMath'
 
 const props = defineProps({
   article: { type: Object, default: () => ({ sections: [] }) },
@@ -30,23 +31,10 @@ const equationMap = computed(() => new Map(allBlocks.value.filter((block) => blo
 const figureMap = computed(() => new Map(allBlocks.value.filter((block) => block.type === 'FIGURE').map((block, index) => [block.key, index + 1])))
 const tableMap = computed(() => new Map(allBlocks.value.filter((block) => block.type === 'TABLE').map((block, index) => [block.key, index + 1])))
 
-const escapeHtml = (value = '') => String(value)
-  .replaceAll('&', '&amp;')
-  .replaceAll('<', '&lt;')
-  .replaceAll('>', '&gt;')
-  .replaceAll('"', '&quot;')
-  .replaceAll("'", '&#039;')
-
-const renderInline = (value = '') => {
-  const escaped = escapeHtml(value)
-  return escaped.replace(/\$([^$\n]+)\$/g, (_, latex) => {
-    try {
-      return katex.renderToString(latex, { throwOnError: false, trust: false })
-    } catch {
-      return `<code>${escapeHtml(latex)}</code>`
-    }
-  }).replaceAll('\n', '<br>')
-}
+const renderInline = (value = '') =>
+  renderInlineMath(value, (latex) =>
+    katex.renderToString(latex, { throwOnError: true, trust: false }),
+  )
 
 const equationNumber = (block) => equationMap.value.get(block.key) || 0
 const figureLabel = (block) => `Figure ${figureMap.value.get(block.key) || ''}`

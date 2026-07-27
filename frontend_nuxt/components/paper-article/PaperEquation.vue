@@ -1,6 +1,12 @@
 <template>
   <div class="article-equation" :class="{ invalid: renderError }">
-    <div v-if="renderError" class="equation-error">Equation preview unavailable: {{ renderError }}</div>
+    <div
+      v-if="renderError"
+      class="equation-error"
+      :title="renderError"
+    >
+      Equation preview unavailable. Please correct the imported formula in the article editor and check it in Preview Article.
+    </div>
     <div v-else class="equation-render" v-html="rendered" />
     <span v-if="block.numbered" class="equation-number">({{ number }})</span>
   </div>
@@ -9,6 +15,7 @@
 <script setup>
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
+import { normalizeLatex } from '~/utils/paperMath'
 
 const props = defineProps({
   block: { type: Object, required: true },
@@ -20,12 +27,15 @@ const rendered = computed(() => {
   renderError.value = ''
   if (!props.block?.latex?.trim()) return ''
   try {
-    return katex.renderToString(props.block.latex, {
-      displayMode: true,
-      throwOnError: true,
-      trust: false,
-      strict: 'warn',
-    })
+    return katex.renderToString(
+      normalizeLatex(props.block.latex, { stripEquationNumber: props.block.numbered }),
+      {
+        displayMode: true,
+        throwOnError: true,
+        trust: false,
+        strict: 'warn',
+      },
+    )
   } catch (error) {
     renderError.value = error?.message || 'Check the LaTeX syntax.'
     return ''

@@ -45,10 +45,21 @@ import BaseInput from '~/components/BaseInput.vue'
 import ThirdPartyAuth from '~/components/ThirdPartyAuth.vue'
 import { registerPush } from '~/utils/push'
 const config = useRuntimeConfig()
+const route = useRoute()
+const router = useRouter()
 const API_BASE_URL = config.public.apiBaseUrl
 const username = ref('')
 const password = ref('')
 const isWaitingForLogin = ref(false)
+
+const loginRedirectPath = computed(() => {
+  const redirect = Array.isArray(route.query.redirect)
+    ? route.query.redirect[0]
+    : route.query.redirect
+  return typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')
+    ? redirect
+    : '/papers'
+})
 
 const submitLogin = async () => {
   try {
@@ -60,10 +71,10 @@ const submitLogin = async () => {
     })
     const data = await res.json().catch(() => ({}))
     if (res.ok && data.token) {
-      setToken(data.token)
+      await setToken(data.token)
       toast.success('登录成功')
-      registerPush()
-      await navigateTo('/', { replace: true })
+      await router.replace(loginRedirectPath.value)
+      void registerPush()
     } else if (data.reason_code === 'EMAIL_SEND_FAILED') {
       const msg = data.error || data.message || res.statusText || '登录失败'
       toast.error(`${res.status} ${msg} (${data.reason_code})`)
