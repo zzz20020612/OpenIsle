@@ -65,6 +65,9 @@
       <div v-else-if="draftChoiceError && !pendingOriginalDraft && !draft" class="submission-loading error" role="alert">
         {{ draftChoiceError }}
       </div>
+      <div v-else-if="pendingOriginalDraft" class="submission-loading">
+        Choose whether to continue your draft or start a new submission.
+      </div>
 
       <template v-else-if="draft">
         <div v-if="isRevisionDraft" class="submission-alert revision" role="status">

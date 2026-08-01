@@ -77,6 +77,18 @@
             <PreviewOpen :size="17" /> Preview Supporting Information
           </button>
           <button
+            v-if="canCreateRevision"
+            type="button"
+            class="journal-action"
+            :disabled="isCreatingRevision"
+            @click="createRevision"
+          >{{ isCreatingRevision ? 'Opening revision...' : 'Revise Submission' }}</button>
+          <NuxtLink
+            v-else-if="paper.latestRevisionPaperId"
+            class="journal-action"
+            :to="`/papers/${paper.latestRevisionPaperId}`"
+          >View Latest Revision</NuxtLink>
+          <button
             v-if="canSubscribeToDiscussion"
             class="journal-action"
             type="button"
@@ -407,6 +419,7 @@ import { toast } from '~/main'
 const route = useRoute()
 const {
   getPaper,
+  createRevisionDraft,
   ratePaper,
   runAdminPaperAction,
   runAdminPostAction,
@@ -456,6 +469,7 @@ const discussionCount = computed(() => paperComments.value.length)
 const previewFile = ref(null)
 const previewUrl = ref('')
 const previewObjectUrl = ref('')
+const isCreatingRevision = ref(false)
 const allPublicFiles = computed(() => {
   const seen = new Set()
   return [...(paper.value.manuscriptFiles || []), ...(paper.value.supplementaryFiles || [])]
@@ -541,6 +555,12 @@ const rating = reactive({
 const submitting = ref(false)
 const ratingMessage = ref('')
 const isAdmin = computed(() => authState.role === 'ADMIN')
+const canCreateRevision = computed(() =>
+  authState.loggedIn &&
+  isPostAuthor.value &&
+  paper.value.publicationStatus === 'NEEDS_REVISION' &&
+  !paper.value.latestRevisionPaperId
+)
 const canManageDiscussion = computed(() => isAdmin.value || isPostAuthor.value)
 const isRunningPaperAction = ref(false)
 const paperActionMenuItems = computed(() => {
@@ -577,6 +597,18 @@ const paperActionMenuItems = computed(() => {
   }
   return items
 })
+const createRevision = async () => {
+  if (!canCreateRevision.value || isCreatingRevision.value) return
+  isCreatingRevision.value = true
+  try {
+    const draft = await createRevisionDraft(paper.value.id)
+    await navigateTo(`/papers/submit?draft=${draft.id}`)
+  } catch (error) {
+    toast.error(error?.data?.error || error?.message || 'Unable to create a revision draft.')
+  } finally {
+    isCreatingRevision.value = false
+  }
+}
 const screeningDimensions = computed(() => {
   try {
     const dimensions = JSON.parse(paper.value.screening?.issuesJson || '[]')

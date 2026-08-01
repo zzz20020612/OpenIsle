@@ -49,6 +49,12 @@ export const usePaperApi = () => {
       headers: authHeaders(),
     })
 
+  const createRevisionDraft = (paperId) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/revisions/${paperId}`, {
+      method: 'POST',
+      headers: authHeaders(),
+    })
+
   const getCurrentSubmissionDraft = (kind = 'ANY') =>
     $fetch(`${apiBaseUrl}/api/paper-submission-drafts/current`, {
       headers: authHeaders(),
@@ -219,6 +225,7 @@ export const usePaperApi = () => {
     getPaper,
     submitPaper,
     createSubmissionDraft,
+    createRevisionDraft,
     getCurrentSubmissionDraft,
     getSubmissionDraft,
     updateSubmissionDraft,

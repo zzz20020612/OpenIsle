@@ -113,6 +113,13 @@ public class PaperProfile {
   @JoinColumn(name = "created_by")
   private User createdBy;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "revision_of_paper_id")
+  private PaperProfile revisionOfPaper;
+
+  @Column(name = "revision_number", nullable = false)
+  private int revisionNumber = 1;
+
   @Column(name = "published_at")
   private LocalDateTime publishedAt;
 

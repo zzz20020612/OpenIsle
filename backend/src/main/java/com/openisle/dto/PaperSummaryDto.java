@@ -17,6 +17,9 @@ public class PaperSummaryDto {
   private String paperType;
   private PaperPublicationStatus publicationStatus;
   private PaperScreeningStatus screeningStatus;
+  private Long revisionOfPaperId;
+  private int revisionNumber;
+  private Long latestRevisionPaperId;
   private String primaryInstitutionName;
   private List<PaperAuthorDto> authors;
   private LocalDateTime publishedAt;

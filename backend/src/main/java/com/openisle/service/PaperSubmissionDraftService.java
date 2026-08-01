@@ -9,6 +9,10 @@ import com.openisle.dto.PaperSubmissionResultDto;
 import com.openisle.dto.PaperSubmissionSubmitRequest;
 import com.openisle.dto.PaperSubmissionValidationDto;
 import com.openisle.dto.PaperDetailDto;
+import com.openisle.dto.PaperAffiliationRequest;
+import com.openisle.dto.PaperArticleDto;
+import com.openisle.dto.PaperAuthorRequest;
+import com.openisle.dto.PaperFundingRequest;
 import com.openisle.dto.PaperSubmitRequest;
 import com.openisle.exception.DraftVersionConflictException;
 import com.openisle.exception.NotFoundException;
@@ -16,14 +20,24 @@ import com.openisle.model.PaperSubmissionDraft;
 import com.openisle.model.PaperSubmissionDraftKind;
 import com.openisle.model.PaperSubmissionDraftStatus;
 import com.openisle.model.PaperArticleStatus;
+import com.openisle.model.PaperAuthor;
+import com.openisle.model.PaperAuthorAffiliation;
+import com.openisle.model.PaperFile;
+import com.openisle.model.PaperPublicationStatus;
 import com.openisle.model.PaperSubmissionFile;
 import com.openisle.model.PaperProfile;
 import com.openisle.model.User;
 import com.openisle.repository.PaperProfileRepository;
+import com.openisle.repository.PaperAuthorAffiliationRepository;
+import com.openisle.repository.PaperAuthorRepository;
+import com.openisle.repository.PaperFileRepository;
+import com.openisle.repository.PaperFundingRecordRepository;
 import com.openisle.repository.PaperSubmissionDraftRepository;
 import com.openisle.repository.PaperSubmissionFileRepository;
 import com.openisle.repository.UserRepository;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -40,6 +54,10 @@ public class PaperSubmissionDraftService {
   private final PaperSubmissionDraftRepository draftRepository;
   private final PaperSubmissionFileRepository fileRepository;
   private final PaperProfileRepository paperProfileRepository;
+  private final PaperAuthorRepository paperAuthorRepository;
+  private final PaperAuthorAffiliationRepository paperAuthorAffiliationRepository;
+  private final PaperFundingRecordRepository paperFundingRecordRepository;
+  private final PaperFileRepository paperFileRepository;
   private final UserRepository userRepository;
   private final PaperSubmissionValidator validator;
   private final PaperArticleService articleService;
@@ -59,6 +77,43 @@ public class PaperSubmissionDraftService {
     draft.setCurrentSection(DEFAULT_SECTION);
     draft.setStatus(PaperSubmissionDraftStatus.IN_PROGRESS);
     return toDto(draftRepository.saveAndFlush(draft));
+  }
+
+  @Transactional
+  public PaperSubmissionDraftDto createRevisionDraft(String username, Long paperId) {
+    User user = requireUser(username);
+    PaperProfile source = paperProfileRepository.findById(paperId)
+      .orElseThrow(() -> new NotFoundException("Paper not found"));
+    if (!source.getCreatedBy().getId().equals(user.getId())) {
+      throw new AccessDeniedException("Only the submitting author can create a revision");
+    }
+    if (source.getPublicationStatus() != PaperPublicationStatus.NEEDS_REVISION) {
+      throw new IllegalStateException("A revision can only be created for a paper that needs revision");
+    }
+    if (paperProfileRepository.findFirstByRevisionOfPaperIdOrderByRevisionNumberDescIdDesc(paperId).isPresent()) {
+      throw new IllegalStateException("A newer revision has already been submitted for this paper");
+    }
+    var existing = draftRepository.findFirstByRevisionSourcePaperIdAndStatusOrderByUpdatedAtDescIdDesc(
+      paperId,
+      PaperSubmissionDraftStatus.IN_PROGRESS
+    );
+    if (existing.isPresent()) {
+      return toDto(existing.get());
+    }
+
+    PaperSubmissionDraft draft = new PaperSubmissionDraft();
+    draft.setCreatedBy(user);
+    draft.setRevisionSourcePaper(source);
+    draft.setManuscriptType(source.getPaperType());
+    draft.setFormDataJson(writeForm(formFromPaper(source)));
+    draft.setCurrentSection(DEFAULT_SECTION);
+    draft.setStatus(PaperSubmissionDraftStatus.IN_PROGRESS);
+    draft = draftRepository.saveAndFlush(draft);
+
+    Map<Long, Long> revisionFileIds = copyFilesToRevisionDraft(source, draft);
+    copyArticleToRevisionDraft(source, draft, revisionFileIds);
+    draftRepository.saveAndFlush(draft);
+    return toDto(draft);
   }
 
   @Transactional(readOnly = true)
@@ -182,6 +237,12 @@ public class PaperSubmissionDraftService {
     PaperProfile paper = paperProfileRepository
       .findById(submitted.getId())
       .orElseThrow(() -> new IllegalStateException("Submitted paper could not be loaded"));
+    if (draft.getRevisionSourcePaper() != null) {
+      PaperProfile source = draft.getRevisionSourcePaper();
+      paper.setRevisionOfPaper(source);
+      paper.setRevisionNumber(Math.max(source.getRevisionNumber(), 1) + 1);
+      paperProfileRepository.saveAndFlush(paper);
+    }
     articleService.copyToPaper(draft, paper);
     paperProfileRepository.saveAndFlush(paper);
     draft.setSubmittedPaper(paper);
@@ -262,6 +323,152 @@ public class PaperSubmissionDraftService {
     dto.setCreatedAt(file.getCreatedAt());
     dto.setUpdatedAt(file.getUpdatedAt());
     return dto;
+  }
+
+  private PaperSubmitRequest formFromPaper(PaperProfile paper) {
+    PaperSubmitRequest form = new PaperSubmitRequest();
+    form.setTitle(paper.getTitle());
+    form.setAbstractText(paper.getAbstractText());
+    form.setKeywords(lines(paper.getKeywords()));
+    form.setReferences(lines(paper.getReferencesText()));
+    form.setSubjectArea(paper.getSubjectArea());
+    form.setPaperType(paper.getPaperType());
+    form.setContent(paper.getPost().getContent());
+    form.setPrimaryInstitutionName(
+      paper.getPrimaryInstitution() == null ? null : paper.getPrimaryInstitution().getName()
+    );
+    form.setFundingStatement(paper.getFundingStatement());
+    form.setConflictOfInterest(paper.getConflictOfInterest());
+    form.setDataAvailability(paper.getDataAvailability());
+    form.setEthicsStatement(paper.getEthicsStatement());
+    form.setPreprintStatement(paper.getPreprintStatement());
+    form.setAiUseDisclosure(paper.getAiUseDisclosure());
+    form.setPrivateComments(paper.getPrivateComments());
+    form.setAuthors(
+      paperAuthorRepository.findByPaperIdOrderByAuthorOrderAsc(paper.getId()).stream()
+        .map(this::authorRequestFromPaperAuthor)
+        .toList()
+    );
+    form.setFunding(
+      paperFundingRecordRepository.findByPaperIdOrderByDisplayOrderAscIdAsc(paper.getId()).stream()
+        .map(record -> {
+          PaperFundingRequest funding = new PaperFundingRequest();
+          funding.setFunderName(record.getFunderName());
+          funding.setGrantId(record.getGrantId());
+          return funding;
+        })
+        .toList()
+    );
+    form.setNoFundingReceived(form.getFunding().isEmpty());
+    return form;
+  }
+
+  private PaperAuthorRequest authorRequestFromPaperAuthor(PaperAuthor author) {
+    PaperAuthorRequest request = new PaperAuthorRequest();
+    request.setDisplayName(author.getDisplayName());
+    request.setGivenName(author.getGivenName());
+    request.setMiddleName(author.getMiddleName());
+    request.setFamilyName(author.getFamilyName());
+    request.setEmail(author.getEmail());
+    request.setOrcid(author.getOrcid());
+    request.setAuthorRole(author.getAuthorRole());
+    request.setInstitutionName(author.getInstitution() == null ? null : author.getInstitution().getName());
+    request.setCountry(author.getCountry());
+    request.setCorrespondingAuthor(author.isCorrespondingAuthor());
+    request.setEqualContribution(author.isEqualContribution());
+    request.setContributionRoles(lines(author.getContributionRoles()));
+    request.setAffiliations(
+      paperAuthorAffiliationRepository.findByPaperAuthorIdOrderByDisplayOrderAscIdAsc(author.getId())
+        .stream()
+        .map(this::affiliationRequestFromPaperAffiliation)
+        .toList()
+    );
+    return request;
+  }
+
+  private PaperAffiliationRequest affiliationRequestFromPaperAffiliation(
+    PaperAuthorAffiliation affiliation
+  ) {
+    PaperAffiliationRequest request = new PaperAffiliationRequest();
+    request.setOrganizationName(affiliation.getOrganizationName());
+    request.setDepartment(affiliation.getDepartment());
+    request.setAddressLine1(affiliation.getAddressLine1());
+    request.setAddressLine2(affiliation.getAddressLine2());
+    request.setCountry(affiliation.getCountry());
+    request.setRegion(affiliation.getRegion());
+    request.setCity(affiliation.getCity());
+    request.setPostalCode(affiliation.getPostalCode());
+    request.setPrimaryAffiliation(affiliation.isPrimaryAffiliation());
+    return request;
+  }
+
+  private Map<Long, Long> copyFilesToRevisionDraft(
+    PaperProfile source,
+    PaperSubmissionDraft draft
+  ) {
+    Map<Long, Long> revisionFileIds = new HashMap<>();
+    List<PaperFile> sourceFiles = paperFileRepository
+      .findByPaperIdOrderBySortOrderAscIdAsc(source.getId());
+    List<PaperSubmissionFile> copiedFiles = sourceFiles
+      .stream()
+      .map(file -> {
+        PaperSubmissionFile copy = new PaperSubmissionFile();
+        copy.setDraft(draft);
+        copy.setOriginalFileName(file.getOriginalFileName());
+        copy.setDisplayName(file.getDisplayName());
+        copy.setContentType(file.getContentType());
+        copy.setFileSize(file.getFileSize());
+        copy.setRole(file.getRole());
+        copy.setDescription(file.getDescription());
+        copy.setVisibility(file.getVisibility());
+        copy.setStorageKey(file.getStorageKey());
+        copy.setUploadStatus(file.getUploadStatus());
+        copy.setSortOrder(file.getSortOrder());
+        return copy;
+      })
+      .toList();
+    List<PaperSubmissionFile> savedFiles = fileRepository.saveAllAndFlush(copiedFiles);
+    for (int index = 0; index < savedFiles.size(); index++) {
+      revisionFileIds.put(
+        sourceFiles.get(index).getId(),
+        savedFiles.get(index).getId()
+      );
+    }
+    return revisionFileIds;
+  }
+
+  private void copyArticleToRevisionDraft(
+    PaperProfile source,
+    PaperSubmissionDraft draft,
+    Map<Long, Long> revisionFileIds
+  ) {
+    if (source.getArticleJson() == null || source.getArticleJson().isBlank()) {
+      draft.setArticleStatus(PaperArticleStatus.NOT_STARTED);
+      return;
+    }
+    try {
+      PaperArticleDto article = objectMapper.readValue(source.getArticleJson(), PaperArticleDto.class);
+      article.getSections().stream()
+        .flatMap(section -> section.getBlocks().stream())
+        .filter(block -> "FIGURE".equals(block.getType()) && block.getFileId() != null)
+        .forEach(block -> block.setFileId(revisionFileIds.getOrDefault(block.getFileId(), block.getFileId())));
+      article.setVersion(1);
+      article.setStatus(PaperArticleStatus.IN_PROGRESS);
+      article.setReadyAt(null);
+      article.setUpdatedAt(null);
+      draft.setArticleJson(objectMapper.writeValueAsString(article));
+      draft.setArticleVersion(1);
+      draft.setArticleStatus(PaperArticleStatus.IN_PROGRESS);
+      draft.setArticleReadyAt(null);
+    } catch (JsonProcessingException exception) {
+      throw new IllegalStateException("Unable to create the revision article", exception);
+    }
+  }
+
+  private static List<String> lines(String value) {
+    return value == null || value.isBlank()
+      ? List.of()
+      : value.lines().map(String::trim).filter(line -> !line.isBlank()).toList();
   }
 
   private PaperSubmissionResultDto toSubmissionResult(PaperProfile paper) {

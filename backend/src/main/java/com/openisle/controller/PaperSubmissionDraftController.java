@@ -49,6 +49,15 @@ public class PaperSubmissionDraftController {
     return ResponseEntity.ok(draftService.createDraft(authentication.getName()));
   }
 
+  @PostMapping("/revisions/{paperId}")
+  @Operation(summary = "Create a revision draft from a revision-needed paper")
+  public ResponseEntity<PaperSubmissionDraftDto> createRevisionDraft(
+    @PathVariable Long paperId,
+    Authentication authentication
+  ) {
+    return ResponseEntity.ok(draftService.createRevisionDraft(authentication.getName(), paperId));
+  }
+
   @GetMapping("/current")
   @Operation(summary = "Restore current paper submission draft")
   @ApiResponse(responseCode = "204", description = "No active submission draft")

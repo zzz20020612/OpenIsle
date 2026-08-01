@@ -30,6 +30,11 @@ public interface PaperSubmissionDraftRepository
 
   Optional<PaperSubmissionDraft> findByIdAndCreatedById(Long id, Long createdById);
 
+  Optional<PaperSubmissionDraft> findFirstByRevisionSourcePaperIdAndStatusOrderByUpdatedAtDescIdDesc(
+    Long paperId,
+    PaperSubmissionDraftStatus status
+  );
+
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query(
     "SELECT draft FROM PaperSubmissionDraft draft " +

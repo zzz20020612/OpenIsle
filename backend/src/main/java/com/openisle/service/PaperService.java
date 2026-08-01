@@ -241,7 +241,11 @@ public class PaperService {
     return paperProfileRepository
       .findByCreatedByIdOrderByCreatedAtDesc(user.getId())
       .stream()
-      .map(this::toSummaryDto)
+      .map(paper -> {
+        PaperSummaryDto dto = toSummaryDto(paper);
+        dto.setLatestRevisionPaperId(latestRevisionPaperId(paper.getId()));
+        return dto;
+      })
       .toList();
   }
 
@@ -654,6 +658,10 @@ public class PaperService {
     dto.setPaperType(paper.getPaperType());
     dto.setPublicationStatus(paper.getPublicationStatus());
     dto.setScreeningStatus(paper.getScreeningStatus());
+    dto.setRevisionOfPaperId(
+      paper.getRevisionOfPaper() != null ? paper.getRevisionOfPaper().getId() : null
+    );
+    dto.setRevisionNumber(Math.max(paper.getRevisionNumber(), 1));
     dto.setPublishedAt(paper.getPublishedAt());
     dto.setFeatured(paper.getPost().getPinnedAt() != null);
     dto.setRssExcluded(Boolean.TRUE.equals(paper.getPost().getRssExcluded()));
@@ -671,6 +679,13 @@ public class PaperService {
     );
     dto.setScoreSnapshot(getScoreSnapshotDto(paper.getId()));
     return dto;
+  }
+
+  private Long latestRevisionPaperId(Long paperId) {
+    return paperProfileRepository
+      .findFirstByRevisionOfPaperIdOrderByRevisionNumberDescIdDesc(paperId)
+      .map(PaperProfile::getId)
+      .orElse(null);
   }
 
   private Comparator<PaperSummaryDto> resolvePaperSort(String sort) {
@@ -712,6 +727,9 @@ public class PaperService {
     dto.setPaperType(summary.getPaperType());
     dto.setPublicationStatus(summary.getPublicationStatus());
     dto.setScreeningStatus(summary.getScreeningStatus());
+    dto.setRevisionOfPaperId(summary.getRevisionOfPaperId());
+    dto.setRevisionNumber(summary.getRevisionNumber());
+    dto.setLatestRevisionPaperId(latestRevisionPaperId(paper.getId()));
     dto.setPrimaryInstitutionName(summary.getPrimaryInstitutionName());
     dto.setAuthors(
       paperAuthorRepository

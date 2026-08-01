@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PaperProfileRepository extends JpaRepository<PaperProfile, Long> {
+  Optional<PaperProfile> findFirstByRevisionOfPaperIdOrderByRevisionNumberDescIdDesc(Long paperId);
   Optional<PaperProfile> findByPostId(Long postId);
 
   List<PaperProfile> findByCreatedByIdOrderByCreatedAtDesc(Long createdById);
