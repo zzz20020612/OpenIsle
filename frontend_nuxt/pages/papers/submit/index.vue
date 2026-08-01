@@ -13,7 +13,58 @@
         </div>
       </header>
 
-      <div v-if="loading" class="submission-loading">Opening your submission draft...</div>
+      <Teleport to="body">
+        <div v-if="pendingOriginalDraft" class="draft-choice-backdrop">
+          <section
+            class="draft-choice-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="draft-choice-title"
+            aria-describedby="draft-choice-description"
+          >
+            <span class="draft-choice-eyebrow">Submission draft found</span>
+            <h2 id="draft-choice-title">Continue your draft or start fresh?</h2>
+            <p id="draft-choice-description">
+              Your existing draft will stay private and unchanged if you start a new submission.
+            </p>
+
+            <div class="draft-choice-summary">
+              <span>Current draft</span>
+              <strong>{{ pendingDraftTitle }}</strong>
+              <small>Last saved {{ formatSavedTime(pendingOriginalDraft.updatedAt) }}</small>
+            </div>
+
+            <p v-if="draftChoiceError" class="draft-choice-error" role="alert">
+              {{ draftChoiceError }}
+            </p>
+
+            <div class="draft-choice-actions">
+              <button
+                class="submission-secondary-button"
+                type="button"
+                :disabled="Boolean(draftChoiceAction)"
+                @click="continueExistingDraft"
+              >
+                {{ draftChoiceAction === 'continue' ? 'Opening Draft...' : 'Continue Draft' }}
+              </button>
+              <button
+                class="submission-primary-button"
+                type="button"
+                :disabled="Boolean(draftChoiceAction)"
+                @click="startNewSubmission"
+              >
+                {{ draftChoiceAction === 'new' ? 'Creating Submission...' : 'Start New Submission' }}
+                <Right v-if="draftChoiceAction !== 'new'" :size="16" />
+              </button>
+            </div>
+          </section>
+        </div>
+      </Teleport>
+
+      <div v-if="loading || entryLoading" class="submission-loading">Opening your submission draft...</div>
+      <div v-else-if="draftChoiceError && !pendingOriginalDraft && !draft" class="submission-loading error" role="alert">
+        {{ draftChoiceError }}
+      </div>
 
       <template v-else-if="draft">
         <div v-if="isRevisionDraft" class="submission-alert revision" role="status">
@@ -434,6 +485,11 @@ const keywordDraft = ref('')
 const continuing = ref(false)
 const articleStatus = ref('NOT_STARTED')
 const articleApi = usePaperApi()
+const entryLoading = ref(true)
+const pendingOriginalDraft = ref(null)
+const draftChoiceAction = ref('')
+const draftChoiceError = ref('')
+const workspaceInitialized = ref(false)
 
 const {
   draft,
@@ -461,6 +517,9 @@ const submissionDescription = computed(() => isRevisionDraft.value
   ? 'Update the manuscript, article content, metadata, and declarations requested in the screening decision.'
   : 'Prepare the files, metadata, authors, funding, and declarations for one research record.'
 )
+const pendingDraftTitle = computed(() =>
+  pendingOriginalDraft.value?.formData?.title?.trim() || 'Untitled manuscript',
+)
 
 const sectionIds = SUBMISSION_SECTIONS.map((section) => section.id)
 const { activeSection, start: startScrollspy, scrollTo } = useSubmissionScrollspy(sectionIds)
@@ -482,32 +541,106 @@ const openSubmissionDraft = async (requestedDraftId, { initializeWorkspace = fal
       articleStatus.value = 'NOT_STARTED'
     }
     if (String(route.query.draft || '') !== String(record.id)) {
-      await router.replace({ query: { ...route.query, draft: record.id } })
+      await router.replace({ query: { draft: record.id } })
     }
     await nextTick()
-    if (initializeWorkspace) startScrollspy()
+    if (initializeWorkspace && !workspaceInitialized.value) {
+      startScrollspy()
+      workspaceInitialized.value = true
+    }
     const hashSection = route.hash?.replace('#', '')
     if (hashSection && sectionIds.includes(hashSection)) {
       setTimeout(() => scrollTo(hashSection), 50)
     } else if (record.currentSection && sectionIds.includes(record.currentSection)) {
       setTimeout(() => scrollTo(record.currentSection), 50)
     }
+    return record
   } catch {
     // The composable exposes the actionable error in the page.
+    return null
+  }
+}
+
+const prepareGlobalSubmissionEntry = async ({ initializeWorkspace = false } = {}) => {
+  entryLoading.value = true
+  draftChoiceError.value = ''
+  try {
+    const currentDraft = await articleApi.getCurrentSubmissionDraft('ORIGINAL')
+    if (currentDraft) {
+      pendingOriginalDraft.value = currentDraft
+      return
+    }
+    const createdDraft = await articleApi.createSubmissionDraft()
+    const openedDraft = await openSubmissionDraft(createdDraft.id, { initializeWorkspace })
+    if (!openedDraft) throw new Error(lastError.value || 'Unable to open paper submission.')
+  } catch (error) {
+    draftChoiceError.value = error?.data?.error || error?.message || 'Unable to open paper submission.'
+  } finally {
+    entryLoading.value = false
+  }
+}
+
+const continueExistingDraft = async () => {
+  const selectedDraft = pendingOriginalDraft.value
+  if (!selectedDraft || draftChoiceAction.value) return
+  draftChoiceAction.value = 'continue'
+  draftChoiceError.value = ''
+  pendingOriginalDraft.value = null
+  try {
+    const openedDraft = await openSubmissionDraft(selectedDraft.id, { initializeWorkspace: true })
+    if (!openedDraft) throw new Error(lastError.value || 'Unable to open this draft.')
+  } catch (error) {
+    pendingOriginalDraft.value = selectedDraft
+    draftChoiceError.value = error?.data?.error || error?.message || 'Unable to open this draft.'
+  } finally {
+    draftChoiceAction.value = ''
+  }
+}
+
+const startNewSubmission = async () => {
+  const existingDraft = pendingOriginalDraft.value
+  if (!existingDraft || draftChoiceAction.value) return
+  draftChoiceAction.value = 'new'
+  draftChoiceError.value = ''
+  try {
+    const createdDraft = await articleApi.createSubmissionDraft()
+    pendingOriginalDraft.value = null
+    const openedDraft = await openSubmissionDraft(createdDraft.id, { initializeWorkspace: true })
+    if (!openedDraft) throw new Error(lastError.value || 'Unable to start a new submission.')
+  } catch (error) {
+    pendingOriginalDraft.value = existingDraft
+    draftChoiceError.value = error?.data?.error || error?.message || 'Unable to start a new submission.'
+  } finally {
+    draftChoiceAction.value = ''
   }
 }
 
 watch(
   () => route.query.draft,
   (requestedDraftId) => {
-    if (!draft.value) return
-    if (String(requestedDraftId || '') === String(draft.value.id)) return
-    void openSubmissionDraft(requestedDraftId)
+    if (requestedDraftId) {
+      if (String(requestedDraftId) === String(draft.value?.id)) return
+      pendingOriginalDraft.value = null
+      entryLoading.value = true
+      void openSubmissionDraft(requestedDraftId).finally(() => {
+        entryLoading.value = false
+      })
+      return
+    }
+    if (draft.value) void prepareGlobalSubmissionEntry()
   },
 )
 
 onMounted(async () => {
-  await openSubmissionDraft(route.query.draft, { initializeWorkspace: true })
+  if (route.query.draft) {
+    try {
+      await openSubmissionDraft(route.query.draft, { initializeWorkspace: true })
+    } finally {
+      entryLoading.value = false
+    }
+    return
+  }
+  await prepareGlobalSubmissionEntry({ initializeWorkspace: true })
 })
 
 const uploadedRole = (role) =>
@@ -672,6 +805,19 @@ const formatSavedTime = (value) => {
 .submission-save-state.error .submission-save-dot, .submission-save-state.conflict .submission-save-dot { background: #b5483d; }
 .submission-loading { min-height: 280px; display: grid; place-items: center; border: 1px solid #d4dade; background: #fff; color: #5f6b73; }
 .submission-loading.error { color: #a33b33; }
+.draft-choice-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(19, 31, 39, .52); }
+.draft-choice-dialog { width: min(540px, 100%); padding: 30px; border: 1px solid #c8d2d7; background: #fff; box-shadow: 0 24px 70px rgba(18, 37, 47, .24); color: #19252d; }
+.draft-choice-eyebrow { display: block; margin-bottom: 9px; color: #2d657d; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.draft-choice-dialog h2 { margin: 0; font-family: Georgia, serif; font-size: 27px; font-weight: 500; line-height: 1.25; }
+.draft-choice-dialog > p { margin: 11px 0 0; color: #5d6a72; font-size: 14px; line-height: 1.55; }
+.draft-choice-summary { display: grid; gap: 5px; margin-top: 22px; padding: 16px; border-left: 3px solid #2b6b87; background: #f2f6f7; }
+.draft-choice-summary span { color: #65727a; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.draft-choice-summary strong { overflow-wrap: anywhere; color: #1b2c35; font-size: 15px; line-height: 1.4; }
+.draft-choice-summary small { color: #69757d; font-size: 12px; }
+.draft-choice-dialog .draft-choice-error { margin-top: 14px; padding: 10px 12px; border: 1px solid #d8aaa5; background: #fff6f5; color: #963b33; font-weight: 700; }
+.draft-choice-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.draft-choice-actions .submission-secondary-button, .draft-choice-actions .submission-primary-button { min-height: 44px; justify-content: center; }
+.draft-choice-actions button:disabled { opacity: .58; cursor: wait; }
 .submission-alert { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border: 1px solid; background: #fff; font-size: 13px; }
 .submission-alert > div { display: grid; gap: 2px; flex: 1; }
 .submission-alert.warning { border-color: #d7b36c; color: #684d20; background: #fffaf0; }
@@ -770,5 +916,10 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
   .submission-primary-button { flex: 1; max-width: 240px; }
   .article-content-launch { align-items: stretch; flex-direction: column; }
   .article-content-launch .submission-secondary-button { justify-content: center; }
+  .draft-choice-backdrop { padding: 14px; }
+  .draft-choice-dialog { padding: 24px 20px; }
+  .draft-choice-dialog h2 { font-size: 24px; }
+  .draft-choice-actions { align-items: stretch; flex-direction: column; }
+  .draft-choice-actions .submission-secondary-button, .draft-choice-actions .submission-primary-button { width: 100%; max-width: none; }
 }
 </style>

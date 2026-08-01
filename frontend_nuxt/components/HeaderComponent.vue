@@ -226,7 +226,10 @@ const goToLogout = () => {
 }
 
 const goToSubmitPaper = () => {
-  navigateTo('/papers/submit', { replace: false })
+  navigateTo({
+    path: '/papers/submit',
+    query: { entry: Date.now().toString() },
+  }, { replace: false })
 }
 
 const goToMessages = () => {
