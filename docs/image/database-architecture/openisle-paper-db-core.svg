@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="760" viewBox="0 0 1320 760" role="img" aria-labelledby="title desc">
+  <title id="title">OpenIsle Paper Platform Core Database Map</title>
+  <desc id="desc">A simplified database relationship diagram for the OpenIsle paper platform.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#285f63"/>
+    </marker>
+    <style>
+      .bg { fill: #f7f7f4; }
+      .title { font: 800 28px Arial, sans-serif; fill: #20242c; }
+      .subtitle { font: 500 15px Arial, sans-serif; fill: #667085; }
+      .group-title { font: 800 14px Arial, sans-serif; letter-spacing: .04em; fill: #667085; text-transform: uppercase; }
+      .box { fill: #ffffff; stroke: #d3d7de; stroke-width: 1.5; rx: 14; }
+      .box-core { fill: #f4fbfb; stroke: #285f63; }
+      .box-paper { fill: #fffdf8; stroke: #b88a2b; }
+      .box-future { fill: #f7f7fb; stroke: #365d8d; stroke-dasharray: 7 5; }
+      .box-title { font: 800 17px Arial, sans-serif; fill: #20242c; }
+      .box-note { font: 500 12px Arial, sans-serif; fill: #667085; }
+      .field { font: 500 12px Arial, sans-serif; fill: #485162; }
+      .line { stroke: #285f63; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .line-soft { stroke: #8a94a3; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+      .line-future { stroke: #365d8d; stroke-width: 1.8; fill: none; stroke-dasharray: 7 5; marker-end: url(#arrow); }
+      .label { font: 700 12px Arial, sans-serif; fill: #285f63; }
+      .label-soft { font: 700 12px Arial, sans-serif; fill: #667085; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1320" height="760"/>
+
+  <text x="56" y="54" class="title">OpenIsle Paper Platform - Core Database Map</text>
+  <text x="56" y="82" class="subtitle">Read this as: users create posts; paper_profiles turns one post into a paper; authors, experts, ratings, and knowledge grow around that paper.</text>
+
+  <text x="58" y="132" class="group-title">1. OpenIsle Core</text>
+  <rect x="56" y="150" width="260" height="130" class="box box-core"/>
+  <text x="78" y="184" class="box-title">users</text>
+  <text x="78" y="211" class="field">id, username, email, role</text>
+  <text x="78" y="234" class="field">experience, point, verified</text>
+  <text x="78" y="257" class="box-note">Platform account and identity</text>
+
+  <rect x="398" y="150" width="280" height="150" class="box box-core"/>
+  <text x="420" y="184" class="box-title">posts</text>
+  <text x="420" y="211" class="field">id, title, content, author_id</text>
+  <text x="420" y="234" class="field">category_id, status, type</text>
+  <text x="420" y="257" class="field">views, comments, RSS, pinned</text>
+  <text x="420" y="280" class="box-note">Paper body + social anchor</text>
+
+  <rect x="760" y="150" width="220" height="70" class="box box-core"/>
+  <text x="782" y="184" class="box-title">comments</text>
+  <text x="782" y="207" class="box-note">discussion on post_id</text>
+
+  <rect x="760" y="245" width="220" height="70" class="box box-core"/>
+  <text x="782" y="279" class="box-title">reactions</text>
+  <text x="782" y="302" class="box-note">post/comment/message feedback</text>
+
+  <rect x="1040" y="150" width="220" height="70" class="box box-core"/>
+  <text x="1062" y="184" class="box-title">categories / tags</text>
+  <text x="1062" y="207" class="box-note">discovery metadata</text>
+
+  <rect x="1040" y="245" width="220" height="70" class="box box-core"/>
+  <text x="1062" y="279" class="box-title">notifications</text>
+  <text x="1062" y="302" class="box-note">reuse for paper events</text>
+
+  <text x="58" y="374" class="group-title">2. Paper Business Extension</text>
+  <rect x="398" y="395" width="300" height="180" class="box box-paper"/>
+  <text x="420" y="429" class="box-title">paper_profiles</text>
+  <text x="420" y="456" class="field">post_id UNIQUE</text>
+  <text x="420" y="479" class="field">title, abstract, keywords</text>
+  <text x="420" y="502" class="field">subject_area, paper_type</text>
+  <text x="420" y="525" class="field">publication_status, screening_status</text>
+  <text x="420" y="548" class="box-note">The real paper business object</text>
+
+  <rect x="56" y="415" width="260" height="150" class="box box-paper"/>
+  <text x="78" y="449" class="box-title">paper_authors</text>
+  <text x="78" y="476" class="field">paper_id, display_name</text>
+  <text x="78" y="499" class="field">email, ORCID, author_order</text>
+  <text x="78" y="522" class="field">corresponding, co-first</text>
+  <text x="78" y="545" class="box-note">Scholarly authors, not only submitter</text>
+
+  <rect x="760" y="395" width="240" height="150" class="box box-paper"/>
+  <text x="782" y="429" class="box-title">paper_ratings</text>
+  <text x="782" y="456" class="field">paper_id, rater_id</text>
+  <text x="782" y="479" class="field">overall, innovation</text>
+  <text x="782" y="502" class="field">method, impact, comment</text>
+  <text x="782" y="525" class="box-note">One user, one rating per paper</text>
+
+  <rect x="1040" y="395" width="240" height="150" class="box box-paper"/>
+  <text x="1062" y="429" class="box-title">paper_score_snapshots</text>
+  <text x="1062" y="456" class="field">paper_id UNIQUE</text>
+  <text x="1062" y="479" class="field">rating_count</text>
+  <text x="1062" y="502" class="field">average scores, composite_score</text>
+  <text x="1062" y="525" class="box-note">Fast feed/ranking score read</text>
+
+  <rect x="56" y="610" width="260" height="95" class="box box-paper"/>
+  <text x="78" y="644" class="box-title">institutions</text>
+  <text x="78" y="671" class="field">name, country, type, verified</text>
+  <text x="78" y="694" class="box-note">Institution database and rankings</text>
+
+  <rect x="398" y="610" width="260" height="95" class="box box-paper"/>
+  <text x="420" y="644" class="box-title">expert_profiles</text>
+  <text x="420" y="671" class="field">user_id, name, email, ORCID</text>
+  <text x="420" y="694" class="box-note">Expert database seed</text>
+
+  <rect x="760" y="610" width="240" height="95" class="box box-paper"/>
+  <text x="782" y="644" class="box-title">ai_screening_results</text>
+  <text x="782" y="671" class="field">paper_id, status, risk_level</text>
+  <text x="782" y="694" class="box-note">Admission and risk control</text>
+
+  <rect x="1040" y="610" width="240" height="95" class="box box-future"/>
+  <text x="1062" y="644" class="box-title">knowledge_entries</text>
+  <text x="1062" y="671" class="field">method, innovation, contribution</text>
+  <text x="1062" y="694" class="box-note">Future enterprise knowledge service</text>
+
+  <path class="line" d="M316 215 C345 215, 365 215, 398 215"/>
+  <text x="336" y="204" class="label">submits</text>
+
+  <path class="line" d="M538 300 C538 335, 548 355, 548 395"/>
+  <text x="560" y="353" class="label">PostType.PAPER</text>
+
+  <path class="line-soft" d="M678 205 C710 194, 725 188, 760 185"/>
+  <path class="line-soft" d="M678 250 C710 262, 725 274, 760 280"/>
+  <path class="line-soft" d="M678 205 C785 128, 938 139, 1040 185"/>
+  <path class="line-soft" d="M678 250 C790 330, 930 337, 1040 280"/>
+
+  <path class="line" d="M398 485 C365 485, 345 487, 316 490"/>
+  <text x="326" y="476" class="label">has many</text>
+
+  <path class="line" d="M698 470 C720 470, 738 470, 760 470"/>
+  <text x="710" y="458" class="label">rated by readers</text>
+
+  <path class="line" d="M1000 470 C1015 470, 1025 470, 1040 470"/>
+  <text x="1008" y="458" class="label">aggregates</text>
+
+  <path class="line-soft" d="M186 565 C186 585, 186 595, 186 610"/>
+  <text x="202" y="592" class="label-soft">affiliation</text>
+
+  <path class="line-soft" d="M316 522 C370 570, 390 590, 430 610"/>
+  <text x="333" y="580" class="label-soft">matches</text>
+
+  <path class="line-soft" d="M548 575 C548 588, 548 598, 548 610"/>
+  <text x="564" y="594" class="label-soft">expert identity</text>
+
+  <path class="line-soft" d="M610 575 C675 605, 715 622, 760 645"/>
+  <text x="646" y="612" class="label-soft">screening log</text>
+
+  <path class="line-future" d="M698 540 C825 600, 935 628, 1040 657"/>
+  <text x="820" y="603" class="label-soft">future extraction</text>
+</svg>

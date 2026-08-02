@@ -1,0 +1,354 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1220" viewBox="0 0 1500 1220">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .title { font: 700 30px Arial, sans-serif; fill: #111827; }
+      .note { font: 16px Arial, sans-serif; fill: #4b5563; }
+      .table { fill: #ffffff; stroke: #8b5cf6; stroke-width: 2; }
+      .head { fill: #ecebff; stroke: #8b5cf6; stroke-width: 2; }
+      .future { fill: #ffffff; stroke: #8b5cf6; stroke-width: 2; stroke-dasharray: 8 6; }
+      .futureHead { fill: #f4f3ff; stroke: #8b5cf6; stroke-width: 2; stroke-dasharray: 8 6; }
+      .grid { stroke: #8b5cf6; stroke-width: 1.5; }
+      .name { font: 700 18px Arial, sans-serif; fill: #111827; }
+      .cell { font: 15px Arial, sans-serif; fill: #111827; }
+      .key { font: 700 14px Arial, sans-serif; fill: #4c1d95; }
+      .rel { fill: none; stroke: #374151; stroke-width: 1.7; }
+      .relText { font: 14px Arial, sans-serif; fill: #111827; }
+      .card { font: 16px Arial, sans-serif; fill: #111827; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#374151" />
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1500" height="1220" />
+  <text x="42" y="48" class="title">OpenIsle Paper Platform ER Diagram</text>
+  <text x="42" y="78" class="note">Core current schema from JPA entities. Dashed table is the planned knowledge database direction.</text>
+
+  <!-- users -->
+  <g id="users" transform="translate(70 135)">
+    <rect class="table" width="250" height="250" />
+    <rect class="head" width="250" height="42" />
+    <text x="125" y="27" text-anchor="middle" class="name">users</text>
+    <line class="grid" x1="72" y1="42" x2="72" y2="250" />
+    <line class="grid" x1="205" y1="42" x2="205" y2="250" />
+    <g class="grid">
+      <line x1="0" y1="76" x2="250" y2="76" /><line x1="0" y1="110" x2="250" y2="110" />
+      <line x1="0" y1="144" x2="250" y2="144" /><line x1="0" y1="178" x2="250" y2="178" />
+      <line x1="0" y1="212" x2="250" y2="212" />
+    </g>
+    <text x="14" y="65" class="cell">bigint</text><text x="86" y="65" class="cell">id</text><text x="216" y="65" class="key">PK</text>
+    <text x="14" y="99" class="cell">string</text><text x="86" y="99" class="cell">username</text>
+    <text x="14" y="133" class="cell">string</text><text x="86" y="133" class="cell">email</text>
+    <text x="14" y="167" class="cell">enum</text><text x="86" y="167" class="cell">role</text>
+    <text x="14" y="201" class="cell">int</text><text x="86" y="201" class="cell">point</text>
+    <text x="14" y="235" class="cell">datetime</text><text x="86" y="235" class="cell">created_at</text>
+  </g>
+
+  <!-- categories -->
+  <g id="categories" transform="translate(70 470)">
+    <rect class="table" width="250" height="182" />
+    <rect class="head" width="250" height="42" />
+    <text x="125" y="27" text-anchor="middle" class="name">categories</text>
+    <line class="grid" x1="72" y1="42" x2="72" y2="182" />
+    <line class="grid" x1="205" y1="42" x2="205" y2="182" />
+    <g class="grid">
+      <line x1="0" y1="76" x2="250" y2="76" /><line x1="0" y1="110" x2="250" y2="110" />
+      <line x1="0" y1="144" x2="250" y2="144" />
+    </g>
+    <text x="14" y="65" class="cell">bigint</text><text x="86" y="65" class="cell">id</text><text x="216" y="65" class="key">PK</text>
+    <text x="14" y="99" class="cell">string</text><text x="86" y="99" class="cell">name</text>
+    <text x="14" y="133" class="cell">string</text><text x="86" y="133" class="cell">icon</text>
+    <text x="14" y="167" class="cell">string</text><text x="86" y="167" class="cell">description</text>
+  </g>
+
+  <!-- posts -->
+  <g id="posts" transform="translate(430 120)">
+    <rect class="table" width="275" height="352" />
+    <rect class="head" width="275" height="42" />
+    <text x="137.5" y="27" text-anchor="middle" class="name">posts</text>
+    <line class="grid" x1="78" y1="42" x2="78" y2="352" />
+    <line class="grid" x1="224" y1="42" x2="224" y2="352" />
+    <g class="grid">
+      <line x1="0" y1="76" x2="275" y2="76" /><line x1="0" y1="110" x2="275" y2="110" />
+      <line x1="0" y1="144" x2="275" y2="144" /><line x1="0" y1="178" x2="275" y2="178" />
+      <line x1="0" y1="212" x2="275" y2="212" /><line x1="0" y1="246" x2="275" y2="246" />
+      <line x1="0" y1="280" x2="275" y2="280" /><line x1="0" y1="314" x2="275" y2="314" />
+    </g>
+    <text x="14" y="65" class="cell">bigint</text><text x="92" y="65" class="cell">id</text><text x="235" y="65" class="key">PK</text>
+    <text x="14" y="99" class="cell">bigint</text><text x="92" y="99" class="cell">author_id</text><text x="235" y="99" class="key">FK</text>
+    <text x="14" y="133" class="cell">bigint</text><text x="92" y="133" class="cell">category_id</text><text x="235" y="133" class="key">FK</text>
+    <text x="14" y="167" class="cell">string</text><text x="92" y="167" class="cell">title</text>
+    <text x="14" y="201" class="cell">longtext</text><text x="92" y="201" class="cell">content</text>
+    <text x="14" y="235" class="cell">enum</text><text x="92" y="235" class="cell">type</text>
+    <text x="14" y="269" class="cell">enum</text><text x="92" y="269" class="cell">status</text>
+    <text x="14" y="303" class="cell">bigint</text><text x="92" y="303" class="cell">views</text>
+    <text x="14" y="337" class="cell">datetime</text><text x="92" y="337" class="cell">created_at</text>
+  </g>
+
+  <!-- tags -->
+  <g id="tags" transform="translate(820 120)">
+    <rect class="table" width="255" height="250" />
+    <rect class="head" width="255" height="42" />
+    <text x="127.5" y="27" text-anchor="middle" class="name">tags</text>
+    <line class="grid" x1="78" y1="42" x2="78" y2="250" />
+    <line class="grid" x1="210" y1="42" x2="210" y2="250" />
+    <g class="grid">
+      <line x1="0" y1="76" x2="255" y2="76" /><line x1="0" y1="110" x2="255" y2="110" />
+      <line x1="0" y1="144" x2="255" y2="144" /><line x1="0" y1="178" x2="255" y2="178" />
+      <line x1="0" y1="212" x2="255" y2="212" />
+    </g>
+    <text x="14" y="65" class="cell">bigint</text><text x="92" y="65" class="cell">id</text><text x="222" y="65" class="key">PK</text>
+    <text x="14" y="99" class="cell">bigint</text><text x="92" y="99" class="cell">creator_id</text><text x="222" y="99" class="key">FK</text>
+    <text x="14" y="133" class="cell">string</text><text x="92" y="133" class="cell">name</text>
+    <text x="14" y="167" class="cell">string</text><text x="92" y="167" class="cell">icon</text>
+    <text x="14" y="201" class="cell">bool</text><text x="92" y="201" class="cell">approved</text>
+    <text x="14" y="235" class="cell">datetime</text><text x="92" y="235" class="cell">created_at</text>
+  </g>
+
+  <!-- post_tags -->
+  <g id="post_tags" transform="translate(820 420)">
+    <rect class="table" width="255" height="114" />
+    <rect class="head" width="255" height="42" />
+    <text x="127.5" y="27" text-anchor="middle" class="name">post_tags</text>
+    <line class="grid" x1="78" y1="42" x2="78" y2="114" />
+    <line class="grid" x1="210" y1="42" x2="210" y2="114" />
+    <line class="grid" x1="0" y1="76" x2="255" y2="76" />
+    <text x="14" y="65" class="cell">bigint</text><text x="92" y="65" class="cell">post_id</text><text x="222" y="65" class="key">FK</text>
+    <text x="14" y="99" class="cell">bigint</text><text x="92" y="99" class="cell">tag_id</text><text x="222" y="99" class="key">FK</text>
+  </g>
+
+  <!-- paper_profiles -->
+  <g id="paper_profiles" transform="translate(410 565)">
+    <rect class="table" width="315" height="454" />
+    <rect class="head" width="315" height="42" />
+    <text x="157.5" y="27" text-anchor="middle" class="name">paper_profiles</text>
+    <line class="grid" x1="92" y1="42" x2="92" y2="454" />
+    <line class="grid" x1="260" y1="42" x2="260" y2="454" />
+    <g class="grid">
+      <line x1="0" y1="76" x2="315" y2="76" /><line x1="0" y1="110" x2="315" y2="110" />
+      <line x1="0" y1="144" x2="315" y2="144" /><line x1="0" y1="178" x2="315" y2="178" />
+      <line x1="0" y1="212" x2="315" y2="212" /><line x1="0" y1="246" x2="315" y2="246" />
+      <line x1="0" y1="280" x2="315" y2="280" /><line x1="0" y1="314" x2="315" y2="314" />
+      <line x1="0" y1="348" x2="315" y2="348" /><line x1="0" y1="382" x2="315" y2="382" />
+      <line x1="0" y1="416" x2="315" y2="416" />
+    </g>
+    <text x="14" y="65" class="cell">bigint</text><text x="106" y="65" class="cell">id</text><text x="272" y="65" class="key">PK</text>
+    <text x="14" y="99" class="cell">bigint</text><text x="106" y="99" class="cell">post_id</text><text x="272" y="99" class="key">FK</text>
+    <text x="14" y="133" class="cell">bigint</text><text x="106" y="133" class="cell">created_by</text><text x="272" y="133" class="key">FK</text>
+    <text x="14" y="167" class="cell">bigint</text><text x="106" y="167" class="cell">primary_institution_id</text><text x="272" y="167" class="key">FK</text>
+    <text x="14" y="201" class="cell">string</text><text x="106" y="201" class="cell">title</text>
+    <text x="14" y="235" class="cell">text</text><text x="106" y="235" class="cell">abstract_text</text>
+    <text x="14" y="269" class="cell">text</text><text x="106" y="269" class="cell">keywords</text>
+    <text x="14" y="303" class="cell">string</text><text x="106" y="303" class="cell">subject_area</text>
+    <text x="14" y="337" class="cell">string</text><text x="106" y="337" class="cell">paper_type</text>
+    <text x="14" y="371" class="cell">enum</text><text x="106" y="371" class="cell">publication_status</text>
+    <text x="14" y="405" class="cell">enum</text><text x="106" y="405" class="cell">screening_status</text>
+    <text x="14" y="439" class="cell">datetime</text><text x="106" y="439" class="cell">published_at</text>
+  </g>
+
+  <!-- paper_authors -->
+  <g id="paper_authors" transform="translate(60 760)">
+    <rect class="table" width="300" height="352" />
+    <rect class="head" width="300" height="42" />
+    <text x="150" y="27" text-anchor="middle" class="name">paper_authors</text>
+    <line class="grid" x1="84" y1="42" x2="84" y2="352" />
+    <line class="grid" x1="246" y1="42" x2="246" y2="352" />
+    <g class="grid">
+      <line x1="0" y1="76" x2="300" y2="76" /><line x1="0" y1="110" x2="300" y2="110" />
+      <line x1="0" y1="144" x2="300" y2="144" /><line x1="0" y1="178" x2="300" y2="178" />
+      <line x1="0" y1="212" x2="300" y2="212" /><line x1="0" y1="246" x2="300" y2="246" />
+      <line x1="0" y1="280" x2="300" y2="280" /><line x1="0" y1="314" x2="300" y2="314" />
+    </g>
+    <text x="14" y="65" class="cell">bigint</text><text x="98" y="65" class="cell">id</text><text x="260" y="65" class="key">PK</text>
+    <text x="14" y="99" class="cell">bigint</text><text x="98" y="99" class="cell">paper_id</text><text x="260" y="99" class="key">FK</text>
+    <text x="14" y="133" class="cell">bigint</text><text x="98" y="133" class="cell">user_id</text><text x="260" y="133" class="key">FK</text>
+    <text x="14" y="167" class="cell">bigint</text><text x="98" y="167" class="cell">expert_profile_id</text><text x="260" y="167" class="key">FK</text>
+    <text x="14" y="201" class="cell">bigint</text><text x="98" y="201" class="cell">institution_id</text><text x="260" y="201" class="key">FK</text>
+    <text x="14" y="235" class="cell">string</text><text x="98" y="235" class="cell">display_name</text>
+    <text x="14" y="269" class="cell">string</text><text x="98" y="269" class="cell">orcid</text>
+    <text x="14" y="303" class="cell">int</text><text x="98" y="303" class="cell">author_order</text>
+    <text x="14" y="337" class="cell">bool</text><text x="98" y="337" class="cell">corresponding_author</text>
+  </g>
+
+  <!-- institutions -->
+  <g id="institutions" transform="translate(785 650)">
+    <rect class="table" width="275" height="250" />
+    <rect class="head" width="275" height="42" />
+    <text x="137.5" y="27" text-anchor="middle" class="name">institutions</text>
+    <line class="grid" x1="78" y1="42" x2="78" y2="250" />
+    <line class="grid" x1="224" y1="42" x2="224" y2="250" />
+    <g class="grid">
+      <line x1="0" y1="76" x2="275" y2="76" /><line x1="0" y1="110" x2="275" y2="110" />
+      <line x1="0" y1="144" x2="275" y2="144" /><line x1="0" y1="178" x2="275" y2="178" />
+      <line x1="0" y1="212" x2="275" y2="212" />
+    </g>
+    <text x="14" y="65" class="cell">bigint</text><text x="92" y="65" class="cell">id</text><text x="235" y="65" class="key">PK</text>
+    <text x="14" y="99" class="cell">string</text><text x="92" y="99" class="cell">name</text>
+    <text x="14" y="133" class="cell">string</text><text x="92" y="133" class="cell">country</text>
+    <text x="14" y="167" class="cell">string</text><text x="92" y="167" class="cell">type</text>
+    <text x="14" y="201" class="cell">string</text><text x="92" y="201" class="cell">website</text>
+    <text x="14" y="235" class="cell">bool</text><text x="92" y="235" class="cell">verified</text>
+  </g>
+
+  <!-- expert_profiles -->
+  <g id="expert_profiles" transform="translate(1145 640)">
+    <rect class="table" width="290" height="318" />
+    <rect class="head" width="290" height="42" />
+    <text x="145" y="27" text-anchor="middle" class="name">expert_profiles</text>
+    <line class="grid" x1="82" y1="42" x2="82" y2="318" />
+    <line class="grid" x1="236" y1="42" x2="236" y2="318" />
+    <g class="grid">
+      <line x1="0" y1="76" x2="290" y2="76" /><line x1="0" y1="110" x2="290" y2="110" />
+      <line x1="0" y1="144" x2="290" y2="144" /><line x1="0" y1="178" x2="290" y2="178" />
+      <line x1="0" y1="212" x2="290" y2="212" /><line x1="0" y1="246" x2="290" y2="246" />
+      <line x1="0" y1="280" x2="290" y2="280" />
+    </g>
+    <text x="14" y="65" class="cell">bigint</text><text x="96" y="65" class="cell">id</text><text x="250" y="65" class="key">PK</text>
+    <text x="14" y="99" class="cell">bigint</text><text x="96" y="99" class="cell">user_id</text><text x="250" y="99" class="key">FK</text>
+    <text x="14" y="133" class="cell">bigint</text><text x="96" y="133" class="cell">primary_institution_id</text><text x="250" y="133" class="key">FK</text>
+    <text x="14" y="167" class="cell">string</text><text x="96" y="167" class="cell">display_name</text>
+    <text x="14" y="201" class="cell">string</text><text x="96" y="201" class="cell">email</text>
+    <text x="14" y="235" class="cell">string</text><text x="96" y="235" class="cell">orcid</text>
+    <text x="14" y="269" class="cell">string</text><text x="96" y="269" class="cell">country</text>
+    <text x="14" y="303" class="cell">enum</text><text x="96" y="303" class="cell">identity_status</text>
+  </g>
+
+  <!-- ai_screening_results -->
+  <g id="ai_screening_results" transform="translate(785 965)">
+    <rect class="table" width="300" height="216" />
+    <rect class="head" width="300" height="42" />
+    <text x="150" y="27" text-anchor="middle" class="name">ai_screening_results</text>
+    <line class="grid" x1="84" y1="42" x2="84" y2="216" />
+    <line class="grid" x1="246" y1="42" x2="246" y2="216" />
+    <g class="grid">
+      <line x1="0" y1="76" x2="300" y2="76" /><line x1="0" y1="110" x2="300" y2="110" />
+      <line x1="0" y1="144" x2="300" y2="144" /><line x1="0" y1="178" x2="300" y2="178" />
+    </g>
+    <text x="14" y="65" class="cell">bigint</text><text x="98" y="65" class="cell">id</text><text x="260" y="65" class="key">PK</text>
+    <text x="14" y="99" class="cell">bigint</text><text x="98" y="99" class="cell">paper_id</text><text x="260" y="99" class="key">FK</text>
+    <text x="14" y="133" class="cell">enum</text><text x="98" y="133" class="cell">status</text>
+    <text x="14" y="167" class="cell">string</text><text x="98" y="167" class="cell">risk_level</text>
+    <text x="14" y="201" class="cell">datetime</text><text x="98" y="201" class="cell">screened_at</text>
+  </g>
+
+  <!-- paper_ratings -->
+  <g id="paper_ratings" transform="translate(1145 105)">
+    <rect class="table" width="290" height="318" />
+    <rect class="head" width="290" height="42" />
+    <text x="145" y="27" text-anchor="middle" class="name">paper_ratings</text>
+    <line class="grid" x1="82" y1="42" x2="82" y2="318" />
+    <line class="grid" x1="236" y1="42" x2="236" y2="318" />
+    <g class="grid">
+      <line x1="0" y1="76" x2="290" y2="76" /><line x1="0" y1="110" x2="290" y2="110" />
+      <line x1="0" y1="144" x2="290" y2="144" /><line x1="0" y1="178" x2="290" y2="178" />
+      <line x1="0" y1="212" x2="290" y2="212" /><line x1="0" y1="246" x2="290" y2="246" />
+      <line x1="0" y1="280" x2="290" y2="280" />
+    </g>
+    <text x="14" y="65" class="cell">bigint</text><text x="96" y="65" class="cell">id</text><text x="250" y="65" class="key">PK</text>
+    <text x="14" y="99" class="cell">bigint</text><text x="96" y="99" class="cell">paper_id</text><text x="250" y="99" class="key">FK</text>
+    <text x="14" y="133" class="cell">bigint</text><text x="96" y="133" class="cell">rater_id</text><text x="250" y="133" class="key">FK</text>
+    <text x="14" y="167" class="cell">int</text><text x="96" y="167" class="cell">overall_score</text>
+    <text x="14" y="201" class="cell">int</text><text x="96" y="201" class="cell">innovation_score</text>
+    <text x="14" y="235" class="cell">int</text><text x="96" y="235" class="cell">method_score</text>
+    <text x="14" y="269" class="cell">int</text><text x="96" y="269" class="cell">impact_score</text>
+    <text x="14" y="303" class="cell">text</text><text x="96" y="303" class="cell">comment</text>
+  </g>
+
+  <!-- paper_score_snapshots -->
+  <g id="paper_score_snapshots" transform="translate(1145 465)">
+    <rect class="table" width="290" height="148" />
+    <rect class="head" width="290" height="42" />
+    <text x="145" y="27" text-anchor="middle" class="name">paper_score_snapshots</text>
+    <line class="grid" x1="82" y1="42" x2="82" y2="148" />
+    <line class="grid" x1="236" y1="42" x2="236" y2="148" />
+    <g class="grid">
+      <line x1="0" y1="76" x2="290" y2="76" /><line x1="0" y1="110" x2="290" y2="110" />
+    </g>
+    <text x="14" y="65" class="cell">bigint</text><text x="96" y="65" class="cell">id</text><text x="250" y="65" class="key">PK</text>
+    <text x="14" y="99" class="cell">bigint</text><text x="96" y="99" class="cell">paper_id</text><text x="250" y="99" class="key">FK</text>
+    <text x="14" y="133" class="cell">double</text><text x="96" y="133" class="cell">composite_score</text>
+  </g>
+
+  <!-- knowledge_entries future -->
+  <g id="knowledge_entries" transform="translate(1145 995)">
+    <rect class="future" width="290" height="182" />
+    <rect class="futureHead" width="290" height="42" />
+    <text x="145" y="27" text-anchor="middle" class="name">knowledge_entries</text>
+    <line class="grid" x1="82" y1="42" x2="82" y2="182" />
+    <line class="grid" x1="236" y1="42" x2="236" y2="182" />
+    <g class="grid">
+      <line x1="0" y1="76" x2="290" y2="76" /><line x1="0" y1="110" x2="290" y2="110" />
+      <line x1="0" y1="144" x2="290" y2="144" />
+    </g>
+    <text x="14" y="65" class="cell">bigint</text><text x="96" y="65" class="cell">id</text><text x="250" y="65" class="key">PK</text>
+    <text x="14" y="99" class="cell">bigint</text><text x="96" y="99" class="cell">paper_id</text><text x="250" y="99" class="key">FK</text>
+    <text x="14" y="133" class="cell">enum</text><text x="96" y="133" class="cell">entry_type</text>
+    <text x="14" y="167" class="cell">text</text><text x="96" y="167" class="cell">content</text>
+  </g>
+
+  <!-- relations -->
+  <path class="rel" d="M320 220 C365 220 385 220 430 220" />
+  <text x="350" y="207" class="relText">1 user writes N posts</text>
+  <text x="330" y="238" class="card">1</text><text x="413" y="238" class="card">N</text>
+
+  <path class="rel" d="M320 560 C365 560 385 420 430 330" />
+  <text x="342" y="505" class="relText">1 category has N posts</text>
+  <text x="330" y="575" class="card">1</text><text x="413" y="345" class="card">N</text>
+
+  <path class="rel" d="M705 300 C760 300 765 470 820 470" />
+  <text x="725" y="420" class="relText">posts use tags</text>
+  <text x="714" y="318" class="card">N</text><text x="803" y="463" class="card">N</text>
+
+  <path class="rel" d="M948 370 L948 420" />
+  <text x="960" y="402" class="relText">tag_id</text>
+  <text x="928" y="390" class="card">1</text><text x="928" y="418" class="card">N</text>
+
+  <path class="rel" d="M568 472 L568 565" />
+  <text x="583" y="525" class="relText">1 post has 0..1 paper profile</text>
+  <text x="548" y="492" class="card">1</text><text x="548" y="558" class="card">0..1</text>
+
+  <path class="rel" d="M410 805 C385 805 385 875 360 875" />
+  <text x="260" y="742" class="relText">1 paper has N authors</text>
+  <text x="390" y="795" class="card">1</text><text x="365" y="895" class="card">N</text>
+
+  <path class="rel" d="M725 710 C750 710 760 745 785 745" />
+  <text x="724" y="690" class="relText">primary institution</text>
+  <text x="732" y="733" class="card">N</text><text x="768" y="765" class="card">1</text>
+
+  <path class="rel" d="M360 960 C570 960 585 820 785 820" />
+  <text x="470" y="935" class="relText">author affiliation</text>
+  <text x="370" y="980" class="card">N</text><text x="768" y="838" class="card">1</text>
+
+  <path class="rel" d="M1060 765 C1090 765 1115 765 1145 765" />
+  <text x="1068" y="744" class="relText">institution owns experts</text>
+  <text x="1068" y="785" class="card">1</text><text x="1128" y="785" class="card">N</text>
+
+  <path class="rel" d="M320 300 C900 300 680 690 1145 705" />
+  <text x="825" y="670" class="relText">user may have expert profile</text>
+  <text x="330" y="318" class="card">1</text><text x="1124" y="700" class="card">0..N</text>
+
+  <path class="rel" d="M360 900 C720 900 800 842 1145 842" />
+  <text x="642" y="880" class="relText">author may match expert</text>
+  <text x="370" y="918" class="card">N</text><text x="1128" y="862" class="card">0..1</text>
+
+  <path class="rel" d="M725 655 C940 610 985 285 1145 285" />
+  <text x="900" y="345" class="relText">1 paper gets N ratings</text>
+  <text x="735" y="652" class="card">1</text><text x="1128" y="303" class="card">N</text>
+
+  <path class="rel" d="M320 250 C785 250 770 235 1145 235" />
+  <text x="840" y="216" class="relText">users rate papers</text>
+  <text x="330" y="268" class="card">1</text><text x="1128" y="253" class="card">N</text>
+
+  <path class="rel" d="M725 735 C960 735 955 540 1145 540" />
+  <text x="898" y="590" class="relText">1 paper has 0..1 score snapshot</text>
+  <text x="735" y="755" class="card">1</text><text x="1110" y="558" class="card">0..1</text>
+
+  <path class="rel" d="M725 930 C748 995 760 1045 785 1045" />
+  <text x="735" y="1004" class="relText">AI screens papers</text>
+  <text x="735" y="928" class="card">1</text><text x="768" y="1063" class="card">N</text>
+
+  <path class="rel" d="M1085 1070 C1105 1070 1125 1070 1145 1070" stroke-dasharray="8 6" />
+  <text x="1092" y="1050" class="relText">future extraction</text>
+  <text x="1090" y="1090" class="card">1</text><text x="1128" y="1090" class="card">N</text>
+</svg>
