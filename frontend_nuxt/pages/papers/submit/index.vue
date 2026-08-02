@@ -40,18 +40,34 @@
 
             <div class="draft-choice-list">
               <button
-                v-for="savedDraft in pendingOriginalDrafts"
+                v-for="savedDraft in recentPendingDrafts"
                 :key="savedDraft.id"
                 class="draft-choice-summary"
                 type="button"
                 :disabled="Boolean(draftChoiceAction)"
                 @click="continueExistingDraft(savedDraft)"
               >
-                <span>Saved draft</span>
+                <span>{{ draftSourceLabel(savedDraft) }}</span>
                 <strong>{{ draftTitle(savedDraft) }}</strong>
                 <small>Last saved {{ formatSavedTime(savedDraft.updatedAt) }}</small>
                 <em>{{ draftChoiceAction === `continue:${savedDraft.id}` ? 'Opening...' : 'Continue' }}</em>
               </button>
+              <details v-if="olderPendingDrafts.length" class="draft-choice-older">
+                <summary>{{ olderPendingDrafts.length }} older draft{{ olderPendingDrafts.length === 1 ? '' : 's' }}</summary>
+                <button
+                  v-for="savedDraft in olderPendingDrafts"
+                  :key="savedDraft.id"
+                  class="draft-choice-summary"
+                  type="button"
+                  :disabled="Boolean(draftChoiceAction)"
+                  @click="continueExistingDraft(savedDraft)"
+                >
+                  <span>{{ draftSourceLabel(savedDraft) }}</span>
+                  <strong>{{ draftTitle(savedDraft) }}</strong>
+                  <small>Last saved {{ formatSavedTime(savedDraft.updatedAt) }}</small>
+                  <em>{{ draftChoiceAction === `continue:${savedDraft.id}` ? 'Opening...' : 'Continue' }}</em>
+                </button>
+              </details>
             </div>
 
             <p v-if="draftChoiceError" class="draft-choice-error" role="alert">
@@ -497,6 +513,7 @@ import {
   MANUSCRIPT_TYPES,
   SUBMISSION_SECTIONS,
 } from '~/config/paperSubmissionConfig'
+import { draftDisplayTitle, draftSourceLabel, partitionDraftsByAge } from '~/utils/paperDraftPresentation'
 
 const SectionHeading = defineComponent({
   props: {
@@ -532,6 +549,9 @@ const articleStatus = ref('NOT_STARTED')
 const articleApi = usePaperApi()
 const entryLoading = ref(true)
 const pendingOriginalDrafts = ref([])
+const pendingDraftGroups = computed(() => partitionDraftsByAge(pendingOriginalDrafts.value))
+const recentPendingDrafts = computed(() => pendingDraftGroups.value.recent)
+const olderPendingDrafts = computed(() => pendingDraftGroups.value.older)
 const draftChoiceAction = ref('')
 const draftChoiceError = ref('')
 const workspaceInitialized = ref(false)
@@ -576,7 +596,7 @@ const workspaceSaveLabel = computed(() => !draft.value?.id && saveState.value ==
   : saveStatusLabel.value
 )
 const hasWorkspaceToRetain = computed(() => hasRetainableDraft.value || Boolean(keywordDraft.value.trim()))
-const draftTitle = (savedDraft) => savedDraft?.formData?.title?.trim() || 'Untitled manuscript'
+const draftTitle = (savedDraft) => draftDisplayTitle(savedDraft)
 
 const sectionIds = SUBMISSION_SECTIONS.map((section) => section.id)
 const { activeSection, start: startScrollspy, scrollTo } = useSubmissionScrollspy(sectionIds)
@@ -998,6 +1018,9 @@ const formatSavedTime = (value) => {
 .draft-choice-dialog h2 { margin: 0; font-family: Georgia, serif; font-size: 27px; font-weight: 500; line-height: 1.25; }
 .draft-choice-dialog > p { margin: 11px 0 0; color: #5d6a72; font-size: 14px; line-height: 1.55; }
 .draft-choice-list { display: grid; gap: 9px; max-height: 320px; margin-top: 22px; overflow-y: auto; }
+.draft-choice-older { border-top: 1px solid #d4dee2; padding-top: 7px; }
+.draft-choice-older summary { margin-bottom: 8px; padding: 7px 3px; color: #526b77; font-size: 12px; font-weight: 750; cursor: pointer; }
+.draft-choice-older .draft-choice-summary + .draft-choice-summary { margin-top: 8px; }
 .draft-choice-summary { position: relative; display: grid; gap: 5px; width: 100%; padding: 16px 88px 16px 16px; border: 0; border-left: 3px solid #2b6b87; background: #f2f6f7; text-align: left; cursor: pointer; }
 .draft-choice-summary:hover, .draft-choice-summary:focus-visible { background: #e8f1f4; outline: 2px solid #2b6b87; outline-offset: -2px; }
 .draft-choice-summary span { color: #65727a; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }

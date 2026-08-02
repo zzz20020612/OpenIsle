@@ -2,6 +2,7 @@ package com.openisle.controller;
 
 import com.openisle.dto.PaperSubmissionDraftDto;
 import com.openisle.dto.PaperSubmissionDraftPatchRequest;
+import com.openisle.dto.PaperSubmissionDraftRenameRequest;
 import com.openisle.dto.PaperSubmissionFileDto;
 import com.openisle.dto.PaperSubmissionFilePresignRequest;
 import com.openisle.dto.PaperSubmissionFilePresignResponse;
@@ -17,6 +18,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import org.springframework.http.CacheControl;
@@ -98,6 +100,16 @@ public class PaperSubmissionDraftController {
     Authentication authentication
   ) {
     return draftService.updateDraft(authentication.getName(), draftId, request);
+  }
+
+  @PatchMapping("/{draftId}/name")
+  @Operation(summary = "Rename paper submission draft")
+  public PaperSubmissionDraftDto renameDraft(
+    @PathVariable Long draftId,
+    @Valid @RequestBody PaperSubmissionDraftRenameRequest request,
+    Authentication authentication
+  ) {
+    return draftService.renameDraft(authentication.getName(), draftId, request);
   }
 
   @DeleteMapping("/{draftId}")

@@ -79,6 +79,13 @@ export const usePaperApi = () => {
       body: payload,
     })
 
+  const renameSubmissionDraft = (draftId, displayName) =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}/name`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: { displayName },
+    })
+
   const discardSubmissionDraft = (draftId) =>
     $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}`, {
       method: 'DELETE',
@@ -236,6 +243,7 @@ export const usePaperApi = () => {
     listSubmissionDrafts,
     getSubmissionDraft,
     updateSubmissionDraft,
+    renameSubmissionDraft,
     discardSubmissionDraft,
     validateSubmissionDraft,
     submitSubmissionDraft,

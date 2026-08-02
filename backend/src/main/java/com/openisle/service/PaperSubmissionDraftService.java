@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openisle.dto.PaperSubmissionDraftDto;
 import com.openisle.dto.PaperSubmissionDraftPatchRequest;
+import com.openisle.dto.PaperSubmissionDraftRenameRequest;
 import com.openisle.dto.PaperSubmissionFileDto;
 import com.openisle.dto.PaperSubmissionResultDto;
 import com.openisle.dto.PaperSubmissionSubmitRequest;
@@ -23,6 +24,7 @@ import com.openisle.model.PaperArticleStatus;
 import com.openisle.model.PaperAuthor;
 import com.openisle.model.PaperAuthorAffiliation;
 import com.openisle.model.PaperFile;
+import com.openisle.model.PaperFileRole;
 import com.openisle.model.PaperPublicationStatus;
 import com.openisle.model.PaperSubmissionFile;
 import com.openisle.model.PaperProfile;
@@ -36,6 +38,7 @@ import com.openisle.repository.PaperSubmissionDraftRepository;
 import com.openisle.repository.PaperSubmissionFileRepository;
 import com.openisle.repository.UserRepository;
 import java.util.HashMap;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,6 +53,7 @@ public class PaperSubmissionDraftService {
 
   private static final String DEFAULT_MANUSCRIPT_TYPE = "Research Article";
   private static final String DEFAULT_SECTION = "manuscript-type";
+  private static final long STALE_DRAFT_DAYS = 30;
 
   private final PaperSubmissionDraftRepository draftRepository;
   private final PaperSubmissionFileRepository fileRepository;
@@ -317,6 +321,18 @@ public class PaperSubmissionDraftService {
   }
 
   @Transactional
+  public PaperSubmissionDraftDto renameDraft(
+    String username,
+    Long draftId,
+    PaperSubmissionDraftRenameRequest request
+  ) {
+    PaperSubmissionDraft draft = requireOwnedDraft(username, draftId);
+    requireEditable(draft);
+    draft.setDisplayName(request == null ? null : clean(request.getDisplayName()));
+    return toDto(draftRepository.saveAndFlush(draft));
+  }
+
+  @Transactional
   public void discardDraft(String username, Long draftId) {
     PaperSubmissionDraft draft = requireOwnedDraft(username, draftId);
     requireEditable(draft);
@@ -424,16 +440,32 @@ public class PaperSubmissionDraftService {
 
   private PaperSubmissionDraftDto toDto(PaperSubmissionDraft draft) {
     PaperSubmissionDraftDto dto = new PaperSubmissionDraftDto();
+    PaperSubmitRequest form = readForm(draft.getFormDataJson());
+    List<PaperSubmissionFile> files = fileRepository
+      .findByDraftIdOrderBySortOrderAscIdAsc(draft.getId());
     dto.setId(draft.getId());
     dto.setVersion(draft.getVersion());
     dto.setManuscriptType(draft.getManuscriptType());
+    dto.setDisplayName(draft.getDisplayName());
+    dto.setManuscriptTitle(clean(form.getTitle()));
+    dto.setPrimaryManuscriptFileName(
+      files.stream()
+        .filter(file -> file.getRole() == PaperFileRole.MANUSCRIPT)
+        .map(PaperSubmissionFile::getOriginalFileName)
+        .filter(this::hasText)
+        .findFirst()
+        .orElse(null)
+    );
+    dto.setFileCount(files.size());
+    dto.setStale(
+      draft.getUpdatedAt() != null &&
+      draft.getUpdatedAt().isBefore(LocalDateTime.now().minusDays(STALE_DRAFT_DAYS))
+    );
     dto.setCurrentSection(draft.getCurrentSection());
     dto.setStatus(draft.getStatus());
-    dto.setFormData(readForm(draft.getFormDataJson()));
+    dto.setFormData(form);
     dto.setFiles(
-      fileRepository
-        .findByDraftIdOrderBySortOrderAscIdAsc(draft.getId())
-        .stream()
+      files.stream()
         .map(this::toFileDto)
         .toList()
     );

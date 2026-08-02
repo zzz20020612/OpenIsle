@@ -11,11 +11,14 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openisle.dto.PaperSubmissionDraftDto;
+import com.openisle.dto.PaperSubmissionDraftRenameRequest;
 import com.openisle.dto.PaperArticleDto;
 import com.openisle.model.PaperArticleStatus;
+import com.openisle.model.PaperFileRole;
 import com.openisle.model.PaperSubmissionDraft;
 import com.openisle.model.PaperSubmissionDraftKind;
 import com.openisle.model.PaperSubmissionDraftStatus;
+import com.openisle.model.PaperSubmissionFile;
 import com.openisle.model.PaperProfile;
 import com.openisle.model.PaperPublicationStatus;
 import com.openisle.model.Post;
@@ -30,11 +33,13 @@ import com.openisle.repository.PaperSubmissionFileRepository;
 import com.openisle.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 @ExtendWith(MockitoExtension.class)
 class PaperSubmissionDraftServiceTest {
@@ -296,6 +301,108 @@ class PaperSubmissionDraftServiceTest {
         8L,
         PaperSubmissionDraftStatus.IN_PROGRESS
       );
+  }
+
+  @Test
+  void renameDraftTrimsTheNameAndBlankClearsIt() throws Exception {
+    User owner = new User();
+    owner.setId(42L);
+    PaperSubmissionDraft draft = new PaperSubmissionDraft();
+    draft.setId(104L);
+    draft.setCreatedBy(owner);
+    draft.setFormDataJson("{}");
+
+    when(userRepository.findByUsername("user1")).thenReturn(Optional.of(owner));
+    when(draftRepository.findById(104L)).thenReturn(Optional.of(draft));
+    when(draftRepository.saveAndFlush(draft)).thenReturn(draft);
+    when(fileRepository.findByDraftIdOrderBySortOrderAscIdAsc(104L)).thenReturn(List.of());
+    when(objectMapper.readValue("{}", com.openisle.dto.PaperSubmitRequest.class))
+      .thenReturn(new com.openisle.dto.PaperSubmitRequest());
+
+    PaperSubmissionDraftRenameRequest named = new PaperSubmissionDraftRenameRequest();
+    named.setDisplayName("  Lake pollution manuscript  ");
+    PaperSubmissionDraftDto renamed = service.renameDraft("user1", 104L, named);
+    assertEquals("Lake pollution manuscript", renamed.getDisplayName());
+
+    PaperSubmissionDraftRenameRequest cleared = new PaperSubmissionDraftRenameRequest();
+    cleared.setDisplayName("   ");
+    PaperSubmissionDraftDto result = service.renameDraft("user1", 104L, cleared);
+    assertEquals(null, result.getDisplayName());
+  }
+
+  @Test
+  void draftDtoIncludesFileSummaryAndStaleMarker() throws Exception {
+    User owner = new User();
+    owner.setId(42L);
+    PaperSubmissionDraft draft = new PaperSubmissionDraft();
+    draft.setId(105L);
+    draft.setCreatedBy(owner);
+    draft.setFormDataJson("{\"title\":\"Parsed manuscript\"}");
+    draft.setUpdatedAt(LocalDateTime.now().minusDays(31));
+
+    PaperSubmissionFile manuscript = new PaperSubmissionFile();
+    manuscript.setId(501L);
+    manuscript.setRole(PaperFileRole.MANUSCRIPT);
+    manuscript.setOriginalFileName("pollution-study.docx");
+
+    when(userRepository.findByUsername("user1")).thenReturn(Optional.of(owner));
+    when(draftRepository.findById(105L)).thenReturn(Optional.of(draft));
+    when(fileRepository.findByDraftIdOrderBySortOrderAscIdAsc(105L))
+      .thenReturn(List.of(manuscript));
+    when(objectMapper.readValue(
+      "{\"title\":\"Parsed manuscript\"}",
+      com.openisle.dto.PaperSubmitRequest.class
+    )).thenAnswer(invocation -> {
+      var form = new com.openisle.dto.PaperSubmitRequest();
+      form.setTitle("Parsed manuscript");
+      return form;
+    });
+
+    PaperSubmissionDraftDto result = service.getDraft("user1", 105L);
+
+    assertEquals("Parsed manuscript", result.getManuscriptTitle());
+    assertEquals("pollution-study.docx", result.getPrimaryManuscriptFileName());
+    assertEquals(1, result.getFileCount());
+    assertTrue(result.isStale());
+  }
+
+  @Test
+  void renameDraftRejectsAnotherUsersDraft() {
+    User owner = new User();
+    owner.setId(42L);
+    User anotherUser = new User();
+    anotherUser.setId(99L);
+    PaperSubmissionDraft draft = new PaperSubmissionDraft();
+    draft.setId(106L);
+    draft.setCreatedBy(owner);
+
+    when(userRepository.findByUsername("user2")).thenReturn(Optional.of(anotherUser));
+    when(draftRepository.findById(106L)).thenReturn(Optional.of(draft));
+
+    assertThrows(
+      AccessDeniedException.class,
+      () -> service.renameDraft("user2", 106L, new PaperSubmissionDraftRenameRequest())
+    );
+    verify(draftRepository, never()).saveAndFlush(any(PaperSubmissionDraft.class));
+  }
+
+  @Test
+  void renameDraftRejectsSubmittedDraft() {
+    User owner = new User();
+    owner.setId(42L);
+    PaperSubmissionDraft draft = new PaperSubmissionDraft();
+    draft.setId(107L);
+    draft.setCreatedBy(owner);
+    draft.setStatus(PaperSubmissionDraftStatus.SUBMITTED);
+
+    when(userRepository.findByUsername("user1")).thenReturn(Optional.of(owner));
+    when(draftRepository.findById(107L)).thenReturn(Optional.of(draft));
+
+    assertThrows(
+      IllegalStateException.class,
+      () -> service.renameDraft("user1", 107L, new PaperSubmissionDraftRenameRequest())
+    );
+    verify(draftRepository, never()).saveAndFlush(any(PaperSubmissionDraft.class));
   }
 
   private static PaperProfile revisionSource(User owner, Long id, String title) {

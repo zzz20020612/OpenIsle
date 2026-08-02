@@ -19,21 +19,26 @@
         </div>
         <NuxtLink :to="`/papers/${submittedPaper.id}`">Open submission</NuxtLink>
       </div>
-      <section v-if="originalDrafts.length" class="draft-list" aria-labelledby="original-drafts-title">
+      <section v-if="allDrafts.length" class="draft-list" aria-labelledby="draft-workspace-title">
         <div class="draft-list-heading">
           <div>
             <span>Private workspace</span>
-            <h2 id="original-drafts-title">New Submission Drafts</h2>
+            <h2 id="draft-workspace-title">Saved Drafts</h2>
+            <p>New submissions and requested revisions are kept separate.</p>
           </div>
-          <small>{{ originalDrafts.length }} saved</small>
+          <small>{{ allDrafts.length }} saved</small>
         </div>
-        <article v-for="savedDraft in originalDrafts" :key="savedDraft.id" class="draft-row">
-          <div>
-            <strong>{{ draftTitle(savedDraft) }}</strong>
-            <span>Last edited {{ formatDraftTime(savedDraft.updatedAt) }}</span>
+        <div v-for="group in draftGroups" :key="group.key" class="draft-group">
+          <div class="draft-group-heading">
+            <strong>{{ group.label }}</strong>
+            <span>{{ group.description }}</span>
           </div>
-          <NuxtLink :to="{ path: '/papers/submit', query: { draft: savedDraft.id } }">Continue Draft</NuxtLink>
-        </article>
+          <PaperDraftRow v-for="savedDraft in group.recent" :key="savedDraft.id" :draft="savedDraft" @updated="updateDraftRecord" @deleted="removeDraftRecord" />
+          <details v-if="group.older.length" class="older-drafts">
+            <summary>{{ group.older.length }} older draft{{ group.older.length === 1 ? '' : 's' }}</summary>
+            <PaperDraftRow v-for="savedDraft in group.older" :key="savedDraft.id" :draft="savedDraft" @updated="updateDraftRecord" @deleted="removeDraftRecord" />
+          </details>
+        </div>
       </section>
       <section v-if="papers.length" class="submission-list">
       <article v-for="paper in papers" :key="paper.id" class="submission-row">
@@ -62,13 +67,14 @@
         </div>
       </article>
       </section>
-      <p v-else-if="!originalDrafts.length" class="state-message">You have not submitted a paper yet.</p>
+      <p v-else-if="!allDrafts.length" class="state-message">You have not submitted a paper yet.</p>
     </template>
   </main>
 </template>
 
 <script setup>
 import { toast } from '~/main'
+import { partitionDraftsByAge } from '~/utils/paperDraftPresentation'
 
 definePageMeta({ middleware: 'auth-client', keepalive: false })
 useHead({ title: 'My Submissions - OpenIsle' })
@@ -80,8 +86,23 @@ const { data, pending, error } = await useAsyncData('my-paper-submissions', asyn
   return { papers, drafts }
 }, { server: false })
 const papers = computed(() => data.value?.papers || [])
-const originalDrafts = computed(() => (data.value?.drafts || []).filter((draft) => !draft.revisionSourcePaperId))
-const revisionDrafts = computed(() => (data.value?.drafts || []).filter((draft) => draft.revisionSourcePaperId))
+const allDrafts = computed(() => data.value?.drafts || [])
+const originalDrafts = computed(() => allDrafts.value.filter((draft) => !draft.revisionSourcePaperId))
+const revisionDrafts = computed(() => allDrafts.value.filter((draft) => draft.revisionSourcePaperId))
+const draftGroups = computed(() => [
+  {
+    key: 'original',
+    label: 'New submission drafts',
+    description: 'Independent manuscripts that have not been submitted.',
+    ...partitionDraftsByAge(originalDrafts.value),
+  },
+  {
+    key: 'revision',
+    label: 'Revision drafts',
+    description: 'Prefilled workspaces linked to papers that need revision.',
+    ...partitionDraftsByAge(revisionDrafts.value),
+  },
+].filter((group) => group.recent.length || group.older.length))
 const submittedPaper = computed(() => {
   const submittedId = String(route.query.submitted || '')
   return papers.value.find((paper) => String(paper.id) === submittedId)
@@ -90,11 +111,14 @@ const formatStatus = (value) => String(value || 'NOT_SCREENED').replaceAll('_', 
 const statusClass = (value) => `status-${String(value || '').toLowerCase()}`
 const isCreatingRevisionId = ref(null)
 const revisionDraftFor = (paperId) => revisionDrafts.value.find((draft) => String(draft.revisionSourcePaperId) === String(paperId))
-const draftTitle = (draft) => draft?.formData?.title?.trim() || 'Untitled submission'
-const formatDraftTime = (value) => {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'recently'
-  return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+const updateDraftRecord = (updated) => {
+  data.value = {
+    ...data.value,
+    drafts: allDrafts.value.map((draft) => String(draft.id) === String(updated.id) ? updated : draft),
+  }
+}
+const removeDraftRecord = (draftId) => {
+  data.value = { ...data.value, drafts: allDrafts.value.filter((draft) => String(draft.id) !== String(draftId)) }
 }
 const openRevision = async (paper) => {
   if (!paper?.id || isCreatingRevisionId.value) return
@@ -122,13 +146,14 @@ header p { margin: 0; color: #65747b; }
 .draft-list-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding: 16px 18px; border-bottom: 1px solid #d7e0e4; }
 .draft-list-heading span { color: #2f657c; font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
 .draft-list-heading h2 { margin: 4px 0 0; font-family: Georgia, serif; font-size: 21px; font-weight: 500; }
+.draft-list-heading p { margin: 5px 0 0; color: #65747b; font-size: 12px; }
 .draft-list-heading small { color: #6a777e; }
-.draft-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 18px; border-bottom: 1px solid #e0e6e9; }
-.draft-row:last-child { border-bottom: 0; }
-.draft-row > div { display: grid; gap: 4px; min-width: 0; }
-.draft-row strong { overflow-wrap: anywhere; color: #20313a; font-size: 15px; }
-.draft-row span { color: #6a777e; font-size: 12px; }
-.draft-row a { flex: 0 0 auto; padding: 7px 10px; border: 1px solid #2f6178; color: #245f7d; font-size: 12px; font-weight: 700; text-decoration: none; }
+.draft-group + .draft-group { border-top: 2px solid #cad6db; }
+.draft-group-heading { display: flex; align-items: baseline; gap: 10px; padding: 12px 18px; background: #edf3f5; }
+.draft-group-heading strong { color: #263a44; font-size: 13px; }
+.draft-group-heading span { color: #69777e; font-size: 12px; }
+.older-drafts { border-top: 1px solid #d8e0e3; }
+.older-drafts summary { padding: 11px 18px; color: #526b77; font-size: 12px; font-weight: 700; cursor: pointer; }
 .submission-success { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 24px 0; padding: 16px 18px; border: 1px solid #9fc7ad; background: #f1f8f3; color: #214b2e; }
 .submission-success strong { font-size: 15px; }
 .submission-success p { margin: 5px 0 0; color: #40624a; font-size: 13px; line-height: 1.5; }

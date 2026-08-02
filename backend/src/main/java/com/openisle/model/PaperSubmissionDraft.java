@@ -35,6 +35,9 @@ public class PaperSubmissionDraft {
   @Column(name = "manuscript_type")
   private String manuscriptType;
 
+  @Column(name = "display_name", length = 160)
+  private String displayName;
+
   @Column(name = "form_data_json", nullable = false, columnDefinition = "LONGTEXT")
   private String formDataJson;
 
