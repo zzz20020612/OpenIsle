@@ -14,16 +14,17 @@ The goal is to keep every public-facing API, admin workflow, and ranking calcula
 
 It stores:
 
-- Full paper text or readable body content.
+- Public readable paper body or structured summary content.
 - Comments and discussion.
-- Community interactions.
+- Reactions and subscriptions.
+- Notification and moderation integration.
 - Category and tag relationships.
 
-`Post` should not become the paper business table.
+`Post` should not become the paper business table, and a paper `Post` is created only during final submission.
 
 ### 2.2 PaperProfile
 
-`PaperProfile` is the main paper business object.
+`PaperProfile` is the formal, finalized paper metadata and publication-state object. It is not used to store an incomplete submission form.
 
 It stores:
 
@@ -33,8 +34,8 @@ It stores:
 - References extracted from manuscripts or added later.
 - Subject area.
 - Paper type.
-- Manuscript file metadata.
-- Supplementary file metadata.
+- Final file relationships through normalized `PaperFile` rows.
+- Legacy `manuscript_files` and `supplementary_files` compatibility summaries when required by existing consumers.
 - Funding statement.
 - Conflict of interest statement.
 - Data availability statement.
@@ -44,8 +45,11 @@ It stores:
 - Primary institution derived from author affiliations.
 - Creator.
 - Published timestamp.
+- Corresponding-author public-contact confirmation and audit metadata.
 
 `PaperProfile` has a one-to-one relationship with `Post`.
+
+Normalized `PaperFile` rows are authoritative for final file metadata, role, visibility, and access control. Legacy `PaperProfile.manuscript_files` and `PaperProfile.supplementary_files` values are derived compatibility summaries only and must never drive file visibility or access decisions.
 
 ### 2.3 PaperAuthor
 
@@ -53,10 +57,10 @@ It stores:
 
 It stores:
 
-- Display name.
+- Given name and family name.
 - Email.
-- Institution.
-- Country or region.
+- Author role.
+- Affiliations through `PaperAuthorAffiliation` records.
 - Author order.
 - Corresponding author flag.
 - Co-first author flag.
@@ -64,7 +68,7 @@ It stores:
 
 The linked platform user is important for later rules such as blocking co-author self-rating.
 
-`PaperAuthor` should model common paper authorship, not a full contribution taxonomy in the MVP. The normal case is ordered authors plus one or more corresponding authors. The only special authorship case supported in the core submission flow is co-first authorship.
+`PaperAuthor` should model common paper authorship, not a full contribution taxonomy in the MVP. The normal case is ordered authors with exactly one corresponding author. The only special authorship case supported in the core submission flow is co-first authorship.
 
 Co-first authors must start from the first author and be continuous. For example, author 1 and author 2 can both be co-first authors. Author 1 and author 3 cannot be co-first authors if author 2 is not also marked co-first.
 
@@ -130,6 +134,18 @@ It stores:
 
 List pages and ranking pages should read from the snapshot instead of recalculating every rating on each request.
 
+### 2.8 PaperSubmissionDraft
+
+`PaperSubmissionDraft` stores incomplete, private, owner-scoped submission form state and draft-scoped file references.
+
+The persistence boundary is strict:
+
+- `Post` owns finalized community behavior: comments, reactions, subscriptions, notifications, and moderation.
+- `PaperProfile` owns formal finalized paper metadata and publication state.
+- `PaperSubmissionDraft` owns incomplete private form state only.
+
+Saving or autosaving a partial submission must not create `Post` or `PaperProfile` rows.
+
 ## 3. User Roles
 
 ### 3.1 Guest
@@ -156,13 +172,15 @@ Allowed:
 - Submit papers.
 - View their own draft, screening, rejected, withdrawn, or revision-needed papers.
 - Edit papers when the paper is still editable.
-- Withdraw their own paper when withdrawal is allowed.
+- Cancel or abandon their own submission before public publication.
+- Request withdrawal after publication, subject to admin review.
 
 Not allowed:
 
 - Rate their own paper.
 - Rate a paper where they are a linked co-author.
 - Override AI or moderation decisions.
+- Directly withdraw a paper after it has been publicly published.
 
 ### 3.3 Qualified Reader
 
@@ -185,6 +203,7 @@ Allowed:
 - View all papers.
 - Process AI screening exceptions.
 - Mark papers as `REJECTED`, `NEEDS_REVISION`, `WITHDRAWN`, or `RETRACTED`.
+- Review post-publication withdrawal requests.
 - Restore papers when policy allows.
 - Manage institution normalization and verification.
 
@@ -203,19 +222,22 @@ Expert rules are not part of the current MVP implementation.
 
 ## 4. Paper Status Model
 
-`PaperPublicationStatus` is the main lifecycle status.
+`PaperPublicationStatus` is the main lifecycle status for a finalized paper record. Partial form state exists only in `PaperSubmissionDraft`; a newly finalized paper enters this lifecycle at `SCREENING`.
 
-### 4.1 DRAFT
+### 4.1 Submission Draft (`PaperSubmissionDraft`, outside `PaperPublicationStatus`)
 
-The paper is still a private draft.
+The submission is still an incomplete private form and is not yet a paper record.
 
 Rules:
 
-- Visible only to the creator and admins.
+- Readable and editable only by the draft owner through the owner-scoped browser workflow.
 - Not visible in the public feed.
 - Not visible in rankings.
 - Cannot be rated.
 - Can be edited by the creator.
+- Does not create `Post`, `PaperProfile`, or other finalized paper rows.
+- Cancelling or deleting it affects only the private draft and its unreferenced draft files.
+- Original-submission drafts and revision drafts are separate private workspaces. A global new-submission action must not implicitly resume a revision draft; revision drafts are resumed from their source paper or the author's submission workspace.
 
 ### 4.2 SCREENING
 
@@ -239,7 +261,8 @@ Rules:
 - Visible in the public feed.
 - Eligible for ratings by qualified non-author readers.
 - Eligible for paper, author, and institution rankings after it has at least one valid rating.
-- Can later move to `WITHDRAWN` or `RETRACTED`.
+- Cannot be directly withdrawn by the author after public publication.
+- Can later move to `WITHDRAWN` only through an admin-approved withdrawal workflow, or to `RETRACTED` through admin moderation.
 
 ### 4.4 NEEDS_REVISION
 
@@ -270,10 +293,15 @@ Rules:
 
 ### 4.6 WITHDRAWN
 
-The author withdrew the paper.
+The paper was removed from active public publication through a platform-approved withdrawal workflow.
 
 Rules:
 
+- A private draft may be abandoned through `PaperSubmissionDraft IN_PROGRESS -> ABANDONED`; this creates or converts no `PaperProfile`.
+- For a finalized paper before public publication, only `SCREENING`, `NEEDS_REVISION`, or `REJECTED` may move to `WITHDRAWN` under this policy.
+- After public publication, the author cannot directly withdraw the paper.
+- After public publication, the author may submit a withdrawal request.
+- Admin review is required before a public paper becomes `WITHDRAWN`.
 - Not visible in the public feed.
 - Not visible in rankings.
 - Cannot receive new ratings.
@@ -363,12 +391,13 @@ A paper can appear in the public paper feed only when:
 
 Excluded statuses:
 
-- `DRAFT`
 - `SCREENING`
 - `NEEDS_REVISION`
 - `REJECTED`
 - `WITHDRAWN`
 - `RETRACTED`
+
+Submission drafts are excluded before this check because they do not have a `PaperProfile` or `publicationStatus`.
 
 ### 6.2 Public Detail Eligibility
 
@@ -556,7 +585,7 @@ Future signals:
 
 ### 10.1 Draft Creation
 
-The author creates a draft.
+The author creates a private `PaperSubmissionDraft`. Partial saves and autosaves update that draft only; they do not create incomplete `Post` or `PaperProfile` records.
 
 Required fields before final submission:
 
@@ -565,43 +594,52 @@ Required fields before final submission:
 - Keywords.
 - Subject area.
 - Paper type.
-- Full text or manuscript file metadata.
+- Exactly one DOCX manuscript.
+- Exactly one cover letter.
+- Exactly one TOC graphic.
 - At least one author.
-- At least one corresponding author with email.
-- Author affiliation and country or region when available.
+- Exactly one corresponding author across the submission.
+- Email, given name, family name, and author role for every author.
+- At least one affiliation and exactly one primary affiliation for every author.
+- Explicit final-review confirmation that the corresponding author's email may be used as the paper's public contact.
 - Declaration statements when applicable.
 
 References are not required as a separate manual entry during MVP submission. The manuscript file remains the source of truth for references, and future extraction can parse references from the uploaded file or full text.
 
-Authors do not enter a separate paper-level primary institution during submission. The system derives `PaperProfile.primaryInstitution` from the author list:
+Submission privacy is mandatory:
 
-1. Use the first author's institution.
-2. If the first author has no institution, use the first corresponding author's institution.
-3. If neither is available, leave the primary institution empty.
+- After publication, public APIs may expose only the exactly-one corresponding author's email.
+- Final review requires `correspondingAuthorContactConfirmed = true`; final submission must store and audit this value, its confirmation timestamp, and the confirming user in finalized submission metadata.
+- All non-corresponding author emails remain private.
+- Public affiliation fields are organization, department, city, region or state, and country.
+- Private affiliation fields are street or address lines and postal code.
+- Cover letters, review-only files, and private comments to the platform are never public.
+
+Authors do not enter a separate paper-level primary institution during submission. The system derives `PaperProfile.primaryInstitution` from the first author's required primary affiliation.
 
 ### 10.2 Final Submission
 
-When the author submits:
+Final submission is idempotent. After authoritative validation succeeds, one transaction creates:
 
-1. Create `Post`.
-2. Create `PaperProfile`.
-3. Create `PaperAuthor` rows.
-4. Create or reuse `Institution` rows.
-5. Derive `PaperProfile.primaryInstitution` from the submitted author affiliations.
-6. Set `publicationStatus = SCREENING`.
-7. Set `screeningStatus = SCREENING`.
-8. Run AI screening.
-9. Store `AiScreeningResult`.
-10. If passed, set `publicationStatus = PUBLISHED`.
-11. If published, set `publishedAt`.
+1. A `Post` with `PostType.PAPER`.
+2. The formal `PaperProfile` metadata with `publicationStatus = SCREENING`, `screeningStatus = SCREENING`, and the corresponding-author public-contact confirmation audit fields.
+3. `PaperAuthor` rows.
+4. `PaperAuthorAffiliation` rows and normalized `Institution` links.
+5. Structured funding rows.
+6. Final file rows for the manuscript, cover letter, TOC graphic, and any additional files.
+7. The initial screening state or screening record.
+
+The same transaction derives `PaperProfile.primaryInstitution`, locks the draft, and records the successful idempotency result. Retrying the same final submission must return the same finalized paper without creating duplicates.
+
+AI screening runs after finalization. If it passes, the system sets `publicationStatus = PUBLISHED` and `publishedAt`; if screening cannot complete, the finalized paper remains in `SCREENING`.
 
 ### 10.3 Post and PaperProfile Relationship
 
-Creation must be atomic.
+Finalization must be atomic across `Post`, paper metadata, authors, affiliations, funding, files, and screening state.
 
-If `Post` creation succeeds but `PaperProfile` creation fails, the transaction should roll back.
+If any finalized row fails to persist, the transaction must roll back and the private draft must remain available for retry.
 
-If `PaperProfile` creation succeeds but AI screening fails, the paper should remain in `SCREENING`.
+If AI screening fails after the finalization transaction commits, the paper remains in `SCREENING`; the system must not create a second paper on retry.
 
 ## 11. Moderation Rules
 
@@ -617,15 +655,22 @@ Admin should eventually have a paper management queue with:
 
 ### 11.2 Withdrawal
 
-Authors can request withdrawal.
+Submission cancellation and withdrawal are separate workflows.
 
-MVP option:
+Before publication:
 
-- Allow creator to mark `PUBLISHED -> WITHDRAWN`.
+- The creator can abandon a private draft through `PaperSubmissionDraft IN_PROGRESS -> ABANDONED`; this creates or converts no `PaperProfile`.
+- For a finalized paper before public publication, only `SCREENING`, `NEEDS_REVISION`, or `REJECTED` may move to `WITHDRAWN` under this policy.
+- Cancelled unpublished submissions do not enter the public feed or rankings.
 
-Future option:
+After publication:
 
-- Require admin approval for published-paper withdrawal.
+- The creator cannot directly mark a `PUBLISHED` paper as `WITHDRAWN`.
+- The creator can submit a withdrawal request with a reason.
+- Admins review withdrawal requests.
+- If approved, the admin changes `PUBLISHED -> WITHDRAWN`.
+- If the reason indicates policy violation, misconduct, or platform risk, the admin may choose `PUBLISHED -> RETRACTED` instead.
+- Withdrawal decisions should create an audit log entry.
 
 ### 11.3 Retraction
 
@@ -744,7 +789,7 @@ Apply the policy to:
 
 Required tests:
 
-- Draft papers do not appear in feed.
+- Submission drafts have no paper row and therefore cannot appear in the feed.
 - Screening papers do not appear in feed.
 - Published papers appear in feed.
 - Unpublished papers cannot be rated.

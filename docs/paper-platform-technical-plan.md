@@ -24,7 +24,7 @@ OpenIsle 已经提供用户、登录、帖子、草稿、分类标签、评论�
 - `Role`
 - `Auth`
 - `Post`
-- `Draft`
+- `Draft`（仅指 OpenIsle 通用 post draft，不承载论文投稿表单）
 - `Category`
 - `Tag`
 - `Comment`
@@ -35,25 +35,36 @@ OpenIsle 已经提供用户、登录、帖子、草稿、分类标签、评论�
 `Paper Business Extension` 负责论文平台业务：
 
 - `PaperProfile`
+- `PaperSubmissionDraft`
+- `PaperSubmissionFile`
 - `PaperAuthor`
+- `PaperAuthorAffiliation`
 - `Institution`
+- `PaperFundingRecord`
+- `PaperFile`
 - `PaperRating`
 - `PaperScoreSnapshot`
 - `AiScreeningResult`
 - `ExpertProfile`
 - `KnowledgeEntry`
 
-核心设计原则是：不要把 `Post` 直接改成复杂论文总表。`Post` 继续作为内容正文和社区互动的承载层，`PaperProfile` 作为论文业务主表，与 `Post` 一对一关联。
+核心设计原则是：不要把 `Post` 直接改成复杂论文总表。`Post` 继续承载最终论文的评论、reaction、subscription、notification 和 moderation；`PaperProfile` 保存正式完成投稿后的论文元数据与 publication state，并与 `Post` 一对一关联；`PaperSubmissionDraft` 只保存未完成、私有、owner-scoped 的交互式表单状态。
+
+部分保存和 autosave 只能写入 `PaperSubmissionDraft` 及其 draft-scoped files，不能提前创建不完整的 `Post` 或 `PaperProfile`。
 
 推荐关系：
 
 ```text
 Post
-  -> title, content, author, comments, reactions, tags
+  -> finalized content, comments, reactions, subscriptions, notifications, moderation
 
 PaperProfile
   -> linked to Post
-  -> paper metadata, subject area, publication status, screening status
+  -> formal finalized metadata, subject area, publication status, screening status
+
+PaperSubmissionDraft
+  -> incomplete private owner-scoped form state only
+  -> no Post or PaperProfile before final submission
 
 PaperRating
   -> linked to PaperProfile
@@ -64,7 +75,9 @@ PaperScoreSnapshot
   -> calculated paper score
 
 Institution
-  -> linked to PaperAuthor
+  -> PaperAuthorAffiliation
+  -> PaperAuthor
+  -> each PaperAuthor may have multiple affiliations with exactly one primary
   -> used for institution ranking
 
 AiScreeningResult
@@ -209,7 +222,7 @@ User login
 
 ### 5.1 PaperProfile
 
-作用：论文业务主表，与 `Post` 一对一关联。
+作用：正式完成投稿后的论文业务主表，与 `Post` 一对一关联。未完成表单不写入该表。
 
 建议字段：
 
@@ -224,13 +237,17 @@ User login
 - `screeningStatus`
 - `publishedAt`
 - `primaryInstitutionId`
+- `correspondingAuthorContactConfirmed`
+- `correspondingAuthorContactConfirmedAt`
+- `correspondingAuthorContactConfirmedBy`
 - `createdBy`
 - `createdAt`
 - `updatedAt`
 
+最终文件元数据以 normalized `PaperFile` rows 为权威来源。若为兼容现有消费者保留 `PaperProfile.manuscriptFiles` 或 `PaperProfile.supplementaryFiles`，它们只能是由 `PaperFile` 派生的 compatibility summaries，不得用于 visibility 或 access-control 判断。
+
 建议状态：
 
-- `DRAFT`
 - `SCREENING`
 - `PUBLISHED`
 - `NEEDS_REVISION`
@@ -238,9 +255,11 @@ User login
 - `WITHDRAWN`
 - `RETRACTED`
 
+`PaperProfile` 在 final submission 事务中直接以 `SCREENING` 状态创建。`IN_PROGRESS` 属于 `PaperSubmissionDraft.status`，不是新的 `PaperProfile` 或 `Post` 记录。
+
 状态含义：
 
-- `WITHDRAWN`：作者主动撤回。撤回后论文不在公开 feed 中展示，但历史记录和已有评分保留。
+- `WITHDRAWN`：公开前作者取消/放弃投稿，或公开后经 Admin 审核批准的撤稿结果。撤回后论文不在公开 feed 中展示，但历史记录和已有评分保留。
 - `RETRACTED`：平台管理员强制下架。用于学术不端、违规内容或严重风险场景，只有 Admin 可以操作。
 
 ### 5.2 PaperAuthor
@@ -252,11 +271,40 @@ User login
 - `id`
 - `paperId`
 - `userId`
-- `displayName`
+- `givenName`
+- `middleName`（optional）
+- `familyName`
+- `displayName`（derived compatibility/search field）
 - `email`
-- `institutionId`
+- `authorRole`
 - `authorOrder`
 - `isCorrespondingAuthor`
+
+最终提交要求每位作者都有 email、given name、family name、author role、至少一个 `PaperAuthorAffiliation`，且其中恰好一个为 primary affiliation。整篇投稿必须恰好有一位 corresponding author。
+
+`givenName` 和 `familyName` 是权威姓名字段。`displayName` 由 `givenName`、可选 `middleName` 和 `familyName` 计算生成，仅用于兼容现有实现与搜索，不作为独立可编辑的数据源。
+
+### 5.2.1 PaperAuthorAffiliation
+
+作用：连接 `PaperAuthor` 与 normalized `Institution`，允许每位作者拥有多个 affiliations，并要求恰好一个 primary affiliation。
+
+建议字段：
+
+- `id`
+- `paperAuthorId`
+- `institutionId`
+- `department`
+- `city`
+- `regionOrState`
+- `country`
+- `streetOrAddressLines`
+- `postalCode`
+- `isPrimary`
+- `displayOrder`
+
+公开 `organization` 值来自关联的 normalized `Institution.name`；如保留 author-specific organization snapshot，也必须由该 normalized institution 关系派生。
+
+公开 affiliation 字段仅包括 organization、department、city、region/state 和 country。`streetOrAddressLines` 与 `postalCode` 始终私有，不得进入公开 API、搜索索引或页面元数据。
 
 ### 5.3 Institution
 
@@ -390,14 +438,33 @@ User login
 
 前端调用论文平台业务 API，不直接依赖复杂内部实现。
 
-### 6.1 Paper APIs
+### 6.1 Submission Draft and Finalized Paper APIs
+
+浏览器投稿工作区使用 owner-scoped draft APIs：
 
 ```text
-POST /api/papers
+POST /api/paper-submission-drafts
+GET /api/paper-submission-drafts/current
+GET /api/paper-submission-drafts/{draftId}
+PATCH /api/paper-submission-drafts/{draftId}
+DELETE /api/paper-submission-drafts/{draftId}
+POST /api/paper-submission-drafts/{draftId}/files/presign
+PATCH /api/paper-submission-drafts/{draftId}/files/{fileId}
+DELETE /api/paper-submission-drafts/{draftId}/files/{fileId}
+POST /api/paper-submission-drafts/{draftId}/validate
+POST /api/paper-submission-drafts/{draftId}/submit
+```
+
+`GET /api/paper-submission-drafts/current` 返回当前用户最近更新的 `IN_PROGRESS` draft；没有可恢复草稿时返回 `204 No Content`。可通过 `kind=ORIGINAL|REVISION|ANY` 限定草稿用途，其中不传参数时保持 `ANY` 兼容行为。全局 Submit 入口必须请求 `ORIGINAL`，修订工作流必须通过明确的 revision draft ID 进入，避免普通投稿与修订稿互相恢复。
+
+这些 draft endpoints 是交互式、owner-scoped 的浏览器工作流，因此有意不暴露为 MCP tools。未来 MCP 集成边界是 finalized paper APIs，而不是部分草稿的 autosave、恢复或文件编排接口。
+
+正式论文 API 继续服务 final submission 之后的资源：
+
+```text
 GET /api/papers
 GET /api/papers/{paperId}
 PUT /api/papers/{paperId}
-POST /api/papers/{paperId}/submit
 POST /api/papers/{paperId}/publish
 ```
 
@@ -477,7 +544,7 @@ OpenIsle 已经包含 SpringDoc/OpenAPI 相关依赖。MVP 开发阶段需要把
 
 ### 7.2 Submit Paper Page
 
-基于现有 `new-post.vue` 改造。
+使用独立的连续投稿工作区，并以 `PaperSubmissionDraft` autosave；打开或保存页面时不得创建 `Post` 或 `PaperProfile`。
 
 字段：
 
@@ -486,10 +553,17 @@ OpenIsle 已经包含 SpringDoc/OpenAPI 相关依赖。MVP 开发阶段需要把
 - Keywords
 - Subject Area
 - Paper Type
-- Authors
-- Institutions
-- Full Text
-- Optional File Link
+- Exactly one DOCX Manuscript
+- Exactly one Cover Letter
+- Exactly one TOC Graphic
+- Authors with Email, Given Name, Family Name, and Author Role
+- At least one Affiliation and exactly one Primary Affiliation per Author
+- Exactly one Corresponding Author
+- Corresponding Author Public Contact Confirmation
+- Structured Funding and Declarations
+- Optional Supporting, Review Only, and Other Files
+
+Final review 必须写入 `correspondingAuthorContactConfirmed = true`。Finalization 将该值连同 `correspondingAuthorContactConfirmedAt` 和 `correspondingAuthorContactConfirmedBy` 保存到 finalized metadata；公开后仅 corresponding author email 可公开。非 corresponding author email、street/address lines、postal code、Cover Letter、Review Only files 和 Comments to the Platform 始终私有。
 
 ### 7.3 Paper Detail Page
 
@@ -498,7 +572,7 @@ OpenIsle 已经包含 SpringDoc/OpenAPI 相关依赖。MVP 开发阶段需要把
 内容：
 
 - Paper metadata
-- Full text
+- Structured public metadata and downloadable DOCX manuscript
 - Score panel
 - Rating distribution
 - Reader reviews
@@ -555,7 +629,7 @@ public interface AiScreeningClient {
 - Abstract
 - Keywords
 - Subject Area
-- Full text
+- DOCX manuscript file reference or extracted text when available
 - Authors
 - Institutions
 
@@ -591,11 +665,14 @@ public interface AiScreeningClient {
 
 ```text
 Author fills submit form
-  -> System creates Post
-  -> System creates PaperProfile linked to Post
-  -> System creates PaperAuthor records
-  -> Author submits paper
-  -> AiScreeningResult created
+  -> System creates and autosaves PaperSubmissionDraft only
+  -> Author reviews and confirms final submission
+  -> correspondingAuthorContactConfirmed must equal true
+  -> Idempotent transaction creates Post + PaperProfile
+  -> Same transaction stores contact-confirmation audit metadata
+  -> Same transaction creates authors + affiliations + funding + files + screening state
+  -> Draft is locked and marked submitted
+  -> Existing AI screening runs
   -> If PASSED, PaperProfile becomes PUBLISHED
   -> Paper appears in public feed
   -> Reader submits PaperRating
@@ -616,10 +693,17 @@ PaperProfile becomes NEEDS_REVISION or REJECTED
 创建规则：
 
 - `Post.title` 同步论文标题。
-- `Post.content` 存储论文全文或 Markdown 正文。
+- `Post.content` 存储由正式元数据生成的公开可读正文或结构化摘要；当前阶段不解析 DOCX 全文。
 - `PaperProfile` 存储摘要、关键词、主题、类型、发布状态和初筛状态。
-- `PaperAuthor` 存储作者列表和机构关系。
-- 创建 `Post + PaperProfile + PaperAuthor` 必须在同一个事务中完成。
+- `PaperAuthor` 与 `PaperAuthorAffiliation` 存储作者顺序、多机构关系和 primary affiliation。
+- Normalized `PaperFile` rows 是 final file metadata、role、visibility 和 access control 的权威来源；legacy `PaperProfile` file summaries 仅用于兼容。
+- Public contact 只允许 exactly-one corresponding author email，且 final submission 必须验证并审计 `correspondingAuthorContactConfirmed = true`。
+- Affiliation 公开字段为 organization、department、city、region/state、country；street/address lines 和 postal code 始终私有。
+- Partial save 只更新 `PaperSubmissionDraft`，不创建 `Post`、`PaperProfile` 或其他正式论文记录。
+- Final submission 必须幂等，并在同一个事务中创建 `Post`、`PaperProfile`、authors、affiliations、funding、final files 和 initial screening state。
+- 相同 idempotency key 的重试返回同一篇正式论文，不得重复创建任何记录。
+- `PaperSubmissionDraft.status = IN_PROGRESS` 表示私有草稿仍在编辑；取消时设置为 `ABANDONED`，且不创建或转换任何 `PaperProfile`。
+- AI screening 在 finalization 后执行；调用失败时，已完成投稿的论文保持 `SCREENING`。
 
 论文详情页聚合规则：
 
@@ -633,11 +717,17 @@ GET /api/papers/{paperId}
   -> AiScreeningResult summary
 ```
 
-撤回和下架流程：
+取消、撤稿和下架流程：
 
 ```text
-Author withdrawal:
-PUBLISHED -> WITHDRAWN
+Private draft abandonment:
+PaperSubmissionDraft IN_PROGRESS -> ABANDONED (no PaperProfile)
+
+Finalized pre-publication cancellation:
+SCREENING | NEEDS_REVISION | REJECTED -> WITHDRAWN
+
+Post-publication withdrawal request:
+PUBLISHED -> withdrawal request -> Admin review -> WITHDRAWN or RETRACTED
 
 Admin retraction:
 PUBLISHED -> RETRACTED
@@ -645,7 +735,10 @@ PUBLISHED -> RETRACTED
 
 权限规则：
 
-- 作者可以撤回自己的论文。
+- 作者可以在公开发表前取消或放弃自己的投稿。
+- AI 通过并公开发表后，作者不能自行撤回论文。
+- 公开发表后的撤稿只能由作者提交 withdrawal request，由 Admin 审核处理。
+- Admin 审核后可以将论文标记为 `WITHDRAWN`，如涉及违规或平台风险则标记为 `RETRACTED`。
 - Admin 可以下架任意论文。
 - `WITHDRAWN` 和 `RETRACTED` 不进入公开 feed 和 ranking。
 - 已有评分和评论保留，用于审计和历史记录。
@@ -722,6 +815,10 @@ MVP 不实现复杂语义搜索、向量检索和知识库问答。这些能力�
 
 最低测试要求：
 
+- Integration test: partial autosave creates only `PaperSubmissionDraft`, with no `Post` or `PaperProfile` rows.
+- Integration test: final submission validates exactly one corresponding author, required author fields and affiliations, and the three required file roles.
+- Integration test: final submission is transactional and idempotent across paper metadata, authors, affiliations, funding, files, and screening state.
+- Security test: draft ownership and private-file/public-field visibility rules.
 - Integration test: `paper submission -> mock AI screening -> publication`.
 - Integration test: `rating -> score snapshot update -> ranking data changes`.
 - Service test: `PaperRatingService` must enforce one user, one rating.
@@ -746,8 +843,10 @@ MVP 不实现复杂语义搜索、向量检索和知识库问答。这些能力�
 
 ### Phase 2: Paper Data Layer
 
+- 新增 `PaperSubmissionDraft` 和 draft-scoped file records。
 - 新增 `PaperProfile`。
 - 新增 `PaperAuthor`。
+- 新增 `PaperAuthorAffiliation`、`PaperFundingRecord` 和 final `PaperFile`。
 - 新增 `Institution`。
 - 建立 `Post -> PaperProfile` 关联。
 - 建立基础 repository 和 service。
@@ -756,8 +855,10 @@ MVP 不实现复杂语义搜索、向量检索和知识库问答。这些能力�
 
 ### Phase 3: Paper Submission and Publication
 
-- 改造 submit page。
-- 新增 paper create/update/submit API。
+- 实现 EST-style continuous submission workspace 和 owner-scoped autosave。
+- 新增 draft create/read/update/delete、file、validate 和 submit API。
+- 实现幂等 finalization transaction，正式创建 `Post`、paper metadata、authors、affiliations、funding、files 和 screening state。
+- 保持 browser draft APIs 不进入 MCP；finalized paper APIs 作为未来 MCP 集成边界。
 - 新增 mock AI screening。
 - AI passed 后自动发布。
 - 首页展示 paper feed。
