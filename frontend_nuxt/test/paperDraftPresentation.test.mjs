@@ -21,8 +21,9 @@ test('draft title follows the explicit, metadata, and filename fallback order', 
 test('revision source is identified separately from ordinary draft files', () => {
   assert.equal(
     draftSourceLabel({ revisionSourcePaperId: 6, revisionSourcePaperTitle: 'Original paper' }),
-    'Revision of Original paper',
+    'Revision of Paper #6 · Original paper',
   )
+  assert.equal(draftSourceLabel({ revisionSourcePaperId: 7 }), 'Revision of Paper #7')
   assert.equal(draftSourceLabel({ fileCount: 2 }), '2 uploaded files')
 })
 

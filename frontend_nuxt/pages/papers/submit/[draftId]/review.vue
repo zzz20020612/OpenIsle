@@ -154,6 +154,7 @@
 </template>
 
 <script setup>
+import { toUserFacingError } from '~/utils/userFacingError'
 import { Attention, CheckOne, Edit, FileText } from '@icon-park/vue-next'
 import { OPTIONAL_FILE_ROLES, REQUIRED_FILE_ROWS } from '~/config/paperSubmissionConfig'
 
@@ -203,7 +204,7 @@ onMounted(async () => {
     draft.value = await api.getSubmissionDraft(route.params.draftId)
     validation.value = await api.validateSubmissionDraft(route.params.draftId)
   } catch (error) {
-    errorMessage.value = error?.data?.error || error?.message || 'Unable to load this submission.'
+    errorMessage.value = toUserFacingError(error, 'Unable to load this submission.')
   } finally {
     loading.value = false
   }
@@ -226,7 +227,7 @@ const submitFinal = async () => {
       query: { submitted: result.paperId },
     })
   } catch (error) {
-    errorMessage.value = error?.data?.error || error?.message || 'Unable to submit this manuscript.'
+    errorMessage.value = toUserFacingError(error, 'Unable to submit this manuscript.')
     if (error?.statusCode === 409 || error?.response?.status === 409) {
       try {
         draft.value = await api.getSubmissionDraft(route.params.draftId)

@@ -7,7 +7,7 @@
         <p>Continue to your submissions, revisions, and research workspace.</p>
       </header>
 
-      <form class="login-form" @submit.prevent="submitLogin">
+      <form class="login-form" method="post" action="/login" @submit.prevent="submitLogin">
         <label class="login-field" for="login-username">
           <span>Email or username</span>
           <BaseInput
@@ -68,8 +68,9 @@
 
 <script setup>
 import { toast } from '~/main'
-import { loadCurrentUser, setToken } from '~/utils/auth'
+import { authState, loadCurrentUser, setToken } from '~/utils/auth'
 import { AuthResultStatus } from '~/utils/authSessionCore'
+import { toUserFacingError } from '~/utils/userFacingError'
 import BaseInput from '~/components/BaseInput.vue'
 import ThirdPartyAuth from '~/components/ThirdPartyAuth.vue'
 import { registerPush } from '~/utils/push'
@@ -83,6 +84,7 @@ const password = ref('')
 const isWaitingForLogin = ref(false)
 const loginError = ref('')
 const sessionUnavailable = ref(false)
+let redirecting = false
 
 const loginRedirectPath = computed(() => {
   const redirect = Array.isArray(route.query.redirect)
@@ -93,11 +95,29 @@ const loginRedirectPath = computed(() => {
     : '/papers'
 })
 
+const redirectAuthenticatedSession = async () => {
+  if (redirecting || route.path !== '/login') return
+  redirecting = true
+  try {
+    await router.replace(loginRedirectPath.value)
+  } finally {
+    redirecting = false
+  }
+}
+
+watch(
+  () => authState.status,
+  (status) => {
+    if (status === AuthResultStatus.AUTHENTICATED) void redirectAuthenticatedSession()
+  },
+  { immediate: true },
+)
+
 const finishLogin = async () => {
   sessionUnavailable.value = false
   loginError.value = ''
   toast.success('Logged in successfully.')
-  await router.replace(loginRedirectPath.value)
+  await redirectAuthenticatedSession()
   void registerPush()
 }
 
@@ -143,7 +163,7 @@ const submitLogin = async () => {
     if (response.ok && data.token) {
       await handleSessionResult(await setToken(data.token))
     } else if (data.reason_code === 'EMAIL_SEND_FAILED') {
-      loginError.value = data.error || data.message || 'The verification email could not be sent.'
+      loginError.value = toUserFacingError(data, 'The verification email could not be sent.')
     } else if (data.reason_code === 'NOT_VERIFIED') {
       toast.info('This email is not verified. A new verification code has been sent.')
       await navigateTo(
@@ -155,10 +175,10 @@ const submitLogin = async () => {
     } else if (data.reason_code === 'NOT_APPROVED') {
       await navigateTo({ path: '/signup-reason', query: { token: data.token } }, { replace: true })
     } else {
-      loginError.value = data.error || data.message || 'The username or password was not accepted.'
+      loginError.value = toUserFacingError(data, 'The username or password was not accepted.')
     }
   } catch (error) {
-    loginError.value = `Unable to reach the sign-in service. ${error?.message || 'Try again shortly.'}`
+    loginError.value = toUserFacingError(error, 'Unable to reach the sign-in service. Try again shortly.')
   } finally {
     isWaitingForLogin.value = false
   }

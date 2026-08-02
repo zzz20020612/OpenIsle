@@ -10,7 +10,10 @@ export const draftDisplayTitle = (draft) =>
 
 export const draftSourceLabel = (draft) => {
   if (draft?.revisionSourcePaperId) {
-    return `Revision of ${trimmed(draft.revisionSourcePaperTitle) || `Paper #${draft.revisionSourcePaperId}`}`
+    const sourceTitle = trimmed(draft.revisionSourcePaperTitle)
+    return sourceTitle
+      ? `Revision of Paper #${draft.revisionSourcePaperId} · ${sourceTitle}`
+      : `Revision of Paper #${draft.revisionSourcePaperId}`
   }
   const fileName = trimmed(draft?.primaryManuscriptFileName) ||
     trimmed(draft?.files?.find((file) => file?.role === 'MANUSCRIPT')?.originalFileName)

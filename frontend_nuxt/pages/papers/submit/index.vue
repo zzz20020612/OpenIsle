@@ -514,6 +514,7 @@ import {
   SUBMISSION_SECTIONS,
 } from '~/config/paperSubmissionConfig'
 import { draftDisplayTitle, draftSourceLabel, partitionDraftsByAge } from '~/utils/paperDraftPresentation'
+import { toUserFacingError } from '~/utils/userFacingError'
 
 const SectionHeading = defineComponent({
   props: {
@@ -659,7 +660,7 @@ const prepareGlobalSubmissionEntry = async ({ initializeWorkspace = false } = {}
       workspaceInitialized.value = true
     }
   } catch (error) {
-    draftChoiceError.value = error?.data?.error || error?.message || 'Unable to open paper submission.'
+    draftChoiceError.value = toUserFacingError(error, 'Unable to open paper submission.')
   } finally {
     entryLoading.value = false
   }
@@ -675,7 +676,7 @@ const continueExistingDraft = async (selectedDraft) => {
     if (!openedDraft) throw new Error(lastError.value || 'Unable to open this draft.')
   } catch (error) {
     pendingOriginalDrafts.value = [selectedDraft]
-    draftChoiceError.value = error?.data?.error || error?.message || 'Unable to open this draft.'
+    draftChoiceError.value = toUserFacingError(error, 'Unable to open this draft.')
   } finally {
     draftChoiceAction.value = ''
   }
@@ -698,7 +699,7 @@ const startNewSubmission = async () => {
     }
   } catch (error) {
     pendingOriginalDrafts.value = existingDrafts
-    draftChoiceError.value = error?.data?.error || error?.message || 'Unable to start a new submission.'
+    draftChoiceError.value = toUserFacingError(error, 'Unable to start a new submission.')
   } finally {
     draftChoiceAction.value = ''
   }

@@ -4,6 +4,7 @@ import {
   createSingleFlight,
   shouldInvalidateToken,
 } from './authSessionCore.js'
+import { toUserFacingError } from './userFacingError.js'
 
 const TOKEN_KEY = 'token'
 const singleFlight = createSingleFlight()
@@ -98,7 +99,7 @@ const requestCurrentUser = async (token) => {
     return authResult(AuthResultStatus.INVALID, { message: data.error })
   }
 
-  return unavailableResult(data?.error || data?.message || `Account request failed (${response.status}).`)
+  return unavailableResult(toUserFacingError(data, `Account request failed (${response.status}).`))
 }
 
 export async function loadCurrentUser(requestToken = getToken()) {
@@ -162,7 +163,7 @@ const requestTokenCheck = async (token) => {
     return authResult(AuthResultStatus.INVALID, { message: data.error })
   }
 
-  return unavailableResult(data?.error || data?.message || `Session check failed (${response.status}).`)
+  return unavailableResult(toUserFacingError(data, `Session check failed (${response.status}).`))
 }
 
 export async function checkToken() {
