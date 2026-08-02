@@ -1,6 +1,16 @@
 import { defineNuxtConfig } from 'nuxt/config'
+import { defineEventHandler } from 'h3'
 
 export default defineNuxtConfig({
+  experimental: {
+    appManifest: false,
+  },
+  devServerHandlers: [
+    {
+      route: '/_nuxt/builds/meta/dev.json',
+      handler: defineEventHandler(() => ({})),
+    },
+  ],
   devServer: {
     host: '0.0.0.0',
     port: 3000,

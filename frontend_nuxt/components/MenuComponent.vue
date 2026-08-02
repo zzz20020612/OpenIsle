@@ -1,176 +1,57 @@
-﻿<template>
+<template>
   <transition name="slide">
-    <nav v-if="visible" class="menu">
+    <nav v-if="visible" class="menu" aria-label="Primary navigation">
       <div class="menu-content">
         <div class="menu-item-container">
-                    <NuxtLink class="menu-item" exact-active-class="selected" to="/" @click="handleItemClick">
-            <hashtag-key class="menu-item-icon" />
-            <span class="menu-item-text">Home</span>
-          </NuxtLink>
           <NuxtLink
+            v-for="item in primaryItems"
+            :key="item.to"
             class="menu-item"
             exact-active-class="selected"
-            to="/papers"
+            :to="item.to"
             @click="handleItemClick"
           >
-            <hashtag-key class="menu-item-icon" />
-            <span class="menu-item-text">Papers</span>
-          </NuxtLink>
-          <NuxtLink
-            class="menu-item"
-            exact-active-class="selected"
-            to="/new-post"
-            @click="handleItemClick"
-          >
-            <edit class="menu-item-icon" />
-            <span class="menu-item-text">New Post</span>
-          </NuxtLink>
-          <NuxtLink
-            class="menu-item"
-            exact-active-class="selected"
-            to="/message"
-            @click="handleItemClick"
-          >
-            <remind class="menu-item-icon" />
-            <span class="menu-item-text">Messages</span>
-            <span v-if="unreadCount > 0" class="unread-container">
-              <span class="unread"> {{ showUnreadCount }} </span>
-            </span>
-          </NuxtLink>
-          <NuxtLink
-            class="menu-item"
-            exact-active-class="selected"
-            to="/about"
-            @click="handleItemClick"
-          >
-            <info-icon class="menu-item-icon" />
-            <span class="menu-item-text">About</span>
-          </NuxtLink>
-          <NuxtLink
-            class="menu-item"
-            exact-active-class="selected"
-            to="/activities"
-            @click="handleItemClick"
-          >
-            <gift class="menu-item-icon" />
-            <span class="menu-item-text">Activities</span>
-          </NuxtLink>
-          <NuxtLink
-            v-if="shouldShowStats"
-            class="menu-item"
-            exact-active-class="selected"
-            to="/about/stats"
-            @click="handleItemClick"
-          >
-            <chart-line class="menu-item-icon" />
-            <span class="menu-item-text">Site Stats</span>
-          </NuxtLink>
-          <NuxtLink
-            v-if="authState.loggedIn"
-            class="menu-item"
-            exact-active-class="selected"
-            to="/points"
-            @click="handleItemClick"
-          >
-            <finance class="menu-item-icon" />
-            <span class="menu-item-text">
-              Points Store
-              <span v-if="myPoint !== null" class="point-count">{{ myPoint }}</span>
+            <component :is="item.icon" class="menu-item-icon" />
+            <span class="menu-item-text">{{ item.label }}</span>
+            <span v-if="item.badge" class="unread-container">
+              <span class="unread">{{ item.badge }}</span>
             </span>
           </NuxtLink>
         </div>
 
-        <div class="menu-section">
-          <div class="section-header" @click="categoryOpen = !categoryOpen">
-            <span>Categories</span>
-            <up v-if="categoryOpen" class="menu-item-icon" />
-            <down v-else class="menu-item-icon" />
-          </div>
-          <div v-if="categoryOpen" class="section-items">
-            <div v-if="isLoadingCategory" class="menu-loading-container">
-              <l-hatch size="28" stroke="4" speed="3.5" color="var(--primary-color)"></l-hatch>
-            </div>
-            <div
-              v-else
-              v-for="c in categoryData"
-              :key="c.id"
-              class="section-item"
-              :class="{ selected: isCategorySelected(c.id) }"
-              @click="gotoCategory(c)"
-            >
-              <template v-if="c.smallIcon || c.icon">
-                <BaseImage
-                  v-if="isImageIcon(c.smallIcon || c.icon)"
-                  :src="c.smallIcon || c.icon"
-                  class="section-item-icon"
-                  :alt="c.name"
-                />
-                <component v-else :is="c.smallIcon || c.icon" class="section-item-icon" />
-              </template>
-              <span class="section-item-text">
-                {{ c.name }}
-                <span class="section-item-text-count" v-if="c.count >= 0">x {{ c.count }}</span>
-              </span>
-            </div>
-          </div>
+        <div v-if="accountItems.length" class="menu-section">
+          <div class="section-label">Account</div>
+          <NuxtLink
+            v-for="item in accountItems"
+            :key="item.to"
+            class="menu-item"
+            exact-active-class="selected"
+            :to="item.to"
+            @click="handleItemClick"
+          >
+            <component :is="item.icon" class="menu-item-icon" />
+            <span class="menu-item-text">{{ item.label }}</span>
+          </NuxtLink>
         </div>
 
         <div class="menu-section">
-          <div class="section-header" @click="tagOpen = !tagOpen">
-            <span>Tags</span>
-            <up v-if="tagOpen" class="menu-item-icon" />
-            <down v-else class="menu-item-icon" />
+          <div class="section-label">Coming Next</div>
+          <div class="menu-item disabled">
+            <peoples-two class="menu-item-icon" />
+            <span class="menu-item-text">Experts</span>
           </div>
-          <div v-if="tagOpen" class="section-items">
-            <div v-if="isLoadingTag" class="menu-loading-container">
-              <l-hatch size="28" stroke="4" speed="3.5" color="var(--primary-color)"></l-hatch>
-            </div>
-            <template v-else>
-              <div
-                v-for="t in tagData"
-                :key="t.id"
-                class="section-item"
-                :class="{ selected: isTagSelected(t.id) }"
-                @click="gotoTag(t)"
-              >
-                <BaseImage
-                  v-if="isImageIcon(t.smallIcon || t.icon)"
-                  :src="t.smallIcon || t.icon"
-                  class="section-item-icon"
-                  :alt="t.name"
-                />
-                <component
-                  v-else-if="t.smallIcon || t.icon"
-                  :is="t.smallIcon || t.icon"
-                  class="section-item-icon"
-                />
-                <tag-one v-else class="section-item-icon" />
-                <span class="section-item-text"
-                  >{{ t.name }} <span class="section-item-text-count">x {{ t.count }}</span></span
-                >
-              </div>
-              <div v-if="hasMoreTags || isLoadingMoreTags" class="section-item more-item">
-                <a
-                  v-if="hasMoreTags && !isLoadingMoreTags"
-                  href="#"
-                  class="more-link"
-                  @click.prevent="loadMoreTags"
-                >
-                  View More
-                </a>
-                <span v-else class="more-loading">Loading...</span>
-              </div>
-            </template>
+          <div class="menu-item disabled">
+            <code-icon class="menu-item-icon" />
+            <span class="menu-item-text">Knowledge</span>
           </div>
         </div>
       </div>
 
-      <!-- 瑙ｅ喅鍔ㄦ€佹牱寮忕殑姘村悎閿欒 -->
       <ClientOnly v-if="!isMobile">
         <div class="menu-footer">
-          <div class="menu-footer-btn" @click="cycleTheme">
+          <button class="menu-footer-btn" type="button" @click="cycleTheme" aria-label="Switch theme">
             <component :is="iconClass" class="menu-item-icon" />
-          </div>
+          </button>
         </div>
       </ClientOnly>
     </nav>
@@ -178,142 +59,71 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import { authState, fetchCurrentUser } from '~/utils/auth'
-import { fetchUnreadCount, notificationState } from '~/utils/notification'
+import { computed, onMounted } from 'vue'
+import { authState } from '~/utils/auth'
+import {
+  fetchUnreadCount as fetchNotificationUnreadCount,
+  notificationState,
+} from '~/utils/notification'
+import { useUnreadCount } from '~/composables/useUnreadCount'
+import { useChannelsUnreadCount } from '~/composables/useChannelsUnreadCount'
 import { useIsMobile } from '~/utils/screen'
 import { cycleTheme, ThemeMode, themeState } from '~/utils/theme'
-import { selectedCategoryGlobal, selectedTagsGlobal } from '~/composables/postFilter'
 
 const isMobile = useIsMobile()
-// 鍒ゆ柇褰撳墠鍒嗙被鏄惁琚€変腑
-const isCategorySelected = (id) => {
-  return id === selectedCategoryGlobal.value
-}
-
-// 鍒ゆ柇褰撳墠鏍囩鏄惁琚€変腑
-const isTagSelected = (id) => {
-  const selected = Array.isArray(selectedTagsGlobal.value)
-    ? selectedTagsGlobal.value
-    : [selectedTagsGlobal.value]
-  return selected.includes(id)
-}
-
-const config = useRuntimeConfig()
-const API_BASE_URL =
-  process.server && config.public.apiBaseUrlSsr
-    ? config.public.apiBaseUrlSsr
-    : config.public.apiBaseUrl
 
 const props = defineProps({
   visible: { type: Boolean, default: true },
 })
 const emit = defineEmits(['item-click'])
 
-const categoryOpen = ref(true)
-const tagOpen = ref(true)
-const myPoint = ref(null)
-
-/** 鉁?鐢?useAsyncData 鏇挎崲鍘熺敓 fetch锛岄伩鍏?SSR+CSR 浜屾璇锋眰 */
-const {
-  data: categoryData,
-  pending: isLoadingCategory,
-  error: categoryError,
-} = await useAsyncData(
-  // 绋冲畾 key锛氶伩鍏?hydration 鏈熻鍒?
-  'menu:categories',
-  () => $fetch(`${API_BASE_URL}/api/categories`),
-  {
-    server: true, // SSR 棰勫彇
-    default: () => [], // 鍒濆榛樿鍊硷紝鍑忓皯绌哄垽鏂?
-    // 5 鍒嗛挓鍐呭鐢ㄧ紦瀛橈紝閬垮厤璺敱寰€杩旈噸澶嶈姹?
-    staleTime: 5 * 60 * 1000,
-  },
+const { count: unreadMessageCount, fetchUnreadCount: fetchMessageUnreadCount } = useUnreadCount()
+const { hasUnread: hasChannelUnread, fetchChannelUnread } = useChannelsUnreadCount()
+const unreadNotificationCount = computed(() => notificationState.unreadCount)
+const showUnreadNotificationCount = computed(() =>
+  unreadNotificationCount.value > 99 ? '99+' : unreadNotificationCount.value,
+)
+const showUnreadMessageCount = computed(() =>
+  unreadMessageCount.value > 99 ? '99+' : unreadMessageCount.value,
 )
 
-const TAG_PAGE_SIZE = 10
-const tagPage = ref(0)
-const hasMoreTags = ref(true)
-const isLoadingMoreTags = ref(false)
+const primaryItems = computed(() => [
+  { to: '/papers', label: 'Papers', icon: 'hashtag-key' },
+  { to: '/papers/submit', label: 'Submit', icon: 'edit' },
+  { to: '/papers/rankings', label: 'Rankings', icon: 'chart-line' },
+  {
+    to: '/message',
+    label: 'Notifications',
+    icon: 'remind',
+    badge: unreadNotificationCount.value > 0 ? showUnreadNotificationCount.value : '',
+  },
+  {
+    to: '/message-box',
+    label: 'Messages',
+    icon: 'message-emoji',
+    badge: unreadMessageCount.value > 0 ? showUnreadMessageCount.value : hasChannelUnread.value ? '!' : '',
+  },
+])
 
-const buildTagUrl = (page = 0) => {
-  const base = API_BASE_URL || (import.meta.client ? window.location.origin : '')
-  const url = new URL('/api/tags', base)
-  url.searchParams.set('page', String(page))
-  url.searchParams.set('pageSize', String(TAG_PAGE_SIZE))
-  return url.toString()
-}
-
-const fetchTagPage = async (page = 0) => {
-  try {
-    return await $fetch(buildTagUrl(page))
-  } catch (e) {
-    console.error('Failed to fetch tags', e)
-    return []
+const accountItems = computed(() => {
+  if (!authState.loggedIn) {
+    return [{ to: '/login', label: 'Log in', icon: 'login' }]
   }
-}
-
-const {
-  data: tagData,
-  pending: isLoadingTag,
-  error: tagError,
-} = await useAsyncData('menu:tags', () => fetchTagPage(0), {
-  server: true,
-  default: () => [],
-  staleTime: 5 * 60 * 1000,
+  const items = [
+    {
+      to: `/users/${authState.username || authState.userId}`,
+      label: 'Profile',
+      icon: 'user',
+    },
+    { to: '/papers/submissions', label: 'My Submissions', icon: 'file-text' },
+    { to: '/settings', label: 'Settings', icon: 'setting' },
+  ]
+  if (authState.role === 'ADMIN') {
+    items.push({ to: '/admin/papers', label: 'Paper Admin', icon: 'setting-config' })
+  }
+  return items
 })
 
-const dedupeTags = (list) => Array.from(new Map(list.map((tag) => [tag.id, tag])).values())
-
-const initializeTagState = (val) => {
-  const initial = Array.isArray(val) ? val : []
-  if (!Array.isArray(val)) {
-    tagData.value = []
-  }
-  tagPage.value = 0
-  hasMoreTags.value = initial.length === TAG_PAGE_SIZE
-}
-
-initializeTagState(tagData.value)
-
-watch(
-  tagData,
-  (val, oldVal) => {
-    const next = Array.isArray(val) ? val : []
-    if (!Array.isArray(val)) {
-      tagData.value = []
-    }
-    const shouldReset =
-      !Array.isArray(oldVal) || oldVal.length > next.length || next.length <= TAG_PAGE_SIZE
-    if (shouldReset) {
-      tagPage.value = 0
-      hasMoreTags.value = next.length === TAG_PAGE_SIZE
-    }
-  },
-  { deep: false },
-)
-
-const loadMoreTags = async () => {
-  if (isLoadingMoreTags.value || !hasMoreTags.value) return
-  isLoadingMoreTags.value = true
-  const nextPage = tagPage.value + 1
-  try {
-    const result = await fetchTagPage(nextPage)
-    const data = Array.isArray(result) ? result : []
-    const existing = Array.isArray(tagData.value) ? tagData.value : []
-    tagData.value = dedupeTags([...existing, ...data])
-    tagPage.value = nextPage
-    if (data.length < TAG_PAGE_SIZE) {
-      hasMoreTags.value = false
-    }
-  } catch (e) {
-    console.error('Failed to load more tags', e)
-  } finally {
-    isLoadingMoreTags.value = false
-  }
-}
-
-/** 鍏朵綑閫昏緫淇濇寔涓嶅彉 */
 const iconClass = computed(() => {
   switch (themeState.mode) {
     case ThemeMode.DARK:
@@ -325,58 +135,20 @@ const iconClass = computed(() => {
   }
 })
 
-const unreadCount = computed(() => notificationState.unreadCount)
-const showUnreadCount = computed(() => (unreadCount.value > 99 ? '99+' : unreadCount.value))
-const shouldShowStats = computed(() => authState.role === 'ADMIN')
-
-const loadPoint = async () => {
+onMounted(async () => {
   if (authState.loggedIn) {
-    const user = await fetchCurrentUser()
-    myPoint.value = user ? user.point : null
-  } else {
-    myPoint.value = null
-  }
-}
-
-const updateCount = async () => {
-  if (authState.loggedIn) {
-    await fetchUnreadCount()
+    await Promise.all([
+      fetchNotificationUnreadCount(),
+      fetchMessageUnreadCount(),
+      fetchChannelUnread(),
+    ])
   } else {
     notificationState.unreadCount = 0
   }
-}
-
-onMounted(async () => {
-  await Promise.all([updateCount(), loadPoint()])
-  // 鐧诲綍鎬佸彉鍖栨椂鍐嶆媺涓€娆℃湭璇绘暟鍜岀Н鍒嗭紱涓?useAsyncData 鏃犲叧
-  watch(
-    () => authState.loggedIn,
-    () => {
-      updateCount()
-      loadPoint()
-    },
-  )
 })
 
 const handleItemClick = () => {
   if (window.innerWidth <= 768) emit('item-click')
-}
-
-const isImageIcon = (icon) => {
-  if (!icon) return false
-  return /^https?:\/\//.test(icon) || icon.startsWith('/')
-}
-
-const gotoCategory = (c) => {
-  const value = encodeURIComponent(c.id ?? c.name)
-  navigateTo({ path: '/', query: { category: value } })
-  handleItemClick()
-}
-
-const gotoTag = (t) => {
-  const value = encodeURIComponent(t.id ?? t.name)
-  navigateTo({ path: '/', query: { tags: value } })
-  handleItemClick()
 }
 </script>
 
@@ -385,53 +157,56 @@ const gotoTag = (t) => {
   position: sticky;
   top: var(--header-height);
   width: 220px;
-  background-color: var(--app-menu-background-color);
   height: calc(100vh - var(--header-height));
-  border-right: 1px solid var(--menu-border-color);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  scrollbar-width: none;
+  border-right: 1px solid var(--menu-border-color);
+  background-color: var(--app-menu-background-color);
   backdrop-filter: var(--blur-10);
+  scrollbar-width: none;
 }
 
 .menu-content {
   width: 100%;
   height: 100%;
-  overflow-y: auto;
   box-sizing: border-box;
-  padding: 10px 10px 0 10px;
-}
-
-.menu-content::-webkit-scrollbar {
-  display: none;
-}
-
-.menu-content {
-  -ms-overflow-style: none;
+  padding: 10px 10px 0;
+  overflow-y: auto;
   scrollbar-width: none;
 }
 
-.menu-item-container {
+.menu-content::-webkit-scrollbar,
+.menu::-webkit-scrollbar {
+  display: none;
+}
+
+.menu-item-container,
+.menu-section {
+  padding-bottom: 6px;
+  margin-bottom: 6px;
   border-bottom: 1px solid var(--menu-border-color);
 }
 
-.menu-item:last-child {
-  margin-bottom: 5px;
+.section-label {
+  padding: 8px 12px 5px;
+  color: var(--menu-text-color);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.62;
 }
 
-/* .menu-item-container { */
-/**/
-/* } */
-
 .menu-item {
-  padding: 6px 12px;
-  text-decoration: none;
-  color: var(--menu-text-color);
-  border-radius: 10px;
   display: flex;
   align-items: center;
-  transition: background-color 0.5s ease;
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  color: var(--menu-text-color);
+  text-decoration: none;
+  transition: background-color 0.18s ease;
 }
 
 .menu-item:hover {
@@ -439,25 +214,40 @@ const gotoTag = (t) => {
 }
 
 .menu-item.selected {
-  font-weight: bold;
+  font-weight: 800;
   background-color: var(--menu-selected-background-color);
 }
 
+.menu-item.disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.menu-item.disabled:hover {
+  background-color: transparent;
+}
+
 .menu-item-text {
+  color: var(--menu-text-color);
   font-size: 14px;
   text-decoration: none;
-  color: var(--menu-text-color);
+}
+
+.menu-item-icon {
+  margin-right: 10px;
+  opacity: 0.62;
+  font-weight: bold;
 }
 
 .unread-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background-color: rgb(255, 102, 102);
-  margin-left: 15px;
   width: 18px;
   height: 18px;
+  margin-left: auto;
+  border-radius: 50%;
+  background-color: rgb(255, 102, 102);
   text-align: center;
 }
 
@@ -467,136 +257,44 @@ const gotoTag = (t) => {
   font-weight: bold;
 }
 
-.point-count {
-  margin-left: 4px;
-  font-size: 12px;
-  color: var(--primary-color);
-}
-
-.menu-item-icon {
-  margin-right: 10px;
-  opacity: 0.5;
-  font-weight: bold;
-}
-
 .menu-footer {
-  position: relation;
-  height: 30px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  padding: 0 6px 6px;
 }
 
 .menu-footer-btn {
   width: 30px;
   height: 30px;
-  margin-right: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-}
-
-.menu-section {
-  border-bottom: 1px solid var(--menu-border-color);
-  padding-bottom: 5px;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 14px;
-  padding: 6px 12px 0 12px;
-  color: var(--menu-text-color);
-  cursor: pointer;
-}
-
-.section-items {
-  color: var(--menu-text-color);
-  display: flex;
-  flex-direction: column;
-  margin-top: 4px;
-}
-
-.section-item {
-  padding: 6px 12px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  border: 0;
   border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.5s ease;
-}
-
-.more-item {
-  justify-content: center;
-}
-
-.more-link {
-  color: var(--primary-color);
-  text-decoration: none;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.more-link:hover {
-  text-decoration: underline;
-}
-
-.more-loading {
-  font-size: 13px;
   color: var(--menu-text-color);
-  opacity: 0.7;
+  background: transparent;
+  cursor: pointer;
 }
 
-.section-item:hover {
+.menu-footer-btn:hover {
   background-color: var(--menu-selected-background-color-hover);
-}
-.section-item.selected {
-  font-weight: bold;
-  background-color: var(--menu-selected-background-color);
-}
-
-.section-item-text-count {
-  font-size: 12px;
-  color: var(--menu-text-color);
-  opacity: 0.5;
-  font-weight: bold;
-}
-
-.section-item-text {
-  font-size: 14px;
-  text-decoration: none;
-  color: var(--menu-text-color);
-}
-
-.section-item-icon {
-  width: 16px;
-  height: 16px;
-  margin-right: 5px;
-  opacity: 0.7;
-}
-
-.menu-loading-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px;
 }
 
 @media (max-width: 768px) {
   .menu {
     position: fixed;
     z-index: 1000;
-    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
     left: 10px;
-    border-radius: 20px;
-    border-right: none;
-    height: 400px;
     top: calc(var(--header-height) + 10px);
+    height: auto;
+    max-height: 420px;
     padding-top: 10px;
+    border-right: none;
+    border-radius: 20px;
     background-color: var(--background-color-blur);
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
   }
 
   .menu-content {
@@ -624,4 +322,3 @@ const gotoTag = (t) => {
   }
 }
 </style>
-

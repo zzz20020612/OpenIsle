@@ -14,7 +14,7 @@
           ></span>
         </div>
 
-        <NuxtLink class="logo-container" to="/" @click="refreshData">
+        <NuxtLink class="logo-container" to="/papers">
           <BaseImage
             alt="OpenIsle"
             src="https://openisle-1307107697.cos.ap-guangzhou.myqcloud.com/assert/image.png"
@@ -50,35 +50,20 @@
             </button>
           </ToolTip>
 
-          <ToolTip v-if="!isMobile" content="Copy invite link" placement="bottom">
-            <button class="header-icon-item" type="button" @click="copyInviteLink">
-              <template v-if="!isCopying">
-                <copy-link class="header-icon" />
-                <span class="header-label">Invite</span>
-              </template>
-              <loading v-else />
-            </button>
-          </ToolTip>
-
-          <ToolTip v-if="!isMobile" content="Online users" placement="bottom">
-            <div class="header-icon-item passive">
-              <peoples-two class="header-icon" />
-              <span class="header-label">Online</span>
-              <span class="header-badge">{{ onlineCount }}</span>
-            </div>
-          </ToolTip>
-
-          <ToolTip content="Copy RSS link" placement="bottom">
-            <button class="header-icon-item" type="button" @click="copyRssLink">
-              <rss class="header-icon" />
-              <span class="header-label">RSS</span>
-            </button>
-          </ToolTip>
-
           <ToolTip v-if="!isMobile && isLogin" content="Submit a paper" placement="bottom">
             <button class="header-submit-button" type="button" @click="goToSubmitPaper">
               <edit class="header-icon" />
               <span>Submit</span>
+            </button>
+          </ToolTip>
+
+          <ToolTip v-if="isLogin" content="Notifications" placement="bottom">
+            <button class="header-icon-item" type="button" @click="goToNotifications">
+              <remind class="header-icon" />
+              <span class="header-label">Notifications</span>
+              <span v-if="unreadNotificationCount > 0" class="unread-badge">
+                {{ unreadNotificationCount }}
+              </span>
             </button>
           </ToolTip>
 
@@ -129,16 +114,15 @@ import DropdownMenu from '~/components/DropdownMenu.vue'
 import ToolTip from '~/components/ToolTip.vue'
 import SearchDropdown from '~/components/SearchDropdown.vue'
 import BaseUserAvatar from '~/components/BaseUserAvatar.vue'
-import { authState, clearToken, getToken } from '~/utils/auth'
+import { authState, clearToken } from '~/utils/auth'
 import { useUnreadCount } from '~/composables/useUnreadCount'
 import { useChannelsUnreadCount } from '~/composables/useChannelsUnreadCount'
+import {
+  fetchUnreadCount as fetchNotificationUnreadCount,
+  notificationState,
+} from '~/utils/notification'
 import { useIsMobile } from '~/utils/screen'
 import { themeState, cycleTheme, ThemeMode } from '~/utils/theme'
-import { toast } from '~/main'
-
-const config = useRuntimeConfig()
-const API_BASE_URL = config.public.apiBaseUrl
-const WEBSITE_BASE_URL = config.public.websiteBaseUrl
 
 defineProps({
   showMenuBtn: {
@@ -151,38 +135,9 @@ const isLogin = computed(() => authState.loggedIn)
 const isMobile = useIsMobile()
 const { count: unreadMessageCount, fetchUnreadCount } = useUnreadCount()
 const { hasUnread: hasChannelUnread, fetchChannelUnread } = useChannelsUnreadCount()
+const unreadNotificationCount = computed(() => notificationState.unreadCount)
 const showSearch = ref(false)
 const searchDropdown = ref(null)
-const isCopying = ref(false)
-const onlineCount = ref(0)
-
-async function sendPing() {
-  try {
-    let userId = authState.userId
-    if (userId) {
-      localStorage.removeItem('guestId')
-    } else {
-      let savedId = localStorage.getItem('guestId')
-      if (!savedId) {
-        savedId = `guest-${crypto.randomUUID()}`
-        localStorage.setItem('guestId', savedId)
-      }
-      userId = savedId
-    }
-    await fetch(`${API_BASE_URL}/api/online/heartbeat?userId=${userId}`, { method: 'POST' })
-  } catch (error) {
-    console.error('Online heartbeat failed', error)
-  }
-}
-
-async function fetchCount() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/online/count`, { method: 'GET' })
-    onlineCount.value = await res.json()
-  } catch (error) {
-    console.error('Failed to fetch online count', error)
-  }
-}
 
 const search = () => {
   showSearch.value = true
@@ -232,46 +187,12 @@ const goToSubmitPaper = () => {
   }, { replace: false })
 }
 
+const goToNotifications = () => {
+  navigateTo('/message')
+}
+
 const goToMessages = () => {
   navigateTo('/message-box')
-}
-
-const refreshData = () => {
-  window.dispatchEvent(new Event('refresh-home'))
-}
-
-const copyInviteLink = async () => {
-  isCopying.value = true
-  const token = getToken()
-  if (!token) {
-    toast.error('Please log in first.')
-    isCopying.value = false
-    return
-  }
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/invite/generate`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      toast.error(data.error || 'Failed to generate invite link.')
-      return
-    }
-    const data = await res.json()
-    const inviteLink = data.token ? `${WEBSITE_BASE_URL}/signup?invite_token=${data.token}` : ''
-    await navigator.clipboard.writeText(inviteLink)
-    toast.success('Invite link copied.')
-  } catch (error) {
-    toast.error('Failed to generate invite link.')
-  } finally {
-    isCopying.value = false
-  }
-}
-
-const copyRssLink = async () => {
-  await navigator.clipboard.writeText(`${API_BASE_URL}/api/rss`)
-  toast.success('RSS link copied.')
 }
 
 const headerMenuItems = computed(() => {
@@ -302,16 +223,14 @@ onMounted(async () => {
     if (authState.loggedIn) {
       fetchUnreadCount()
       fetchChannelUnread()
+      fetchNotificationUnreadCount()
     } else {
       fetchChannelUnread()
+      notificationState.unreadCount = 0
     }
   }
 
   await updateUnread()
-  sendPing()
-  fetchCount()
-  setInterval(sendPing, 120000)
-  setInterval(fetchCount, 60000)
 })
 </script>
 

@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue'
 import { toast } from '~/composables/useToast'
 import { authState, getToken } from '~/utils/auth'
 import { reactionEmojiMap } from '~/utils/reactions'
+import { resolveCommentPath, resolveContentPath } from '~/utils/contentRoutes'
 
 export const notificationState = reactive({
   unreadCount: 0,
@@ -207,7 +208,7 @@ export async function updateEmailNotificationPreference(type, enabled) {
 }
 
 /**
- * 处理信息的高阶函数
+ * 处理信息的高阶函�?
  * @returns
  */
 function createFetchNotifications() {
@@ -299,7 +300,7 @@ function createFetchNotifications() {
             iconClick: () => {
               if (n.post) {
                 markNotificationRead(n.id)
-                navigateTo(`/posts/${n.post.id}`)
+                navigateTo(resolveContentPath(n.post))
               }
             },
           })
@@ -316,7 +317,7 @@ function createFetchNotifications() {
             iconClick: () => {
               if (n.post) {
                 markNotificationRead(n.id)
-                navigateTo(`/posts/${n.post.id}`)
+                navigateTo(resolveContentPath(n.post))
               }
             },
           })
@@ -362,7 +363,7 @@ function createFetchNotifications() {
             iconClick: () => {
               if (n.post) {
                 markNotificationRead(n.id)
-                navigateTo(`/posts/${n.post.id}`, { replace: true })
+                navigateTo(resolveContentPath(n.post), { replace: true })
               }
             },
           })
@@ -374,7 +375,7 @@ function createFetchNotifications() {
             iconClick: () => {
               if (n.post) {
                 markNotificationRead(n.id)
-                navigateTo(`/posts/${n.post.id}`, { replace: true })
+                navigateTo(resolveContentPath(n.post), { replace: true })
               }
             },
           })
@@ -385,7 +386,7 @@ function createFetchNotifications() {
             iconClick: () => {
               if (n.post) {
                 markNotificationRead(n.id)
-                navigateTo(`/posts/${n.post.id}`, { replace: true })
+                navigateTo(resolveContentPath(n.post), { replace: true })
               }
             },
           })
@@ -397,7 +398,7 @@ function createFetchNotifications() {
             iconClick: () => {
               if (n.post) {
                 markNotificationRead(n.id)
-                navigateTo(`/posts/${n.post.id}`, { replace: true })
+                navigateTo(resolveContentPath(n.post), { replace: true })
               }
             },
           })
@@ -440,7 +441,7 @@ function createFetchNotifications() {
   }
 
   const markAllRead = async () => {
-    // 为了覆盖分页中的全部未读，先从后端分页拉取全部未读 ID（排除 REGISTER_REQUEST）。
+    // 为了覆盖分页中的全部未读，先从后端分页拉取全部未�?ID（排�?REGISTER_REQUEST）�?
     const localIdsToMark = notifications.value
       .filter((n) => n.type !== 'REGISTER_REQUEST' && !n.read)
       .map((n) => n.id)
@@ -459,9 +460,9 @@ function createFetchNotifications() {
 
       await fetchUnreadCount()
       if (authState.role === 'ADMIN') {
-        toast.success('已读所有消息（注册请求除外）')
+        toast.success('All notifications marked as read except membership requests')
       } else {
-        toast.success('已读所有消息')
+        toast.success('All notifications marked as read')
       }
     } catch (e) {
       notifications.value.forEach((n) => {

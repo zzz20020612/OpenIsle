@@ -2,10 +2,10 @@
   <div class="messages-container">
     <div class="page-title">
       <message-emoji />
-      <span class="page-title-text">选择聊天</span>
+      <span class="page-title-text">Conversations</span>
     </div>
     <div v-if="!isFloatMode" class="float-control">
-      <collapse-text-input class="float-control-icon" @click="minimize" title="最小化" />
+      <collapse-text-input class="float-control-icon" @click="minimize" title="Minimize" />
     </div>
     <BaseTabs v-model="activeTab" :tabs="tabs">
       <div v-if="activeTab === 'messages'">
@@ -22,7 +22,7 @@
         </div>
 
         <div v-if="!loading && conversations.length === 0" class="empty-container">
-          <BasePlaceholder v-if="conversations.length === 0" text="暂无会话" icon="inbox" />
+          <BasePlaceholder v-if="conversations.length === 0" text="No conversations yet" icon="inbox" />
         </div>
 
         <div
@@ -36,7 +36,7 @@
             <BaseUserAvatar
               :src="getOtherParticipant(convo)?.avatar"
               :user-id="getOtherParticipant(convo)?.id"
-              :alt="getOtherParticipant(convo)?.username || '用户'"
+              :alt="getOtherParticipant(convo)?.username || 'User'"
               class="avatar-img"
               :disable-link="true"
             />
@@ -45,7 +45,7 @@
           <div class="conversation-content">
             <div class="conversation-header">
               <div class="participant-name">
-                {{ getOtherParticipant(convo)?.username || '未知用户' }}
+                {{ getOtherParticipant(convo)?.username || 'Unknown user' }}
               </div>
               <div class="message-time">
                 {{ formatTime(convo.lastMessage?.createdAt || convo.createdAt) }}
@@ -57,7 +57,7 @@
                 {{
                   convo.lastMessage
                     ? stripMarkdownLength(convo.lastMessage.content, 100)
-                    : '暂无消息'
+                    : 'No messages yet'
                 }}
               </div>
               <div v-if="convo.unreadCount > 0" class="unread-count-badge">
@@ -74,7 +74,7 @@
         </div>
         <div v-else>
           <div v-if="channels.length === 0" class="empty-container">
-            <BasePlaceholder text="暂无频道" icon="inbox" />
+            <BasePlaceholder text="No channels yet" icon="inbox" />
           </div>
           <div
             v-for="ch in channels"
@@ -108,7 +108,7 @@
                       : ch.description
                   }}
                 </div>
-                <div class="member-count">成员 {{ ch.memberCount }}</div>
+                <div class="member-count">{{ ch.memberCount }} members</div>
               </div>
             </div>
           </div>
@@ -148,8 +148,8 @@ const { fetchChannelUnread: refreshChannelUnread, setFromList: setChannelUnreadF
 
 const activeTab = ref('channels')
 const tabs = [
-  { key: 'messages', label: '站内信' },
-  { key: 'channels', label: '频道' },
+  { key: 'messages', label: 'Direct Messages' },
+  { key: 'channels', label: 'Channels' },
 ]
 const channels = ref([])
 const loadingChannels = ref(false)
@@ -159,7 +159,7 @@ const floatRoute = useState('messageFloatRoute')
 async function fetchConversations() {
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please log in first.')
     return
   }
   loading.value = true
@@ -174,25 +174,25 @@ async function fetchConversations() {
     const data = await response.json()
     conversations.value = data
   } catch (e) {
-    error.value = '无法加载会话列表。'
+    error.value = 'Unable to load conversations.'
   } finally {
     loading.value = false
   }
 }
 
-// 获取对话中的另一个参与者（非当前用户）
+// Get the other participant in a direct conversation.
 function getOtherParticipant(conversation) {
   if (!currentUser.value || !conversation.participants) return null
   return conversation.participants.find((p) => p.id !== currentUser.value.id)
 }
 
-// 格式化时间
+// Format display time.
 function formatTime(timeString) {
   if (!timeString) return ''
   return TimeManager.format(timeString)
 }
 
-// 头像加载失败处理
+// Handle avatar loading failures.
 function handleAvatarError(event) {
   event.target.src = null
 }
@@ -200,7 +200,7 @@ function handleAvatarError(event) {
 async function fetchChannels() {
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please log in first.')
     return
   }
   loadingChannels.value = true
@@ -208,7 +208,7 @@ async function fetchChannels() {
     const response = await fetch(`${API_BASE_URL}/api/channels`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!response.ok) throw new Error('无法加载频道')
+    if (!response.ok) throw new Error('Unable to load channels')
     const data = await response.json()
     channels.value = data
     setChannelUnreadFromList(data)
@@ -230,7 +230,7 @@ watch(activeTab, (tab) => {
 async function goToChannel(id) {
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please log in first.')
     return
   }
   try {
@@ -262,10 +262,10 @@ onActivated(async () => {
     const token = getToken()
     if (token) {
       if (isConnected.value) {
-        // 如果已经连接，但可能因为组件销毁而取消了订阅，所以需要重新订阅
+        // If already connected, resubscribe because component cleanup may have removed the subscription.
         subscribeToUserMessages()
       } else {
-        // 如果未连接，则发起连接，连接成功后 watch 回调会处理订阅
+        // If disconnected, connect first; the watcher will subscribe after connection succeeds.
         connect(token)
       }
     }

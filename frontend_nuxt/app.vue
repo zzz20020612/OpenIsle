@@ -17,7 +17,7 @@
         :class="{ 'menu-open': menuVisible && !hideMenu && !isFloatMode }"
         :style="isFloatMode ? { paddingTop: '0px', minHeight: '100vh' } : {}"
       >
-        <NuxtPage keepalive />
+        <NuxtPage />
       </div>
 
       <div
@@ -46,7 +46,9 @@ import { checkToken } from '~/utils/auth'
 const isMobile = useIsMobile()
 const menuVisible = ref(!isMobile.value)
 
-await checkToken()
+onMounted(() => {
+  checkToken().catch(() => {})
+})
 
 const showNewPostIcon = computed(() => useRoute().path === '/')
 
@@ -67,7 +69,6 @@ const hideMenu = computed(() => {
 
 const header = useTemplateRef('header')
 const isFloatMode = computed(() => useRoute().query.float !== undefined)
-
 onMounted(() => {
   if (typeof window !== 'undefined') {
     menuVisible.value = window.innerWidth > 768

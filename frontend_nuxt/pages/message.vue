@@ -5,14 +5,14 @@
         <div class="message-page-header-right">
           <div class="message-page-header-right-item" @click="markAllRead">
             <check-correct class="message-page-header-right-item-button-icon" />
-            <span class="message-page-header-right-item-button-text"> 已读所有消息 </span>
+            <span class="message-page-header-right-item-button-text"> Mark all as read </span>
           </div>
         </div>
       </template>
 
       <div v-if="selectedTab === 'control'">
         <div class="message-control-container">
-          <div class="message-control-title">通知设置</div>
+          <div class="message-control-title">Notification settings</div>
           <div class="message-control-item-container">
             <template v-for="pref in notificationPrefs">
               <div
@@ -30,7 +30,7 @@
           </div>
         </div>
         <div class="message-control-container">
-          <div class="message-control-title">邮件通知设置</div>
+          <div class="message-control-title">Email notification settings</div>
           <div class="message-control-item-container">
             <div v-for="pref in emailPrefs" :key="pref.type" class="message-control-item">
               <div class="message-control-item-label">{{ formatType(pref.type) }}</div>
@@ -50,7 +50,7 @@
 
         <BasePlaceholder
           v-else-if="notifications.length === 0"
-          text="暂时没有消息 :)"
+          text="No notifications yet"
           icon="inbox"
         />
 
@@ -68,24 +68,24 @@
                         :to="`/users/${item.comment.author.id}`"
                         >{{ item.comment.author.username }}
                       </NuxtLink>
-                      对我的评论
+                      replied to my comment
                       <span>
                         <NuxtLink
                           class="notif-content-text"
                           @click="markRead(item.id)"
-                          :to="`/posts/${item.post.id}#comment-${item.parentComment.id}`"
+                          :to="resolveCommentPath(item.post, item.parentComment.id)"
                         >
                           <span
                             v-html="stripMarkdownWithTiebaMoji(item.parentComment.content, 500)"
                           ></span>
                         </NuxtLink>
                       </span>
-                      回复了
+                      with
                       <span>
                         <NuxtLink
                           class="notif-content-text"
                           @click="markRead(item.id)"
-                          :to="`/posts/${item.post.id}#comment-${item.comment.id}`"
+                          :to="resolveCommentPath(item.post, item.comment.id)"
                         >
                           <span
                             v-html="stripMarkdownWithTiebaMoji(item.comment.content, 500)"
@@ -102,22 +102,22 @@
                         :to="`/users/${item.comment.author.id}`"
                         >{{ item.comment.author.username }}
                       </NuxtLink>
-                      对我的文章
+                      replied to my post
                       <span>
                         <NuxtLink
                           class="notif-content-text"
                           @click="markRead(item.id)"
-                          :to="`/posts/${item.post.id}`"
+                          :to="resolveContentPath(item.post)"
                         >
                           {{ stripMarkdownLength(item.post.title, 100) }}
                         </NuxtLink>
                       </span>
-                      回复了
+                      with
                       <span>
                         <NuxtLink
                           class="notif-content-text"
                           @click="markRead(item.id)"
-                          :to="`/posts/${item.post.id}#comment-${item.comment.id}`"
+                          :to="resolveCommentPath(item.post, item.comment.id)"
                         >
                           <span
                             v-html="stripMarkdownWithTiebaMoji(item.comment.content, 500)"
@@ -129,28 +129,28 @@
                   <template v-else-if="item.type === 'ACTIVITY_REDEEM' && !item.parentComment">
                     <NotificationContainer :item="item" :markRead="markRead">
                       <span class="notif-user">{{ item.fromUser.username }} </span>
-                      申请进行奶茶兑换，联系方式是：{{ item.content }}
+                      requested a reward redemption. Contact: {{ item.content }}
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'POINT_REDEEM' && !item.parentComment">
                     <NotificationContainer :item="item" :markRead="markRead">
                       <span class="notif-user">{{ item.fromUser.username }} </span>
-                      申请积分兑换，联系方式是：{{ item.content }}
+                      requested a points redemption. Contact: {{ item.content }}
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'REACTION' && item.post && !item.comment">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      <span class="notif-user">{{ item.fromUser.username }} </span> 对我的文章
+                      <span class="notif-user">{{ item.fromUser.username }} </span> reacted to my post
                       <span>
                         <NuxtLink
                           class="notif-content-text"
                           @click="markRead(item.id)"
-                          :to="`/posts/${item.post.id}`"
+                          :to="resolveContentPath(item.post)"
                         >
                           {{ stripMarkdownLength(item.post.title, 100) }}
                         </NuxtLink>
                       </span>
-                      进行了表态
+
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'REACTION' && item.comment">
@@ -161,19 +161,19 @@
                         :to="`/users/${item.fromUser.id}`"
                         >{{ item.fromUser.username }}
                       </NuxtLink>
-                      对我的评论
+                      reacted to my comment
                       <span>
                         <NuxtLink
                           class="notif-content-text"
                           @click="markRead(item.id)"
-                          :to="`/posts/${item.post.id}#comment-${item.comment.id}`"
+                          :to="resolveCommentPath(item.post, item.comment.id)"
                         >
                           <span
                             v-html="stripMarkdownWithTiebaMoji(item.comment.content, 500)"
                           ></span>
                         </NuxtLink>
                       </span>
-                      进行了表态
+
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'POST_VIEWED'">
@@ -185,11 +185,11 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      查看了您的帖子
+                      viewed your post
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
@@ -197,37 +197,37 @@
                   </template>
                   <template v-else-if="item.type === 'LOTTERY_WIN'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      恭喜你在抽奖贴
+                      Congratulations, you won in
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      中获奖
+
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'LOTTERY_DRAW'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      您的抽奖贴
+                      Your lottery post
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      已开奖
+                      has been drawn
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'POLL_VOTE'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      有用户参与了你的投票贴
+                      Someone voted in your poll
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
@@ -235,77 +235,77 @@
                   </template>
                   <template v-else-if="item.type === 'POLL_RESULT_OWNER'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      你的投票帖
+                      Your poll
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      已出结果
+                      has results
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'POLL_RESULT_PARTICIPANT'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      你参与的投票帖
+                      A poll you joined
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      已出结果
+                      has results
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'CATEGORY_PROPOSAL_RESULT_OWNER'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      你的分类提案
+                      Your category proposal
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      <span v-if="item.approved">已通过</span>
+                      <span v-if="item.approved">was approved</span>
                       <span v-else>
-                        未通过<span v-if="item.content">，原因：{{ item.content }}</span>
+                        was rejected<span v-if="item.content">. Reason: {{ item.content }}</span>
                       </span>
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'CATEGORY_PROPOSAL_RESULT_PARTICIPANT'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      你参与的分类提案
+                      A category proposal you joined
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      <span v-if="item.approved">已通过</span>
+                      <span v-if="item.approved">was approved</span>
                       <span v-else>
-                        未通过<span v-if="item.content">，原因：{{ item.content }}</span>
+                        was rejected<span v-if="item.content">. Reason: {{ item.content }}</span>
                       </span>
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'POST_UPDATED'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      您关注的帖子
+                      A post you follow
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      下面有新评论
+                      has a new comment
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}#comment-${item.comment.id}`"
+                        :to="resolveCommentPath(item.post, item.comment.id)"
                       >
                         <span v-html="stripMarkdownWithTiebaMoji(item.comment.content, 500)"></span>
                       </NuxtLink>
@@ -313,7 +313,7 @@
                   </template>
                   <template v-else-if="item.type === 'USER_ACTIVITY' && item.parentComment">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      你关注的
+                      Someone you follow
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
@@ -321,21 +321,21 @@
                       >
                         {{ item.comment.author.username }}
                       </NuxtLink>
-                      在 对评论
+                      replied to a comment in
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}#comment-${item.parentComment.id}`"
+                        :to="resolveCommentPath(item.post, item.parentComment.id)"
                       >
                         <span
                           v-html="stripMarkdownWithTiebaMoji(item.parentComment.content, 500)"
                         ></span>
                       </NuxtLink>
-                      回复了
+
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}#comment-${item.comment.id}`"
+                        :to="resolveCommentPath(item.post, item.comment.id)"
                       >
                         <span v-html="stripMarkdownWithTiebaMoji(item.comment.content, 500)"></span>
                       </NuxtLink>
@@ -343,7 +343,7 @@
                   </template>
                   <template v-else-if="item.type === 'USER_ACTIVITY'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      你关注的
+                      Someone you follow
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
@@ -351,19 +351,19 @@
                       >
                         {{ item.comment.author.username }}
                       </NuxtLink>
-                      在文章
+                      commented on
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      下面评论了
+
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}#comment-${item.comment.id}`"
+                        :to="resolveCommentPath(item.post, item.comment.id)"
                       >
                         <span v-html="stripMarkdownWithTiebaMoji(item.comment.content, 500)"></span>
                       </NuxtLink>
@@ -378,11 +378,11 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      在评论中提到了你：
+                      mentioned you in a comment:
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}#comment-${item.comment.id}`"
+                        :to="resolveCommentPath(item.post, item.comment.id)"
                       >
                         <span v-html="stripMarkdownWithTiebaMoji(item.comment.content, 500)"></span>
                       </NuxtLink>
@@ -397,15 +397,15 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      在帖子
+                      mentioned you in
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      中提到了你
+
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'USER_FOLLOWED'">
@@ -417,7 +417,7 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      开始关注你了
+                      started following you
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'USER_UNFOLLOWED'">
@@ -429,12 +429,12 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      取消关注你了
+                      unfollowed you
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'FOLLOWED_POST'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      你关注的
+                      Someone you follow
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
@@ -442,11 +442,11 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      发布了文章
+                      published a post
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
@@ -461,11 +461,11 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      订阅了你的文章
+                      subscribed to your post
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
@@ -480,11 +480,11 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      取消订阅了你的文章
+                      unsubscribed from your post
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
@@ -499,89 +499,89 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      发布了帖子
+                      published a post
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      ，请审核
+                      and needs review
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'POST_REVIEW_REQUEST'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      您发布的帖子
+                      Your post
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      已提交审核
+                      has been submitted for review
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'REGISTER_REQUEST'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      {{ item.fromUser.username }} 希望注册为会员，理由是：{{ item.content }}
+                      {{ item.fromUser.username }} requested membership. Reason: {{ item.content }}
                       <template #actions v-if="authState.role === 'ADMIN'">
                         <div v-if="!item.read" class="optional-buttons">
                           <div
                             class="mark-approve-button-item"
                             @click="approve(item.fromUser.id, item.id)"
                           >
-                            同意
+                            Approve
                           </div>
                           <div
                             class="mark-reject-button-item"
                             @click="reject(item.fromUser.id, item.id)"
                           >
-                            拒绝
+                            Reject
                           </div>
                         </div>
-                        <div v-else class="has_read_button" @click="markRead(item.id)">已读</div>
+                        <div v-else class="has_read_button" @click="markRead(item.id)">Read</div>
                       </template>
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'POST_REVIEWED' && item.approved">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      您发布的帖子
+                      Your post
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      已审核通过
+                      was approved
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'POST_REVIEWED' && item.approved === false">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      您发布的帖子
+                      Your post
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      已被管理员拒绝
+                      was rejected by an administrator
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'POST_FEATURED'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      您的文章
+                      Your post
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      被收录为精选
+                      was featured
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'DONATION'">
@@ -593,21 +593,21 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      在帖子
+                      donated to you on
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
-                        :to="`/posts/${item.post.id}`"
+                        :to="resolveContentPath(item.post)"
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                      打赏了你
-                      <template v-if="item.content"> ，获得 {{ item.content }} 积分 </template>
+
+                      <template v-if="item.content">. You received {{ item.content }} points.</template>
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'POST_DELETED'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      管理员
+                      An administrator
                       <template v-if="item.fromUser">
                         <NuxtLink
                           class="notif-content-text"
@@ -617,7 +617,7 @@
                           {{ item.fromUser.username }}
                         </NuxtLink>
                       </template>
-                      删除了您的帖子
+                      deleted your post
                       <span class="notif-content-text">
                         <span v-html="stripMarkdownWithTiebaMoji(item.content, 500)"></span>
                       </span>
@@ -650,6 +650,7 @@ import BaseTabs from '~/components/BaseTabs.vue'
 import { toast } from '~/main'
 import { authState, getToken } from '~/utils/auth'
 import { stripMarkdownWithTiebaMoji } from '~/utils/markdown'
+import { resolveCommentPath, resolveContentPath } from '~/utils/contentRoutes'
 import {
   fetchNotifications,
   fetchUnreadCount,
@@ -673,9 +674,9 @@ const selectedTab = ref(
   ['all', 'unread', 'control'].includes(route.query.tab) ? route.query.tab : 'unread',
 )
 const tabs = [
-  { key: 'all', label: '消息' },
-  { key: 'unread', label: '未读' },
-  { key: 'control', label: '消息设置' },
+  { key: 'all', label: 'Notifications' },
+  { key: 'unread', label: 'Unread' },
+  { key: 'control', label: 'Settings' },
 ]
 const notificationPrefs = ref([])
 const emailPrefs = ref([])
@@ -718,7 +719,7 @@ const togglePref = async (pref, value) => {
     })
     await fetchUnreadCount()
   } else {
-    toast.error('操作失败')
+    toast.error('Operation failed')
   }
 }
 
@@ -727,7 +728,7 @@ const toggleEmailPref = async (pref, value) => {
   if (ok) {
     pref.enabled = value
   } else {
-    toast.error('操作失败')
+    toast.error('Operation failed')
   }
 }
 
@@ -748,9 +749,9 @@ const approve = async (id, nid) => {
   })
   if (res.ok) {
     markRead(nid)
-    toast.success('已同意')
+    toast.success('Approved')
   } else {
-    toast.error('操作失败')
+    toast.error('Operation failed')
   }
 }
 
@@ -763,66 +764,66 @@ const reject = async (id, nid) => {
   })
   if (res.ok) {
     markRead(nid)
-    toast.success('已拒绝')
+    toast.success('Rejected')
   } else {
-    toast.error('操作失败')
+    toast.error('Operation failed')
   }
 }
 
 const formatType = (t) => {
   switch (t) {
     case 'POST_VIEWED':
-      return '帖子被查看'
+      return 'Post viewed'
     case 'COMMENT_REPLY':
-      return '有人回复了你'
+      return 'Someone replied to you'
     case 'REACTION':
-      return '有人点赞'
+      return 'New reaction'
     case 'POST_REVIEW_REQUEST':
-      return '帖子待审核'
+      return 'Post pending review'
     case 'POST_REVIEWED':
-      return '帖子审核结果'
+      return 'Post review result'
     case 'POST_UPDATED':
-      return '关注的帖子有新评论'
+      return 'New comment on followed post'
     case 'FOLLOWED_POST':
-      return '关注的用户发布了新文章'
+      return 'Followed user published a post'
     case 'POST_SUBSCRIBED':
-      return '有人订阅了你的文章'
+      return 'New post subscription'
     case 'POST_UNSUBSCRIBED':
-      return '有人取消订阅你的文章'
+      return 'Post subscription canceled'
     case 'USER_FOLLOWED':
-      return '有人关注了你'
+      return 'New follower'
     case 'USER_UNFOLLOWED':
-      return '有人取消关注你'
+      return 'Follower removed'
     case 'USER_ACTIVITY':
-      return '关注的用户有新动态'
+      return 'Followed user activity'
     case 'MENTION':
-      return '有人提到了你'
+      return 'Mention'
     case 'REGISTER_REQUEST':
-      return '有人申请注册'
+      return 'Membership request'
     case 'ACTIVITY_REDEEM':
-      return '有人申请兑换奶茶'
+      return 'Reward redemption request'
     case 'POINT_REDEEM':
-      return '有人申请积分兑换'
+      return 'Points redemption request'
     case 'DONATION':
-      return '有人打赏了你'
+      return 'Donation received'
     case 'LOTTERY_WIN':
-      return '抽奖中奖了'
+      return 'Lottery win'
     case 'LOTTERY_DRAW':
-      return '抽奖已开奖'
+      return 'Lottery result'
     case 'POST_DELETED':
-      return '帖子被删除'
+      return 'Post deleted'
     case 'POST_FEATURED':
-      return '文章被精选'
+      return 'Post featured'
     case 'POLL_VOTE':
-      return '有人参与你的投票'
+      return 'Poll participation'
     case 'POLL_RESULT_OWNER':
-      return '发布的投票结果已公布'
+      return 'Your poll result published'
     case 'POLL_RESULT_PARTICIPANT':
-      return '参与的投票结果已公布'
+      return 'Joined poll result published'
     case 'CATEGORY_PROPOSAL_RESULT_OWNER':
-      return '分类提案结果已公布'
+      return 'Category proposal result'
     case 'CATEGORY_PROPOSAL_RESULT_PARTICIPANT':
-      return '参与的分类提案结果已公布'
+      return 'Joined category proposal result'
     default:
       return t
   }

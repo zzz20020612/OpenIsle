@@ -16,7 +16,7 @@
         </h2>
       </div>
       <div v-if="!isFloatMode" class="float-control">
-        <collapse-text-input class="float-control-icon" @click="minimize" title="最小化" />
+        <collapse-text-input class="float-control-icon" @click="minimize" title="Minimize" />
       </div>
     </div>
 
@@ -28,7 +28,7 @@
       <template v-else>
         <div class="load-more-container" v-if="hasMoreMessages">
           <div @click="loadMoreMessages" :disabled="loadingMore" class="load-more-button">
-            {{ loadingMore ? '加载中...' : '查看更多消息' }}
+            {{ loadingMore ? 'Loading...' : 'Load more messages' }}
           </div>
         </div>
         <BaseTimeline :items="messages">
@@ -82,7 +82,7 @@
                   }}</span>
                 </div>
                 <div @click="setReply(item)" class="reaction-action reply-btn">
-                  <next /> 写个回复...
+                  <next /> Write a reply...
                 </div>
               </div>
             </div>
@@ -91,7 +91,7 @@
         <div class="empty-container">
           <BasePlaceholder
             v-if="messages.length === 0"
-            text="暂无会话，发送消息试试 🎉"
+            text="No messages yet. Send the first one."
             icon="inbox"
           />
         </div>
@@ -105,11 +105,11 @@
         @click="handleScrollToBottom"
       >
         <double-down />
-        <div class="new-message-count">有{{ newMessagesCount }}条新消息</div>
+        <div class="new-message-count">{{ newMessagesCount }} new messages</div>
       </div>
 
       <div v-if="replyTo" class="active-reply">
-        正在回复 {{ replyTo.sender.username }}:
+        Replying to {{ replyTo.sender.username }}:
         {{ stripMarkdownLength(replyTo.content, 50) }}
         <close-icon class="close-reply" @click="replyTo = null" />
       </div>
@@ -223,15 +223,15 @@ function toggleMessageLike(message) {
   group?.toggleReaction('LIKE')
 }
 
-/** 改造：滚动函数 —— smooth & instant */
+/** Scroll helpers: smooth and instant modes. */
 function scrollToBottomSmooth() {
   const el = messagesListEl.value
   if (!el) return
-  // 优先使用原生 smooth，失败则降级
+  // Prefer native smooth scrolling and fall back when unavailable.
   try {
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   } catch {
-    // 降级：简易动画
+    // Fallback: lightweight animation.
     const start = el.scrollTop
     const end = el.scrollHeight
     const duration = 200
@@ -266,7 +266,7 @@ async function fetchMessages(page = 0) {
   error.value = null
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please log in first.')
     loading.value = false
     return
   }
@@ -278,7 +278,7 @@ async function fetchMessages(page = 0) {
         headers: { Authorization: `Bearer ${token}` },
       },
     )
-    if (!response.ok) throw new Error('无法加载消息')
+    if (!response.ok) throw new Error('Unable to load messages')
 
     const conversationData = await response.json()
     const pageData = conversationData.messages
@@ -312,11 +312,11 @@ async function fetchMessages(page = 0) {
 
     await nextTick()
     if (page > 0 && list) {
-      // 加载更多：保持原视口位置
+      // Loading older messages: preserve the current viewport position.
       const newScrollHeight = list.scrollHeight
       list.scrollTop = newScrollHeight - oldScrollHeight
     } else if (page === 0) {
-      // 首次加载：定位到底部（不用动画，避免“闪动感”）
+      // First load: jump to the bottom without animation.
       scrollToBottomInstant()
     }
     updateNearBottom()
@@ -356,7 +356,7 @@ async function sendMessage(content, clearInput) {
     } else {
       const recipient = otherParticipant.value
       if (!recipient) {
-        toast.error('无法确定收信人')
+        toast.error('Unable to identify the recipient')
         return
       }
       response = await fetch(`${API_BASE_URL}/api/messages`, {
@@ -372,7 +372,7 @@ async function sendMessage(content, clearInput) {
         }),
       })
     }
-    if (!response.ok) throw new Error('发送失败')
+    if (!response.ok) throw new Error('Failed to send message')
 
     const newMessage = await response.json()
     messages.value.push({
@@ -387,7 +387,7 @@ async function sendMessage(content, clearInput) {
     replyTo.value = null
 
     await nextTick()
-    // 仅“发送消息成功后”才平滑滚动到底部
+    // Smooth scroll only after a message is sent successfully.
     scrollToBottomSmooth()
     newMessagesCount.value = 0
   } catch (e) {
@@ -413,7 +413,7 @@ async function markConversationAsRead() {
 }
 
 onMounted(async () => {
-  // 监听列表滚动，实时感知是否接近底部
+  // Track whether the user is near the bottom while scrolling.
   if (messagesListEl.value) {
     messagesListEl.value.addEventListener('scroll', updateNearBottom, { passive: true })
   }
@@ -423,7 +423,7 @@ onMounted(async () => {
     await fetchMessages(0)
     await markConversationAsRead()
     await nextTick()
-    // 初次进入频道时，平滑滚动到底部
+    // On first channel entry, scroll to the bottom.
     scrollToBottomSmooth()
     const token = getToken()
     if (token) {
@@ -434,7 +434,7 @@ onMounted(async () => {
       }
     }
   } else {
-    toast.error('请先登录')
+    toast.error('Please log in first.')
     loading.value = false
   }
 })
@@ -514,7 +514,7 @@ watch(isConnected, (newValue) => {
 })
 
 onActivated(async () => {
-  // 返回页面时：刷新数据与已读，并滚动到底部
+  // When returning to the page, refresh data, mark read, and scroll down.
   if (currentUser.value) {
     await fetchMessages(0)
     await markConversationAsRead()
@@ -523,10 +523,10 @@ onActivated(async () => {
     updateNearBottom()
 
     if (isConnected.value) {
-      // 如果已连接，重新订阅
+      // If already connected, resubscribe.
       subscribeToConversation()
     } else {
-      // 如果未连接，则发起连接
+      // If disconnected, connect first.
       const token = getToken()
       if (token) connect(token)
     }
@@ -565,7 +565,7 @@ function handleContentClick(e) {
 
 function openUser(id) {
   if (isFloatMode.value) {
-    // 先不处理...
+    // No-op for now.
     // navigateTo(`/users/${id}?float=1`)
   } else {
     navigateTo(`/users/${id}`, { replace: true })
