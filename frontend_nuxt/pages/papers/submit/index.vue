@@ -22,6 +22,16 @@
             aria-labelledby="draft-choice-title"
             aria-describedby="draft-choice-description"
           >
+            <button
+              class="draft-choice-close"
+              type="button"
+              aria-label="Close draft selection"
+              title="Close"
+              :disabled="Boolean(draftChoiceAction)"
+              @click="closeDraftChoice"
+            >
+              <CloseOne :size="20" />
+            </button>
             <span class="draft-choice-eyebrow">Submission draft found</span>
             <h2 id="draft-choice-title">Continue your draft or start fresh?</h2>
             <p id="draft-choice-description">
@@ -49,6 +59,14 @@
             </p>
 
             <div class="draft-choice-actions">
+              <button
+                class="submission-secondary-button"
+                type="button"
+                :disabled="Boolean(draftChoiceAction)"
+                @click="closeDraftChoice"
+              >
+                Cancel
+              </button>
               <button
                 class="submission-primary-button"
                 type="button"
@@ -666,6 +684,26 @@ const startNewSubmission = async () => {
   }
 }
 
+const closeDraftChoice = async () => {
+  if (draftChoiceAction.value) return
+
+  const previousPath = import.meta.client ? window.history.state?.back : ''
+  const previousRoutePath = typeof previousPath === 'string' ? previousPath.split(/[?#]/, 1)[0] : ''
+  const canReturnToPreviousPage = typeof previousPath === 'string' &&
+    previousPath.startsWith('/') &&
+    !previousPath.startsWith('//') &&
+    previousRoutePath !== route.path
+
+  allowNavigation = true
+  await router.replace(canReturnToPreviousPage ? previousPath : '/papers')
+}
+
+const handleDraftChoiceKeydown = (event) => {
+  if (event.key !== 'Escape' || !pendingOriginalDrafts.value.length || draftChoiceAction.value) return
+  event.preventDefault()
+  void closeDraftChoice()
+}
+
 watch(
   () => route.query.draft,
   (requestedDraftId) => {
@@ -767,8 +805,14 @@ const warnForPendingKeyword = (event) => {
   event.returnValue = ''
 }
 
-onMounted(() => window.addEventListener('beforeunload', warnForPendingKeyword))
-onBeforeUnmount(() => window.removeEventListener('beforeunload', warnForPendingKeyword))
+onMounted(() => {
+  window.addEventListener('beforeunload', warnForPendingKeyword)
+  window.addEventListener('keydown', handleDraftChoiceKeydown)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', warnForPendingKeyword)
+  window.removeEventListener('keydown', handleDraftChoiceKeydown)
+})
 
 const uploadedRole = (role) =>
   files.value.filter((file) => file.role === role && file.uploadStatus === 'UPLOADED').length
@@ -945,7 +989,11 @@ const formatSavedTime = (value) => {
 .submission-loading { min-height: 280px; display: grid; place-items: center; border: 1px solid #d4dade; background: #fff; color: #5f6b73; }
 .submission-loading.error { color: #a33b33; }
 .draft-choice-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(19, 31, 39, .52); }
-.draft-choice-dialog { width: min(540px, 100%); padding: 30px; border: 1px solid #c8d2d7; background: #fff; box-shadow: 0 24px 70px rgba(18, 37, 47, .24); color: #19252d; }
+.draft-choice-dialog { position: relative; width: min(540px, 100%); padding: 30px; border: 1px solid #c8d2d7; background: #fff; box-shadow: 0 24px 70px rgba(18, 37, 47, .24); color: #19252d; }
+.draft-choice-close { position: absolute; top: 16px; right: 16px; display: inline-grid; width: 36px; height: 36px; place-items: center; padding: 0; border: 1px solid transparent; background: transparent; color: #53636c; cursor: pointer; }
+.draft-choice-close:hover { border-color: #b7c5cb; background: #f1f5f6; color: #1d536b; }
+.draft-choice-close:focus-visible { outline: 2px solid #2b6b87; outline-offset: 2px; }
+.draft-choice-close:disabled { opacity: .5; cursor: wait; }
 .draft-choice-eyebrow { display: block; margin-bottom: 9px; color: #2d657d; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .draft-choice-dialog h2 { margin: 0; font-family: Georgia, serif; font-size: 27px; font-weight: 500; line-height: 1.25; }
 .draft-choice-dialog > p { margin: 11px 0 0; color: #5d6a72; font-size: 14px; line-height: 1.55; }
