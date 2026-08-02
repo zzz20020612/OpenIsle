@@ -18,6 +18,7 @@ public class PaperSummaryDto {
   private PaperPublicationStatus publicationStatus;
   private PaperScreeningStatus screeningStatus;
   private Long revisionOfPaperId;
+  private Long revisionRootPaperId;
   private int revisionNumber;
   private Long latestRevisionPaperId;
   private String primaryInstitutionName;

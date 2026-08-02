@@ -13,6 +13,7 @@ import com.openisle.dto.PaperFundingDto;
 import com.openisle.dto.PaperScoreSnapshotDto;
 import com.openisle.dto.PaperSubmitRequest;
 import com.openisle.dto.PaperSummaryDto;
+import com.openisle.dto.PaperRevisionSummaryDto;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openisle.exception.NotFoundException;
@@ -53,6 +54,7 @@ import com.openisle.repository.TagRepository;
 import com.openisle.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -661,6 +663,7 @@ public class PaperService {
     dto.setRevisionOfPaperId(
       paper.getRevisionOfPaper() != null ? paper.getRevisionOfPaper().getId() : null
     );
+    dto.setRevisionRootPaperId(revisionRoot(paper).getId());
     dto.setRevisionNumber(Math.max(paper.getRevisionNumber(), 1));
     dto.setPublishedAt(paper.getPublishedAt());
     dto.setFeatured(paper.getPost().getPinnedAt() != null);
@@ -682,10 +685,53 @@ public class PaperService {
   }
 
   private Long latestRevisionPaperId(Long paperId) {
-    return paperProfileRepository
-      .findFirstByRevisionOfPaperIdOrderByRevisionNumberDescIdDesc(paperId)
-      .map(PaperProfile::getId)
-      .orElse(null);
+    PaperProfile paper = paperProfileRepository.findById(paperId).orElse(null);
+    if (paper == null) return null;
+    List<PaperProfile> lineage = revisionLineage(paper);
+    PaperProfile latest = lineage.get(lineage.size() - 1);
+    return latest.getId().equals(paperId) ? null : latest.getId();
+  }
+
+  private PaperProfile revisionRoot(PaperProfile paper) {
+    PaperProfile current = paper;
+    HashSet<Long> visited = new HashSet<>();
+    while (
+      current.getRevisionOfPaper() != null &&
+      current.getId() != null &&
+      visited.add(current.getId())
+    ) {
+      current = current.getRevisionOfPaper();
+    }
+    return current;
+  }
+
+  private List<PaperProfile> revisionLineage(PaperProfile paper) {
+    List<PaperProfile> lineage = new java.util.ArrayList<>();
+    HashSet<Long> visited = new HashSet<>();
+    PaperProfile current = revisionRoot(paper);
+    while (current != null && current.getId() != null && visited.add(current.getId())) {
+      lineage.add(current);
+      current = paperProfileRepository
+        .findFirstByRevisionOfPaperIdOrderByRevisionNumberDescIdDesc(current.getId())
+        .orElse(null);
+    }
+    return lineage;
+  }
+
+  private List<PaperRevisionSummaryDto> revisionHistory(PaperProfile paper) {
+    List<PaperProfile> lineage = revisionLineage(paper);
+    Long latestId = lineage.isEmpty() ? null : lineage.get(lineage.size() - 1).getId();
+    return lineage.stream().map(version -> {
+      PaperRevisionSummaryDto dto = new PaperRevisionSummaryDto();
+      dto.setId(version.getId());
+      dto.setRevisionNumber(Math.max(version.getRevisionNumber(), 1));
+      dto.setTitle(version.getTitle());
+      dto.setPublicationStatus(version.getPublicationStatus());
+      dto.setScreeningStatus(version.getScreeningStatus());
+      dto.setSubmittedAt(version.getCreatedAt());
+      dto.setLatest(version.getId().equals(latestId));
+      return dto;
+    }).toList();
   }
 
   private Comparator<PaperSummaryDto> resolvePaperSort(String sort) {
@@ -728,8 +774,10 @@ public class PaperService {
     dto.setPublicationStatus(summary.getPublicationStatus());
     dto.setScreeningStatus(summary.getScreeningStatus());
     dto.setRevisionOfPaperId(summary.getRevisionOfPaperId());
+    dto.setRevisionRootPaperId(summary.getRevisionRootPaperId());
     dto.setRevisionNumber(summary.getRevisionNumber());
     dto.setLatestRevisionPaperId(latestRevisionPaperId(paper.getId()));
+    dto.setRevisionHistory(revisionHistory(paper));
     dto.setPrimaryInstitutionName(summary.getPrimaryInstitutionName());
     dto.setAuthors(
       paperAuthorRepository

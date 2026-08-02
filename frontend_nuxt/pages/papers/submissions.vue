@@ -40,29 +40,41 @@
           </details>
         </div>
       </section>
-      <section v-if="papers.length" class="submission-list">
-      <article v-for="paper in papers" :key="paper.id" class="submission-row">
-        <NuxtLink :to="`/papers/${paper.id}`" class="submission-main">
+      <section v-if="paperLineages.length" class="submission-list">
+      <article v-for="lineage in paperLineages" :key="lineage.rootId" class="submission-row">
+        <div class="submission-main">
+          <NuxtLink :to="`/papers/${lineage.latest.id}`">
           <span class="type">
-            {{ paper.paperType || 'Research Article' }}
-            <template v-if="paper.revisionNumber > 1"> · Revision {{ paper.revisionNumber }}</template>
+            {{ lineage.latest.paperType || 'Research Article' }}
+            <template v-if="lineage.versions.length > 1"> · {{ lineage.versions.length }} versions</template>
           </span>
-          <h2>{{ paper.title }}</h2>
-          <p>{{ paper.subjectArea || 'General Research' }}</p>
-        </NuxtLink>
+          <h2>{{ lineage.latest.title }}</h2>
+          <p>{{ lineage.latest.subjectArea || 'General Research' }}</p>
+          </NuxtLink>
+          <details v-if="lineage.versions.length > 1" class="version-history">
+            <summary>Version history</summary>
+            <ol>
+              <li v-for="version in lineage.versions" :key="version.id">
+                <NuxtLink :to="`/papers/${version.id}`">Revision {{ version.revisionNumber || 1 }}</NuxtLink>
+                <span>{{ formatStatus(version.screeningStatus) }}</span>
+                <strong v-if="version.id === lineage.latest.id">Latest</strong>
+              </li>
+            </ol>
+          </details>
+        </div>
         <div class="status-column">
-          <strong :class="statusClass(paper.publicationStatus)">{{ formatStatus(paper.publicationStatus) }}</strong>
-          <span>{{ formatStatus(paper.screeningStatus) }}</span>
+          <strong :class="statusClass(lineage.latest.publicationStatus)">{{ formatStatus(lineage.latest.publicationStatus) }}</strong>
+          <span>Latest: Revision {{ lineage.latest.revisionNumber || 1 }}</span>
           <button
-            v-if="paper.publicationStatus === 'NEEDS_REVISION' && !paper.latestRevisionPaperId"
+            v-if="lineage.latest.publicationStatus === 'NEEDS_REVISION' && !lineage.latest.latestRevisionPaperId"
             type="button"
-            :disabled="isCreatingRevisionId === paper.id"
-            @click="openRevision(paper)"
-          >{{ isCreatingRevisionId === paper.id ? 'Opening...' : (revisionDraftFor(paper.id) ? 'Continue Revision' : 'Revise Submission') }}</button>
+            :disabled="isCreatingRevisionId === lineage.latest.id"
+            @click="openRevision(lineage.latest)"
+          >{{ isCreatingRevisionId === lineage.latest.id ? 'Opening...' : (revisionDraftFor(lineage.latest.id) ? 'Continue Revision' : 'Revise Latest Version') }}</button>
           <NuxtLink
-            v-else-if="paper.latestRevisionPaperId"
+            v-else-if="lineage.latest.latestRevisionPaperId"
             class="revision-link"
-            :to="`/papers/${paper.latestRevisionPaperId}`"
+            :to="`/papers/${lineage.latest.latestRevisionPaperId}`"
           >View Latest Revision</NuxtLink>
         </div>
       </article>
@@ -75,6 +87,7 @@
 <script setup>
 import { toast } from '~/main'
 import { partitionDraftsByAge } from '~/utils/paperDraftPresentation'
+import { groupPaperRevisionLineages } from '~/utils/paperRevisionLineage'
 
 definePageMeta({ middleware: 'auth-client', keepalive: false })
 useHead({ title: 'My Submissions - OpenIsle' })
@@ -86,6 +99,7 @@ const { data, pending, error } = await useAsyncData('my-paper-submissions', asyn
   return { papers, drafts }
 }, { server: false })
 const papers = computed(() => data.value?.papers || [])
+const paperLineages = computed(() => groupPaperRevisionLineages(papers.value))
 const allDrafts = computed(() => data.value?.drafts || [])
 const originalDrafts = computed(() => allDrafts.value.filter((draft) => !draft.revisionSourcePaperId))
 const revisionDrafts = computed(() => allDrafts.value.filter((draft) => draft.revisionSourcePaperId))
@@ -159,8 +173,15 @@ header p { margin: 0; color: #65747b; }
 .submission-success p { margin: 5px 0 0; color: #40624a; font-size: 13px; line-height: 1.5; }
 .submission-success a { flex: 0 0 auto; padding: 8px 10px; border: 1px solid #327044; background: #327044; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .submission-row { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 24px; padding: 20px 0; border-bottom: 1px solid #d7dee1; color: inherit; }
-.submission-main { color: inherit; text-decoration: none; }
-.submission-main:hover h2 { color: #1f617f; }
+.submission-main > a { color: inherit; text-decoration: none; }
+.submission-main > a:hover h2 { color: #1f617f; }
+.version-history { margin-top: 11px; }
+.version-history summary { width: max-content; color: #245f7d; font-size: 12px; font-weight: 700; cursor: pointer; }
+.version-history ol { display: grid; gap: 5px; margin: 8px 0 0; padding-left: 20px; }
+.version-history li { color: #6a777e; font-size: 12px; }
+.version-history li a { color: #315f75; text-decoration: none; }
+.version-history li span { margin-left: 8px; }
+.version-history li strong { margin-left: 8px; color: #2e6b45; font-size: 10px; text-transform: uppercase; }
 .type, .status-column span { color: #68777e; font-size: 12px; }
 h2 { margin: 7px 0; font-size: 18px; line-height: 1.35; }
 .submission-row p { margin: 0; color: #596970; font-size: 13px; }

@@ -20,5 +20,6 @@ public class PaperDetailDto extends PaperSummaryDto {
   private List<PaperFileRecordDto> supplementaryFiles;
   private PaperFileRecordDto tocGraphic;
   private AiScreeningDto screening;
+  private List<PaperRevisionSummaryDto> revisionHistory;
   private boolean subscribed;
 }

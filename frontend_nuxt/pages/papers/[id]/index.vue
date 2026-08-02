@@ -107,6 +107,24 @@
             <template #trigger><more-one class="paper-action-menu-icon" /></template>
           </DropdownMenu>
         </div>
+        <div v-if="paper.latestRevisionPaperId" class="journal-version-notice" role="status">
+          <span>You are viewing Revision {{ paper.revisionNumber || 1 }}.</span>
+          <NuxtLink :to="`/papers/${paper.latestRevisionPaperId}`">Open the latest revision</NuxtLink>
+        </div>
+        <section v-if="paper.revisionHistory?.length > 1" class="journal-version-history" aria-labelledby="version-history-title">
+          <div>
+            <h2 id="version-history-title">Version History</h2>
+            <span>{{ paper.revisionHistory.length }} submitted versions</span>
+          </div>
+          <ol>
+            <li v-for="version in paper.revisionHistory" :key="version.id" :class="{ current: version.id === paper.id }">
+              <NuxtLink :to="`/papers/${version.id}`">Revision {{ version.revisionNumber }}</NuxtLink>
+              <span>{{ version.latest ? normalizeStatus(version.screeningStatus) : 'Previous version' }}</span>
+              <strong v-if="version.latest">Latest</strong>
+              <em v-if="version.id === paper.id">Viewing</em>
+            </li>
+          </ol>
+        </section>
       </article>
 
       <section class="journal-layout">
@@ -993,6 +1011,18 @@ const normalizeStatus = (value) => {
 .journal-record-header h1 { max-width: 1000px; margin: 0 0 18px; color: #142127; font-family: Georgia, 'Times New Roman', serif; font-size: 40px; font-weight: 500; line-height: 1.18; letter-spacing: 0; }
 .journal-corresponding-email { display: inline-block; margin-top: 12px; color: #2a627a; font-size: 12px; font-weight: 700; text-decoration: none; }
 .journal-action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 24px; padding-top: 18px; border-top: 1px solid #dce1e3; }
+.journal-version-notice { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; padding: 11px 13px; border-left: 3px solid #2d6d8a; background: #edf4f7; color: #435760; font-size: 13px; }
+.journal-version-notice a { color: #1f5f7c; font-weight: 750; text-decoration: none; }
+.journal-version-history { margin-top: 20px; padding-top: 16px; border-top: 1px solid #dce1e3; }
+.journal-version-history > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.journal-version-history h2 { margin: 0; color: #293d47; font-family: Georgia, 'Times New Roman', serif; font-size: 18px; font-weight: 500; }
+.journal-version-history > div > span { color: #6b787e; font-size: 11px; }
+.journal-version-history ol { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 11px 0 0; padding: 0; list-style: none; }
+.journal-version-history li { display: flex; align-items: center; gap: 7px; color: #69777e; font-size: 12px; }
+.journal-version-history li.current { color: #273d47; }
+.journal-version-history a { color: #285f78; font-weight: 700; text-decoration: none; }
+.journal-version-history strong, .journal-version-history em { font-size: 9px; font-style: normal; letter-spacing: .05em; text-transform: uppercase; }
+.journal-version-history strong { color: #2f6d45; }.journal-version-history em { color: #805716; }
 .journal-primary-action, .journal-action { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 13px; font-size: 12px; font-weight: 800; text-decoration: none; cursor: pointer; }
 .journal-primary-action { border: 1px solid #1b5269; background: #205f79; color: #fff; }
 .journal-action { border: 1px solid #b9c4c9; background: #fff; color: #32454f; }

@@ -878,6 +878,61 @@ class PaperServiceTest {
   }
 
   @Test
+  void getPaperReturnsTheFullRevisionLineageAndTrueLatestVersion() {
+    PostService postService = mock(PostService.class);
+    PaperProfileRepository paperProfileRepository = mock(PaperProfileRepository.class);
+    PaperAuthorRepository paperAuthorRepository = mock(PaperAuthorRepository.class);
+    PaperFundingRecordRepository paperFundingRecordRepository = mock(PaperFundingRecordRepository.class);
+    PaperFileRepository paperFileRepository = mock(PaperFileRepository.class);
+    PaperScoreSnapshotRepository paperScoreSnapshotRepository = mock(PaperScoreSnapshotRepository.class);
+    PaperService service = new PaperService(
+      postService,
+      paperProfileRepository,
+      paperAuthorRepository,
+      mock(PaperAuthorAffiliationRepository.class),
+      paperFundingRecordRepository,
+      paperFileRepository,
+      mock(InstitutionRepository.class),
+      mock(AiScreeningResultRepository.class),
+      mock(AiScreeningService.class),
+      paperScoreSnapshotRepository,
+      mock(CategoryRepository.class),
+      mock(TagRepository.class),
+      new PaperAccessPolicy(paperAuthorRepository),
+      mock(UserRepository.class),
+      mock(ExpertProfileRepository.class),
+      mock(SubscriptionService.class)
+    );
+
+    PaperProfile root = buildPublishedPaper(6L, 106L, "Original", "Environment", 0, 0);
+    PaperProfile revision2 = buildPublishedPaper(7L, 107L, "Revision two", "Environment", 0, 0);
+    revision2.setRevisionOfPaper(root);
+    revision2.setRevisionNumber(2);
+    PaperProfile revision3 = buildPublishedPaper(9L, 109L, "Revision three", "Environment", 0, 0);
+    revision3.setRevisionOfPaper(revision2);
+    revision3.setRevisionNumber(3);
+
+    when(paperProfileRepository.findById(6L)).thenReturn(Optional.of(root));
+    when(paperProfileRepository.findFirstByRevisionOfPaperIdOrderByRevisionNumberDescIdDesc(6L))
+      .thenReturn(Optional.of(revision2));
+    when(paperProfileRepository.findFirstByRevisionOfPaperIdOrderByRevisionNumberDescIdDesc(7L))
+      .thenReturn(Optional.of(revision3));
+    when(paperProfileRepository.findFirstByRevisionOfPaperIdOrderByRevisionNumberDescIdDesc(9L))
+      .thenReturn(Optional.empty());
+    when(paperAuthorRepository.findByPaperIdOrderByAuthorOrderAsc(6L)).thenReturn(List.of());
+    when(paperScoreSnapshotRepository.findByPaperId(6L)).thenReturn(Optional.empty());
+    when(paperFundingRecordRepository.findByPaperIdOrderByDisplayOrderAscIdAsc(6L)).thenReturn(List.of());
+    when(paperFileRepository.findByPaperIdOrderBySortOrderAscIdAsc(6L)).thenReturn(List.of());
+
+    PaperDetailDto result = service.getPaper(6L);
+
+    assertEquals(6L, result.getRevisionRootPaperId());
+    assertEquals(9L, result.getLatestRevisionPaperId());
+    assertEquals(List.of(6L, 7L, 9L), result.getRevisionHistory().stream().map(item -> item.getId()).toList());
+    assertEquals(true, result.getRevisionHistory().get(2).isLatest());
+  }
+
+  @Test
   void getPaperMarksPostSubscriptionForAuthenticatedViewer() {
     PostService postService = mock(PostService.class);
     PaperProfileRepository paperProfileRepository = mock(PaperProfileRepository.class);
