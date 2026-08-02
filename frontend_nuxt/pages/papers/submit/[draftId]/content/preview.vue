@@ -9,7 +9,10 @@
       <div class="preview-actions">
         <span v-if="article.status === 'READY'" class="ready-label">Article content ready</span>
         <button v-if="article.status !== 'READY'" type="button" class="ready-button" :disabled="working" @click="markReady">Mark Content as Ready</button>
-        <button v-else type="button" class="reopen-button" :disabled="working" @click="reopen">Reopen in Editor</button>
+        <template v-else>
+          <button type="button" class="reopen-button" :disabled="working" @click="reopen">Reopen in Editor</button>
+          <NuxtLink class="review-button" :to="`/papers/submit/${draftId}/review`">Continue to Submission Review</NuxtLink>
+        </template>
       </div>
     </header>
 
@@ -84,7 +87,7 @@ const figureSource = (block) => draftFileUrls.source(block.fileId)
 h1 { margin: 8px 0 5px; font-family: Georgia, serif; font-size: 38px; font-weight: 500; }
 .preview-topbar p { margin: 0; color: #68747c; }
 .preview-actions { display: flex; align-items: center; gap: 12px; }
-.ready-button, .reopen-button { min-height: 42px; border: 1px solid #1f5b78; background: #1f617f; color: #fff; padding: 9px 14px; font-weight: 750; cursor: pointer; }
+.ready-button, .reopen-button, .review-button { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #1f5b78; background: #1f617f; color: #fff; padding: 9px 14px; font-size: 13px; font-weight: 750; text-decoration: none; cursor: pointer; }
 .reopen-button { background: #fff; color: #1f526b; }
 .ready-button:disabled, .reopen-button:disabled { opacity: .55; cursor: wait; }
 .ready-label { color: #2f6b4f; font-size: 13px; font-weight: 750; }

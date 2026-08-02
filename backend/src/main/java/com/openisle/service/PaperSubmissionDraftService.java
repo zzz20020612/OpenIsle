@@ -343,10 +343,21 @@ public class PaperSubmissionDraftService {
   @Transactional(readOnly = true)
   public PaperSubmissionValidationDto validateDraft(String username, Long draftId) {
     PaperSubmissionDraft draft = requireOwnedDraft(username, draftId);
-    return validator.validateDraft(
+    PaperSubmissionValidationDto result = validator.validateDraft(
       readForm(draft.getFormDataJson()),
       fileRepository.findByDraftIdOrderBySortOrderAscIdAsc(draft.getId())
     );
+    if (draft.getArticleStatus() != PaperArticleStatus.READY) {
+      result.setIssues(new java.util.ArrayList<>(result.getIssues()));
+      result.getIssues().add(new com.openisle.dto.PaperSubmissionIssueDto(
+        "article-content",
+        "article",
+        "ARTICLE_CONTENT_NOT_READY",
+        "Complete and approve the online article before continuing."
+      ));
+      result.setValid(false);
+    }
+    return result;
   }
 
   @Transactional

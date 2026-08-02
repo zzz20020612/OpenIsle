@@ -195,7 +195,13 @@ useHead({
 })
 
 const route = useRoute()
-const { listAdminPapers, runAdminPaperAction, runAdminPostAction, runPostAction } = usePaperApi()
+const {
+  listAdminPapers,
+  runAdminPaperAction,
+  clearPublicPaperCache,
+  runAdminPostAction,
+  runPostAction,
+} = usePaperApi()
 const statusOptions = [
   'DRAFT',
   'SCREENING',
@@ -275,6 +281,7 @@ const runAction = async (action) => {
   try {
     if (action === 'retract') {
       selectedPaper.value = await runAdminPaperAction(selectedPaper.value.id, action)
+      clearPublicPaperCache()
     } else if (action === 'feature' || action === 'remove-feature') {
       await runAdminPostAction(selectedPaper.value.postId, action === 'feature' ? 'pin' : 'unpin')
     } else if (action === 'include-rss' || action === 'exclude-rss') {

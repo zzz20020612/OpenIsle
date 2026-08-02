@@ -141,7 +141,7 @@
             <h2>TOC Graphic</h2>
             <figure class="journal-toc-figure">
               <img
-                :src="contentUrl(paper.tocGraphic, 'preview')"
+                :src="filePreviewSrc(paper.tocGraphic)"
                 :alt="paper.tocGraphic.description || `TOC graphic for ${paper.title}`"
               />
               <figcaption v-if="paper.tocGraphic.description">{{ paper.tocGraphic.description }}</figcaption>
@@ -487,6 +487,7 @@ const discussionCount = computed(() => paperComments.value.length)
 const previewFile = ref(null)
 const previewUrl = ref('')
 const previewObjectUrl = ref('')
+const imageObjectUrls = shallowRef({})
 const isCreatingRevision = ref(false)
 const allPublicFiles = computed(() => {
   const seen = new Set()
@@ -930,9 +931,42 @@ const contentUrl = (file, mode = 'download') => {
   if (!file?.id) return ''
   return paperFileContentUrl(paperId.value, file.id, mode)
 }
+const requiresAuthenticatedPreview = (file) =>
+  Boolean(file?.id) && (
+    file.visibility === 'PRIVATE' ||
+    paper.value.publicationStatus !== 'PUBLISHED'
+  )
+const filePreviewSrc = (file) => {
+  if (!file?.id) return ''
+  return imageObjectUrls.value[file.id] || contentUrl(file, 'preview')
+}
 const figureSource = (block) => {
   const file = figureFiles.value.find((item) => String(item.id) === String(block.fileId))
-  return file ? contentUrl(file, 'preview') : ''
+  return file ? filePreviewSrc(file) : ''
+}
+const revokeImageObjectUrls = () => {
+  Object.values(imageObjectUrls.value).forEach((url) => URL.revokeObjectURL(url))
+  imageObjectUrls.value = {}
+}
+const loadAuthenticatedImagePreviews = async () => {
+  if (!process.client || !getToken()) return
+  const files = [paper.value.tocGraphic, ...figureFiles.value]
+    .filter((file) => file?.id && file.previewable && requiresAuthenticatedPreview(file))
+    .filter((file, index, entries) => entries.findIndex((item) => item.id === file.id) === index)
+  if (!files.length) return
+
+  const urls = {}
+  await Promise.all(files.map(async (file) => {
+    try {
+      const response = await fetch(contentUrl(file, 'preview'), { headers: tokenHeaders() })
+      if (!response.ok) throw new Error(`File request failed with status ${response.status}`)
+      urls[file.id] = URL.createObjectURL(await response.blob())
+    } catch {
+      // The normal URL remains as a fallback for public or temporarily unavailable files.
+    }
+  }))
+  revokeImageObjectUrls()
+  imageObjectUrls.value = urls
 }
 const closePreview = () => {
   previewFile.value = null
@@ -988,9 +1022,11 @@ const handlePreviewKeydown = (event) => {
   if (event.key === 'Escape' && previewFile.value) closePreview()
 }
 onMounted(() => window.addEventListener('keydown', handlePreviewKeydown))
+watch([paper, article], () => { void loadAuthenticatedImagePreviews() }, { flush: 'post' })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handlePreviewKeydown)
   closePreview()
+  revokeImageObjectUrls()
 })
 const normalizeStatus = (value) => {
   if (!value) return 'Screened'

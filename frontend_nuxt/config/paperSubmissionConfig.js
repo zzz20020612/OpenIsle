@@ -2,6 +2,7 @@ export const SUBMISSION_SECTIONS = [
   { id: 'manuscript-type', label: 'Manuscript Type' },
   { id: 'file-upload', label: 'File Upload' },
   { id: 'manuscript-information', label: 'Manuscript Information' },
+  { id: 'article-content', label: 'Article Content' },
   { id: 'author-information', label: 'Author Information' },
   { id: 'funding-information', label: 'Funding Information' },
   { id: 'details-comments', label: 'Details & Comments' },
