@@ -4,15 +4,23 @@ target
 
 # log
 logs
+*.log
+.codex-dev*.log
 
 # deps
 node_modules
+.codexbridge/
 
 # test & build
 coverage
 out/
 build
 dist
+backend/uploads/
+__pycache__/
+*.py[cod]
+__MACOSX/
+ai-screening/paper-screening/results.tsv
 *.tsbuildinfo
 
 # misc
