@@ -263,6 +263,9 @@ export const useDocxArticleImport = () => {
         equationCount: displayEquationCount,
         inlineMathParagraphCount: inlineEquationCount,
       }
+    } catch (error) {
+      progress.value = 'Import failed. Your existing article was kept unchanged.'
+      throw error
     } finally {
       importing.value = false
     }

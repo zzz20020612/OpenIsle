@@ -58,6 +58,7 @@ import { UploadOne } from '@icon-park/vue-next'
 import ArticleBlockEditor from '~/components/paper-article/ArticleBlockEditor.vue'
 import ArticleOutline from '~/components/paper-article/ArticleOutline.vue'
 import { createArticleBlock, createArticleSection } from '~/config/paperArticleConfig'
+import { cleanupImportedDraftFiles } from '~/utils/docxImportRecovery'
 
 definePageMeta({ middleware: 'auth-client', keepalive: false })
 useHead({ title: 'Article Content - OpenIsle' })
@@ -78,6 +79,7 @@ const selectedSection = computed(() => article.value.sections.find((section) => 
 const figureFiles = computed(() => submission.files.value.filter((file) => file.role === 'FIGURE' && file.uploadStatus === 'UPLOADED'))
 const importingDocx = docxImport.importing
 const docxProgress = docxImport.progress
+let importedFigureIds = []
 
 onMounted(async () => {
   await Promise.all([load(), submission.loadOrCreate(draftId)])
@@ -133,26 +135,45 @@ const uploadFigure = async (event) => {
     error.value = cause?.data?.error || cause?.message || 'Unable to upload the figure.'
   }
 }
-const uploadImportedFigure = (file) => submission.uploadFile(file, {
-  role: 'FIGURE',
-  visibility: 'PUBLIC',
-  description: 'Figure imported from the manuscript DOCX',
-  displayName: file.name,
-})
+const uploadImportedFigure = async (file) => {
+  const existingIds = new Set(submission.files.value.map((item) => item.id))
+  try {
+    const uploaded = await submission.uploadFile(file, {
+      role: 'FIGURE',
+      visibility: 'PUBLIC',
+      description: 'Figure imported from the manuscript DOCX',
+      displayName: file.name,
+    })
+    if (uploaded?.id) importedFigureIds.push(uploaded.id)
+    return uploaded
+  } catch (cause) {
+    submission.files.value
+      .filter((item) => item.role === 'FIGURE' && !existingIds.has(item.id))
+      .forEach((item) => importedFigureIds.push(item.id))
+    throw cause
+  }
+}
 const handleDocxImport = async (event) => {
   const file = event.target.files?.[0]
   event.target.value = ''
   if (!file) return
   if (article.value.sections.length && !window.confirm('Importing the DOCX will replace the current online article. Continue?')) return
   error.value = ''
+  importedFigureIds = []
   try {
     const imported = await docxImport.importDocx(file, uploadImportedFigure)
     article.value.sections = imported.sections
     selectedKey.value = imported.sections[0]?.key || ''
     scheduleSave()
     await flush()
+    importedFigureIds = []
   } catch (cause) {
-    error.value = cause?.data?.error || cause?.message || 'Unable to import the DOCX manuscript.'
+    const failedCleanupIds = await cleanupImportedDraftFiles(importedFigureIds, submission.removeFile)
+    importedFigureIds = []
+    const message = cause?.data?.error || cause?.message || 'Unable to import the DOCX manuscript.'
+    error.value = failedCleanupIds.length
+      ? `${message} Some imported figure files could not be removed; review the Files section before submitting.`
+      : `${message} The existing article was kept unchanged.`
   }
 }
 const figureSource = (block) => {
