@@ -11,6 +11,8 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openisle.dto.PaperSubmissionDraftDto;
+import com.openisle.dto.PaperArticleDto;
+import com.openisle.model.PaperArticleStatus;
 import com.openisle.model.PaperSubmissionDraft;
 import com.openisle.model.PaperSubmissionDraftKind;
 import com.openisle.model.PaperSubmissionDraftStatus;
@@ -75,6 +77,92 @@ class PaperSubmissionDraftServiceTest {
 
   @InjectMocks
   private PaperSubmissionDraftService service;
+
+  @Test
+  void activeOriginalDraftListOmitsBlankRowsAndRevisionDrafts() throws Exception {
+    User owner = new User();
+    owner.setId(42L);
+
+    PaperSubmissionDraft meaningful = new PaperSubmissionDraft();
+    meaningful.setId(101L);
+    meaningful.setCreatedBy(owner);
+    meaningful.setFormDataJson("{\"title\":\"Saved work\"}");
+
+    PaperSubmissionDraft blank = new PaperSubmissionDraft();
+    blank.setId(102L);
+    blank.setCreatedBy(owner);
+    blank.setFormDataJson("{}");
+    blank.setVersion(4L);
+    blank.setArticleStatus(PaperArticleStatus.IN_PROGRESS);
+    blank.setArticleJson("{\"sections\":[]}");
+
+    when(userRepository.findByUsername("user1")).thenReturn(Optional.of(owner));
+    when(
+      draftRepository
+        .findByCreatedByIdAndStatusAndRevisionSourcePaperIsNullOrderByUpdatedAtDescIdDesc(
+          42L,
+          PaperSubmissionDraftStatus.IN_PROGRESS
+        )
+    ).thenReturn(List.of(meaningful, blank));
+    when(fileRepository.findByDraftIdOrderBySortOrderAscIdAsc(101L)).thenReturn(List.of());
+    when(fileRepository.findByDraftIdOrderBySortOrderAscIdAsc(102L)).thenReturn(List.of());
+    when(
+      objectMapper.readValue(
+        "{\"title\":\"Saved work\"}",
+        com.openisle.dto.PaperSubmitRequest.class
+      )
+    ).thenAnswer(invocation -> {
+      var form = new com.openisle.dto.PaperSubmitRequest();
+      form.setTitle("Saved work");
+      return form;
+    });
+    when(objectMapper.readValue("{}", com.openisle.dto.PaperSubmitRequest.class))
+      .thenReturn(new com.openisle.dto.PaperSubmitRequest());
+    when(objectMapper.readValue("{\"sections\":[]}", PaperArticleDto.class))
+      .thenReturn(new PaperArticleDto());
+
+    List<PaperSubmissionDraftDto> result = service.listDrafts(
+      "user1",
+      PaperSubmissionDraftKind.ORIGINAL
+    );
+
+    assertEquals(1, result.size());
+    assertEquals(101L, result.get(0).getId());
+    assertEquals("Saved work", result.get(0).getFormData().getTitle());
+  }
+
+  @Test
+  void activeRevisionDraftListKeepsPrefilledVersionZeroDraft() throws Exception {
+    User owner = new User();
+    owner.setId(42L);
+    PaperProfile source = revisionSource(owner, 8L, "Source paper title");
+    PaperSubmissionDraft revision = new PaperSubmissionDraft();
+    revision.setId(103L);
+    revision.setCreatedBy(owner);
+    revision.setRevisionSourcePaper(source);
+    revision.setFormDataJson("{}");
+
+    when(userRepository.findByUsername("user1")).thenReturn(Optional.of(owner));
+    when(
+      draftRepository
+        .findByCreatedByIdAndStatusAndRevisionSourcePaperIsNotNullOrderByUpdatedAtDescIdDesc(
+          42L,
+          PaperSubmissionDraftStatus.IN_PROGRESS
+        )
+    ).thenReturn(List.of(revision));
+    when(fileRepository.findByDraftIdOrderBySortOrderAscIdAsc(103L)).thenReturn(List.of());
+    when(objectMapper.readValue("{}", com.openisle.dto.PaperSubmitRequest.class))
+      .thenReturn(new com.openisle.dto.PaperSubmitRequest());
+
+    List<PaperSubmissionDraftDto> result = service.listDrafts(
+      "user1",
+      PaperSubmissionDraftKind.REVISION
+    );
+
+    assertEquals(1, result.size());
+    assertEquals(103L, result.get(0).getId());
+    assertEquals(8L, result.get(0).getRevisionSourcePaperId());
+  }
 
   @Test
   void currentOriginalDraftDoesNotResumeLatestRevisionDraft() throws Exception {

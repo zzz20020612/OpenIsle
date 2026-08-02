@@ -19,6 +19,22 @@
         </div>
         <NuxtLink :to="`/papers/${submittedPaper.id}`">Open submission</NuxtLink>
       </div>
+      <section v-if="originalDrafts.length" class="draft-list" aria-labelledby="original-drafts-title">
+        <div class="draft-list-heading">
+          <div>
+            <span>Private workspace</span>
+            <h2 id="original-drafts-title">New Submission Drafts</h2>
+          </div>
+          <small>{{ originalDrafts.length }} saved</small>
+        </div>
+        <article v-for="savedDraft in originalDrafts" :key="savedDraft.id" class="draft-row">
+          <div>
+            <strong>{{ draftTitle(savedDraft) }}</strong>
+            <span>Last edited {{ formatDraftTime(savedDraft.updatedAt) }}</span>
+          </div>
+          <NuxtLink :to="{ path: '/papers/submit', query: { draft: savedDraft.id } }">Continue Draft</NuxtLink>
+        </article>
+      </section>
       <section v-if="papers.length" class="submission-list">
       <article v-for="paper in papers" :key="paper.id" class="submission-row">
         <NuxtLink :to="`/papers/${paper.id}`" class="submission-main">
@@ -37,7 +53,7 @@
             type="button"
             :disabled="isCreatingRevisionId === paper.id"
             @click="openRevision(paper)"
-          >{{ isCreatingRevisionId === paper.id ? 'Opening...' : 'Revise Submission' }}</button>
+          >{{ isCreatingRevisionId === paper.id ? 'Opening...' : (revisionDraftFor(paper.id) ? 'Continue Revision' : 'Revise Submission') }}</button>
           <NuxtLink
             v-else-if="paper.latestRevisionPaperId"
             class="revision-link"
@@ -46,7 +62,7 @@
         </div>
       </article>
       </section>
-      <p v-else class="state-message">You have not submitted a paper yet.</p>
+      <p v-else-if="!originalDrafts.length" class="state-message">You have not submitted a paper yet.</p>
     </template>
   </main>
 </template>
@@ -57,10 +73,15 @@ import { toast } from '~/main'
 definePageMeta({ middleware: 'auth-client', keepalive: false })
 useHead({ title: 'My Submissions - OpenIsle' })
 
-const { listMyPapers, createRevisionDraft } = usePaperApi()
+const { listMyPapers, listSubmissionDrafts, createRevisionDraft } = usePaperApi()
 const route = useRoute()
-const { data, pending, error } = await useAsyncData('my-paper-submissions', listMyPapers, { server: false })
-const papers = computed(() => data.value || [])
+const { data, pending, error } = await useAsyncData('my-paper-submissions', async () => {
+  const [papers, drafts] = await Promise.all([listMyPapers(), listSubmissionDrafts('ANY')])
+  return { papers, drafts }
+}, { server: false })
+const papers = computed(() => data.value?.papers || [])
+const originalDrafts = computed(() => (data.value?.drafts || []).filter((draft) => !draft.revisionSourcePaperId))
+const revisionDrafts = computed(() => (data.value?.drafts || []).filter((draft) => draft.revisionSourcePaperId))
 const submittedPaper = computed(() => {
   const submittedId = String(route.query.submitted || '')
   return papers.value.find((paper) => String(paper.id) === submittedId)
@@ -68,6 +89,13 @@ const submittedPaper = computed(() => {
 const formatStatus = (value) => String(value || 'NOT_SCREENED').replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())
 const statusClass = (value) => `status-${String(value || '').toLowerCase()}`
 const isCreatingRevisionId = ref(null)
+const revisionDraftFor = (paperId) => revisionDrafts.value.find((draft) => String(draft.revisionSourcePaperId) === String(paperId))
+const draftTitle = (draft) => draft?.formData?.title?.trim() || 'Untitled submission'
+const formatDraftTime = (value) => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'recently'
+  return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+}
 const openRevision = async (paper) => {
   if (!paper?.id || isCreatingRevisionId.value) return
   isCreatingRevisionId.value = paper.id
@@ -90,6 +118,17 @@ h1 { margin: 8px 0 6px; font-size: 30px; }
 header p { margin: 0; color: #65747b; }
 .submit-link { padding: 10px 14px; border: 1px solid #2f6178; background: #2f6178; color: #fff; white-space: nowrap; }
 .submission-list { border-top: 1px solid #d7dee1; }
+.draft-list { margin: 24px 0 30px; border: 1px solid #cad6db; background: #f7fafb; }
+.draft-list-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding: 16px 18px; border-bottom: 1px solid #d7e0e4; }
+.draft-list-heading span { color: #2f657c; font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.draft-list-heading h2 { margin: 4px 0 0; font-family: Georgia, serif; font-size: 21px; font-weight: 500; }
+.draft-list-heading small { color: #6a777e; }
+.draft-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 18px; border-bottom: 1px solid #e0e6e9; }
+.draft-row:last-child { border-bottom: 0; }
+.draft-row > div { display: grid; gap: 4px; min-width: 0; }
+.draft-row strong { overflow-wrap: anywhere; color: #20313a; font-size: 15px; }
+.draft-row span { color: #6a777e; font-size: 12px; }
+.draft-row a { flex: 0 0 auto; padding: 7px 10px; border: 1px solid #2f6178; color: #245f7d; font-size: 12px; font-weight: 700; text-decoration: none; }
 .submission-success { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 24px 0; padding: 16px 18px; border: 1px solid #9fc7ad; background: #f1f8f3; color: #214b2e; }
 .submission-success strong { font-size: 15px; }
 .submission-success p { margin: 5px 0 0; color: #40624a; font-size: 13px; line-height: 1.5; }

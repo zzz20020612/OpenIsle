@@ -9,12 +9,12 @@
         </div>
         <div class="submission-save-state" :class="saveState">
           <span class="submission-save-dot" aria-hidden="true"></span>
-          <span>{{ saveStatusLabel }}</span>
+          <span>{{ workspaceSaveLabel }}</span>
         </div>
       </header>
 
       <Teleport to="body">
-        <div v-if="pendingOriginalDraft" class="draft-choice-backdrop">
+        <div v-if="pendingOriginalDrafts.length" class="draft-choice-backdrop">
           <section
             class="draft-choice-dialog"
             role="dialog"
@@ -25,13 +25,23 @@
             <span class="draft-choice-eyebrow">Submission draft found</span>
             <h2 id="draft-choice-title">Continue your draft or start fresh?</h2>
             <p id="draft-choice-description">
-              Your existing draft will stay private and unchanged if you start a new submission.
+              Your saved drafts stay private and unchanged if you start a new submission.
             </p>
 
-            <div class="draft-choice-summary">
-              <span>Current draft</span>
-              <strong>{{ pendingDraftTitle }}</strong>
-              <small>Last saved {{ formatSavedTime(pendingOriginalDraft.updatedAt) }}</small>
+            <div class="draft-choice-list">
+              <button
+                v-for="savedDraft in pendingOriginalDrafts"
+                :key="savedDraft.id"
+                class="draft-choice-summary"
+                type="button"
+                :disabled="Boolean(draftChoiceAction)"
+                @click="continueExistingDraft(savedDraft)"
+              >
+                <span>Saved draft</span>
+                <strong>{{ draftTitle(savedDraft) }}</strong>
+                <small>Last saved {{ formatSavedTime(savedDraft.updatedAt) }}</small>
+                <em>{{ draftChoiceAction === `continue:${savedDraft.id}` ? 'Opening...' : 'Continue' }}</em>
+              </button>
             </div>
 
             <p v-if="draftChoiceError" class="draft-choice-error" role="alert">
@@ -39,14 +49,6 @@
             </p>
 
             <div class="draft-choice-actions">
-              <button
-                class="submission-secondary-button"
-                type="button"
-                :disabled="Boolean(draftChoiceAction)"
-                @click="continueExistingDraft"
-              >
-                {{ draftChoiceAction === 'continue' ? 'Opening Draft...' : 'Continue Draft' }}
-              </button>
               <button
                 class="submission-primary-button"
                 type="button"
@@ -61,12 +63,34 @@
         </div>
       </Teleport>
 
+      <Teleport to="body">
+        <div v-if="showExitDialog" class="draft-choice-backdrop">
+          <section class="draft-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="exit-draft-title">
+            <span class="draft-choice-eyebrow">Leave submission workspace</span>
+            <h2 id="exit-draft-title">Keep this draft before leaving?</h2>
+            <p>Your work is private. You can keep it for later or discard this draft now.</p>
+            <p v-if="exitChoiceError" class="draft-choice-error" role="alert">{{ exitChoiceError }}</p>
+            <div class="draft-choice-actions exit-actions">
+              <button type="button" class="submission-text-button danger" :disabled="Boolean(exitChoiceAction)" @click="discardAndExit">
+                {{ exitChoiceAction === 'discard' ? 'Discarding...' : 'Discard Draft' }}
+              </button>
+              <button type="button" class="submission-secondary-button" :disabled="Boolean(exitChoiceAction)" @click="continueEditing">
+                Continue Editing
+              </button>
+              <button type="button" class="submission-primary-button" :disabled="Boolean(exitChoiceAction)" @click="keepAndExit">
+                {{ exitChoiceAction === 'keep' ? 'Saving...' : 'Keep Draft & Exit' }}
+              </button>
+            </div>
+          </section>
+        </div>
+      </Teleport>
+
       <div v-if="loading || entryLoading" class="submission-loading">Opening your submission draft...</div>
       <div v-else-if="draftChoiceError && !pendingOriginalDraft && !draft" class="submission-loading error" role="alert">
         {{ draftChoiceError }}
       </div>
-      <div v-else-if="pendingOriginalDraft" class="submission-loading">
-        Choose whether to continue your draft or start a new submission.
+      <div v-else-if="pendingOriginalDrafts.length" class="submission-loading">
+        Choose a saved draft or start a new submission.
       </div>
 
       <template v-else-if="draft">
@@ -225,10 +249,10 @@
                     <strong>{{ articleStatus === 'READY' ? 'Online article ready' : 'Prepare the online article' }}</strong>
                     <span>{{ articleStatus === 'READY' ? 'The article preview is ready for final submission review.' : 'The DOCX remains archived, while this structured version becomes the reader-facing article.' }}</span>
                   </div>
-                  <NuxtLink class="submission-secondary-button" :to="`/papers/submit/${draft.id}/content`">
+                  <button class="submission-secondary-button" type="button" @click="openArticleEditor">
                     {{ articleStatus === 'READY' ? 'Edit Article' : 'Open Article Editor' }}
                     <Right :size="16" />
-                  </NuxtLink>
+                  </button>
                 </div>
               </section>
 
@@ -489,10 +513,15 @@ const continuing = ref(false)
 const articleStatus = ref('NOT_STARTED')
 const articleApi = usePaperApi()
 const entryLoading = ref(true)
-const pendingOriginalDraft = ref(null)
+const pendingOriginalDrafts = ref([])
 const draftChoiceAction = ref('')
 const draftChoiceError = ref('')
 const workspaceInitialized = ref(false)
+const showExitDialog = ref(false)
+const pendingExitPath = ref('')
+const exitChoiceAction = ref('')
+const exitChoiceError = ref('')
+let allowNavigation = false
 
 const {
   draft,
@@ -501,11 +530,15 @@ const {
   loading,
   saveState,
   saveStatusLabel,
+  hasRetainableDraft,
   uploadState,
   validation,
   conflict,
   lastError,
   loadOrCreate,
+  startBlank,
+  ensureDraft,
+  flush,
   setCurrentSection,
   uploadFile,
   updateFile,
@@ -520,9 +553,12 @@ const submissionDescription = computed(() => isRevisionDraft.value
   ? 'Update the manuscript, article content, metadata, and declarations requested in the screening decision.'
   : 'Prepare the files, metadata, authors, funding, and declarations for one research record.'
 )
-const pendingDraftTitle = computed(() =>
-  pendingOriginalDraft.value?.formData?.title?.trim() || 'Untitled manuscript',
+const workspaceSaveLabel = computed(() => !draft.value?.id && saveState.value === 'idle'
+  ? 'Draft starts when you edit'
+  : saveStatusLabel.value
 )
+const hasWorkspaceToRetain = computed(() => hasRetainableDraft.value || Boolean(keywordDraft.value.trim()))
+const draftTitle = (savedDraft) => savedDraft?.formData?.title?.trim() || 'Untitled manuscript'
 
 const sectionIds = SUBMISSION_SECTIONS.map((section) => section.id)
 const { activeSection, start: startScrollspy, scrollTo } = useSubmissionScrollspy(sectionIds)
@@ -538,12 +574,16 @@ watch(
 const openSubmissionDraft = async (requestedDraftId, { initializeWorkspace = false } = {}) => {
   try {
     const record = await loadOrCreate(requestedDraftId || null, { currentKind: 'ORIGINAL' })
-    try {
-      articleStatus.value = (await articleApi.getDraftArticle(record.id))?.status || 'NOT_STARTED'
-    } catch {
+    if (record.id) {
+      try {
+        articleStatus.value = (await articleApi.getDraftArticle(record.id))?.status || 'NOT_STARTED'
+      } catch {
+        articleStatus.value = 'NOT_STARTED'
+      }
+    } else {
       articleStatus.value = 'NOT_STARTED'
     }
-    if (String(route.query.draft || '') !== String(record.id)) {
+    if (record.id && String(route.query.draft || '') !== String(record.id)) {
       await router.replace({ query: { draft: record.id } })
     }
     await nextTick()
@@ -568,14 +608,18 @@ const prepareGlobalSubmissionEntry = async ({ initializeWorkspace = false } = {}
   entryLoading.value = true
   draftChoiceError.value = ''
   try {
-    const currentDraft = await articleApi.getCurrentSubmissionDraft('ORIGINAL')
-    if (currentDraft) {
-      pendingOriginalDraft.value = currentDraft
+    const savedDrafts = await articleApi.listSubmissionDrafts('ORIGINAL')
+    if (savedDrafts.length) {
+      pendingOriginalDrafts.value = savedDrafts
       return
     }
-    const createdDraft = await articleApi.createSubmissionDraft()
-    const openedDraft = await openSubmissionDraft(createdDraft.id, { initializeWorkspace })
-    if (!openedDraft) throw new Error(lastError.value || 'Unable to open paper submission.')
+    startBlank()
+    articleStatus.value = 'NOT_STARTED'
+    await nextTick()
+    if (initializeWorkspace && !workspaceInitialized.value) {
+      startScrollspy()
+      workspaceInitialized.value = true
+    }
   } catch (error) {
     draftChoiceError.value = error?.data?.error || error?.message || 'Unable to open paper submission.'
   } finally {
@@ -583,17 +627,16 @@ const prepareGlobalSubmissionEntry = async ({ initializeWorkspace = false } = {}
   }
 }
 
-const continueExistingDraft = async () => {
-  const selectedDraft = pendingOriginalDraft.value
+const continueExistingDraft = async (selectedDraft) => {
   if (!selectedDraft || draftChoiceAction.value) return
-  draftChoiceAction.value = 'continue'
+  draftChoiceAction.value = `continue:${selectedDraft.id}`
   draftChoiceError.value = ''
-  pendingOriginalDraft.value = null
+  pendingOriginalDrafts.value = []
   try {
     const openedDraft = await openSubmissionDraft(selectedDraft.id, { initializeWorkspace: true })
     if (!openedDraft) throw new Error(lastError.value || 'Unable to open this draft.')
   } catch (error) {
-    pendingOriginalDraft.value = selectedDraft
+    pendingOriginalDrafts.value = [selectedDraft]
     draftChoiceError.value = error?.data?.error || error?.message || 'Unable to open this draft.'
   } finally {
     draftChoiceAction.value = ''
@@ -601,17 +644,22 @@ const continueExistingDraft = async () => {
 }
 
 const startNewSubmission = async () => {
-  const existingDraft = pendingOriginalDraft.value
-  if (!existingDraft || draftChoiceAction.value) return
+  const existingDrafts = [...pendingOriginalDrafts.value]
+  if (!existingDrafts.length || draftChoiceAction.value) return
   draftChoiceAction.value = 'new'
   draftChoiceError.value = ''
   try {
-    const createdDraft = await articleApi.createSubmissionDraft()
-    pendingOriginalDraft.value = null
-    const openedDraft = await openSubmissionDraft(createdDraft.id, { initializeWorkspace: true })
-    if (!openedDraft) throw new Error(lastError.value || 'Unable to start a new submission.')
+    pendingOriginalDrafts.value = []
+    startBlank()
+    articleStatus.value = 'NOT_STARTED'
+    if (route.query.draft) await router.replace({ query: {} })
+    await nextTick()
+    if (!workspaceInitialized.value) {
+      startScrollspy()
+      workspaceInitialized.value = true
+    }
   } catch (error) {
-    pendingOriginalDraft.value = existingDraft
+    pendingOriginalDrafts.value = existingDrafts
     draftChoiceError.value = error?.data?.error || error?.message || 'Unable to start a new submission.'
   } finally {
     draftChoiceAction.value = ''
@@ -623,16 +671,83 @@ watch(
   (requestedDraftId) => {
     if (requestedDraftId) {
       if (String(requestedDraftId) === String(draft.value?.id)) return
-      pendingOriginalDraft.value = null
+      pendingOriginalDrafts.value = []
       entryLoading.value = true
       void openSubmissionDraft(requestedDraftId).finally(() => {
         entryLoading.value = false
       })
       return
     }
-    if (draft.value) void prepareGlobalSubmissionEntry()
+    if (draft.value?.id) void prepareGlobalSubmissionEntry()
   },
 )
+
+watch(
+  () => draft.value?.id,
+  (draftId) => {
+    if (!draftId || String(route.query.draft || '') === String(draftId)) return
+    void router.replace({ query: { draft: draftId } })
+  },
+)
+
+const confirmWorkspaceExit = (to) => {
+  if (allowNavigation || !hasWorkspaceToRetain.value) return true
+  if (
+    to.path === route.path &&
+    String(to.query.draft || '') === String(draft.value?.id || '')
+  ) return true
+  if (draft.value?.id && to.path.startsWith(`/papers/submit/${draft.value.id}/`)) return true
+  pendingExitPath.value = to.fullPath
+  exitChoiceError.value = ''
+  showExitDialog.value = true
+  return false
+}
+
+onBeforeRouteLeave(confirmWorkspaceExit)
+onBeforeRouteUpdate(confirmWorkspaceExit)
+
+const finishExit = async () => {
+  const destination = pendingExitPath.value || '/papers'
+  showExitDialog.value = false
+  pendingExitPath.value = ''
+  allowNavigation = true
+  await router.push(destination)
+}
+
+const keepAndExit = async () => {
+  if (exitChoiceAction.value) return
+  exitChoiceAction.value = 'keep'
+  exitChoiceError.value = ''
+  try {
+    addKeyword()
+    await flush()
+    await finishExit()
+  } catch (error) {
+    exitChoiceError.value = error?.data?.error || error?.message || 'Unable to save this draft.'
+  } finally {
+    exitChoiceAction.value = ''
+  }
+}
+
+const discardAndExit = async () => {
+  if (exitChoiceAction.value) return
+  exitChoiceAction.value = 'discard'
+  exitChoiceError.value = ''
+  try {
+    await discard()
+    await finishExit()
+  } catch (error) {
+    exitChoiceError.value = error?.data?.error || error?.message || 'Unable to discard this draft.'
+  } finally {
+    exitChoiceAction.value = ''
+  }
+}
+
+const continueEditing = () => {
+  if (exitChoiceAction.value) return
+  showExitDialog.value = false
+  pendingExitPath.value = ''
+}
 
 onMounted(async () => {
   if (route.query.draft) {
@@ -645,6 +760,15 @@ onMounted(async () => {
   }
   await prepareGlobalSubmissionEntry({ initializeWorkspace: true })
 })
+
+const warnForPendingKeyword = (event) => {
+  if (!keywordDraft.value.trim()) return
+  event.preventDefault()
+  event.returnValue = ''
+}
+
+onMounted(() => window.addEventListener('beforeunload', warnForPendingKeyword))
+onBeforeUnmount(() => window.removeEventListener('beforeunload', warnForPendingKeyword))
 
 const uploadedRole = (role) =>
   files.value.filter((file) => file.role === role && file.uploadStatus === 'UPLOADED').length
@@ -752,6 +876,17 @@ const handleFileRemove = async (fileId) => {
   }
 }
 
+const openArticleEditor = async () => {
+  lastError.value = ''
+  try {
+    await ensureDraft()
+    await flush()
+    await router.push(`/papers/submit/${draft.value.id}/content`)
+  } catch (error) {
+    lastError.value = error?.data?.error || error?.message || 'Unable to open the article editor.'
+  }
+}
+
 const continueToReview = async () => {
   addKeyword()
   continuing.value = true
@@ -775,6 +910,7 @@ const continueToReview = async () => {
 const discardCurrentDraft = async () => {
   if (!window.confirm('Discard this submission draft? This action cannot be undone.')) return
   await discard()
+  allowNavigation = true
   await router.push('/papers')
 }
 
@@ -813,14 +949,19 @@ const formatSavedTime = (value) => {
 .draft-choice-eyebrow { display: block; margin-bottom: 9px; color: #2d657d; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .draft-choice-dialog h2 { margin: 0; font-family: Georgia, serif; font-size: 27px; font-weight: 500; line-height: 1.25; }
 .draft-choice-dialog > p { margin: 11px 0 0; color: #5d6a72; font-size: 14px; line-height: 1.55; }
-.draft-choice-summary { display: grid; gap: 5px; margin-top: 22px; padding: 16px; border-left: 3px solid #2b6b87; background: #f2f6f7; }
+.draft-choice-list { display: grid; gap: 9px; max-height: 320px; margin-top: 22px; overflow-y: auto; }
+.draft-choice-summary { position: relative; display: grid; gap: 5px; width: 100%; padding: 16px 88px 16px 16px; border: 0; border-left: 3px solid #2b6b87; background: #f2f6f7; text-align: left; cursor: pointer; }
+.draft-choice-summary:hover, .draft-choice-summary:focus-visible { background: #e8f1f4; outline: 2px solid #2b6b87; outline-offset: -2px; }
 .draft-choice-summary span { color: #65727a; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .draft-choice-summary strong { overflow-wrap: anywhere; color: #1b2c35; font-size: 15px; line-height: 1.4; }
 .draft-choice-summary small { color: #69757d; font-size: 12px; }
+.draft-choice-summary em { position: absolute; top: 50%; right: 16px; color: #245f7d; font-size: 12px; font-style: normal; font-weight: 800; transform: translateY(-50%); }
 .draft-choice-dialog .draft-choice-error { margin-top: 14px; padding: 10px 12px; border: 1px solid #d8aaa5; background: #fff6f5; color: #963b33; font-weight: 700; }
 .draft-choice-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 .draft-choice-actions .submission-secondary-button, .draft-choice-actions .submission-primary-button { min-height: 44px; justify-content: center; }
 .draft-choice-actions button:disabled { opacity: .58; cursor: wait; }
+.draft-choice-actions.exit-actions { align-items: center; flex-wrap: wrap; }
+.draft-choice-actions.exit-actions .danger { margin-right: auto; }
 .submission-alert { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border: 1px solid; background: #fff; font-size: 13px; }
 .submission-alert > div { display: grid; gap: 2px; flex: 1; }
 .submission-alert.warning { border-color: #d7b36c; color: #684d20; background: #fffaf0; }

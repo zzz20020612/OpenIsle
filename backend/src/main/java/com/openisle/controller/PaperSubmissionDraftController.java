@@ -71,6 +71,15 @@ public class PaperSubmissionDraftController {
       .orElseGet(() -> ResponseEntity.noContent().build());
   }
 
+  @GetMapping
+  @Operation(summary = "List active paper submission drafts")
+  public List<PaperSubmissionDraftDto> listDrafts(
+    @RequestParam(defaultValue = "ANY") PaperSubmissionDraftKind kind,
+    Authentication authentication
+  ) {
+    return draftService.listDrafts(authentication.getName(), kind);
+  }
+
   @GetMapping("/{draftId}")
   @Operation(summary = "Get paper submission draft")
   public PaperSubmissionDraftDto getDraft(

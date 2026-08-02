@@ -61,6 +61,12 @@ export const usePaperApi = () => {
       params: { kind },
     })
 
+  const listSubmissionDrafts = (kind = 'ANY') =>
+    $fetch(`${apiBaseUrl}/api/paper-submission-drafts`, {
+      headers: authHeaders(),
+      params: { kind },
+    })
+
   const getSubmissionDraft = (draftId) =>
     $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}`, {
       headers: authHeaders(),
@@ -227,6 +233,7 @@ export const usePaperApi = () => {
     createSubmissionDraft,
     createRevisionDraft,
     getCurrentSubmissionDraft,
+    listSubmissionDrafts,
     getSubmissionDraft,
     updateSubmissionDraft,
     discardSubmissionDraft,

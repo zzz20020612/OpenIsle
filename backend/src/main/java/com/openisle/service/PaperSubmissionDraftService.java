@@ -144,8 +144,154 @@ public class PaperSubmissionDraftService {
   }
 
   @Transactional(readOnly = true)
+  public List<PaperSubmissionDraftDto> listDrafts(
+    String username,
+    PaperSubmissionDraftKind kind
+  ) {
+    User user = requireUser(username);
+    List<PaperSubmissionDraft> drafts = switch (
+      kind != null ? kind : PaperSubmissionDraftKind.ANY
+    ) {
+      case ORIGINAL -> draftRepository
+        .findByCreatedByIdAndStatusAndRevisionSourcePaperIsNullOrderByUpdatedAtDescIdDesc(
+          user.getId(),
+          PaperSubmissionDraftStatus.IN_PROGRESS
+        );
+      case REVISION -> draftRepository
+        .findByCreatedByIdAndStatusAndRevisionSourcePaperIsNotNullOrderByUpdatedAtDescIdDesc(
+          user.getId(),
+          PaperSubmissionDraftStatus.IN_PROGRESS
+        );
+      case ANY -> draftRepository.findByCreatedByIdAndStatusOrderByUpdatedAtDescIdDesc(
+        user.getId(),
+        PaperSubmissionDraftStatus.IN_PROGRESS
+      );
+    };
+    return drafts
+      .stream()
+      .filter(this::isMeaningfulDraft)
+      .map(this::toDto)
+      .toList();
+  }
+
+  @Transactional(readOnly = true)
   public PaperSubmissionDraftDto getDraft(String username, Long draftId) {
     return toDto(requireOwnedDraft(username, draftId));
+  }
+
+  private boolean isMeaningfulDraft(PaperSubmissionDraft draft) {
+    if (draft.getRevisionSourcePaper() != null) {
+      return true;
+    }
+    if (draft.getArticleStatus() == PaperArticleStatus.READY || hasMeaningfulArticle(draft.getArticleJson())) {
+      return true;
+    }
+    if (!fileRepository.findByDraftIdOrderBySortOrderAscIdAsc(draft.getId()).isEmpty()) {
+      return true;
+    }
+    return hasMeaningfulFormData(readForm(draft.getFormDataJson()));
+  }
+
+  private boolean hasMeaningfulFormData(PaperSubmitRequest form) {
+    if (
+      form.getCategoryId() != null ||
+      hasValues(form.getTagIds()) ||
+      hasText(form.getTitle()) ||
+      hasText(form.getAbstractText()) ||
+      hasValues(form.getKeywords()) ||
+      hasValues(form.getReferences()) ||
+      hasValues(form.getManuscriptFiles()) ||
+      hasValues(form.getSupplementaryFiles()) ||
+      hasText(form.getSubjectArea()) ||
+      hasText(form.getContent()) ||
+      hasText(form.getPrimaryInstitutionName()) ||
+      hasText(form.getFundingStatement()) ||
+      hasText(form.getConflictOfInterest()) ||
+      hasText(form.getDataAvailability()) ||
+      hasText(form.getEthicsStatement()) ||
+      hasText(form.getPreprintStatement()) ||
+      hasText(form.getAiUseDisclosure()) ||
+      hasText(form.getPrivateComments()) ||
+      Boolean.TRUE.equals(form.getNoFundingReceived()) ||
+      Boolean.TRUE.equals(form.getAllAuthorsConsent()) ||
+      Boolean.TRUE.equals(form.getOriginalityConfirmed()) ||
+      Boolean.TRUE.equals(form.getRightsConfirmed()) ||
+      Boolean.TRUE.equals(form.getCorrespondingAuthorContactConfirmed()) ||
+      (hasText(form.getPaperType()) && !DEFAULT_MANUSCRIPT_TYPE.equals(form.getPaperType()))
+    ) {
+      return true;
+    }
+    if (form.getFunding() != null && form.getFunding().stream().anyMatch(this::hasMeaningfulFunding)) {
+      return true;
+    }
+    return form.getAuthors() != null && form.getAuthors().stream().anyMatch(this::hasMeaningfulAuthor);
+  }
+
+  private boolean hasMeaningfulArticle(String articleJson) {
+    if (!hasText(articleJson)) return false;
+    try {
+      PaperArticleDto article = objectMapper.readValue(articleJson, PaperArticleDto.class);
+      if (article.getSections() == null) return false;
+      return article.getSections().stream().anyMatch(section ->
+        section != null && section.getBlocks() != null && section.getBlocks().stream().anyMatch(block ->
+          block != null && (
+            hasText(block.getText()) ||
+            hasText(block.getLatex()) ||
+            block.getFileId() != null ||
+            hasText(block.getLabel()) ||
+            hasText(block.getCaption()) ||
+            hasText(block.getAltText()) ||
+            hasText(block.getSourceNote()) ||
+            hasText(block.getNotes()) ||
+            hasValues(block.getColumns()) ||
+            hasValues(block.getRows())
+          )
+        )
+      );
+    } catch (JsonProcessingException error) {
+      return true;
+    }
+  }
+
+  private boolean hasMeaningfulFunding(PaperFundingRequest funding) {
+    return funding != null && (hasText(funding.getFunderName()) || hasText(funding.getGrantId()));
+  }
+
+  private boolean hasMeaningfulAuthor(PaperAuthorRequest author) {
+    if (author == null) return false;
+    if (
+      hasText(author.getDisplayName()) ||
+      hasText(author.getGivenName()) ||
+      hasText(author.getMiddleName()) ||
+      hasText(author.getFamilyName()) ||
+      hasText(author.getEmail()) ||
+      hasText(author.getOrcid()) ||
+      hasText(author.getInstitutionName()) ||
+      hasText(author.getCountry()) ||
+      hasValues(author.getContributionRoles())
+    ) {
+      return true;
+    }
+    return author.getAffiliations() != null && author.getAffiliations().stream().anyMatch(affiliation ->
+      affiliation != null && (
+        hasText(affiliation.getOrganizationName()) ||
+        hasText(affiliation.getDepartment()) ||
+        hasText(affiliation.getAddressLine1()) ||
+        hasText(affiliation.getAddressLine2()) ||
+        hasText(affiliation.getCountry()) ||
+        hasText(affiliation.getRegion()) ||
+        hasText(affiliation.getCity()) ||
+        hasText(affiliation.getPostalCode())
+      )
+    );
+  }
+
+  private boolean hasText(String value) {
+    return value != null && !value.isBlank();
+  }
+
+  private boolean hasValues(List<?> values) {
+    return values != null && !values.isEmpty();
   }
 
   @Transactional

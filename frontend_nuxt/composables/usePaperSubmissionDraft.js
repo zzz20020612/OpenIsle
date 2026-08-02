@@ -58,9 +58,11 @@ export const usePaperSubmissionDraft = () => {
   const dirty = ref(false)
   let saveTimer = null
   let hydrating = false
+  let createPromise = null
 
   const saveStatusLabel = computed(() => SAVE_STATUS_LABELS[saveState.value] || '')
   const hasPendingWork = computed(() => dirty.value || uploadState.active > 0)
+  const hasRetainableDraft = computed(() => Boolean(draft.value?.id) || dirty.value)
 
   const hydrate = (record) => {
     hydrating = true
@@ -78,6 +80,21 @@ export const usePaperSubmissionDraft = () => {
     })
   }
 
+  const startBlank = () => {
+    hydrate({
+      id: null,
+      version: 0,
+      manuscriptType: 'Research Article',
+      currentSection: 'manuscript-type',
+      status: 'IN_PROGRESS',
+      formData: createEmptySubmissionForm(),
+      files: [],
+      articleStatus: 'NOT_STARTED',
+      articleVersion: 0,
+    })
+    return draft.value
+  }
+
   const loadOrCreate = async (draftId, { currentKind = 'ANY' } = {}) => {
     loading.value = true
     lastError.value = ''
@@ -86,9 +103,7 @@ export const usePaperSubmissionDraft = () => {
       if (!record) {
         record = await api.getCurrentSubmissionDraft(currentKind)
       }
-      if (!record) {
-        record = await api.createSubmissionDraft()
-      }
+      if (!record) return startBlank()
       hydrate(record)
       return record
     } catch (error) {
@@ -99,8 +114,27 @@ export const usePaperSubmissionDraft = () => {
     }
   }
 
+  const ensureDraft = async () => {
+    if (draft.value?.id) return draft.value
+    if (createPromise) return createPromise
+    createPromise = api.createSubmissionDraft()
+      .then((record) => {
+        draft.value = {
+          ...record,
+          currentSection: currentSection.value,
+          formData: clone(form),
+          files: [],
+        }
+        return draft.value
+      })
+      .finally(() => {
+        createPromise = null
+      })
+    return createPromise
+  }
+
   const saveNow = async () => {
-    if (!draft.value || hydrating || !dirty.value || saveState.value === 'saving') return draft.value
+    if (hydrating || !dirty.value || saveState.value === 'saving') return draft.value
     if (saveTimer) {
       clearTimeout(saveTimer)
       saveTimer = null
@@ -108,6 +142,7 @@ export const usePaperSubmissionDraft = () => {
     saveState.value = 'saving'
     lastError.value = ''
     try {
+      await ensureDraft()
       const updated = await api.updateSubmissionDraft(draft.value.id, {
         version: draft.value.version,
         currentSection: currentSection.value,
@@ -137,7 +172,7 @@ export const usePaperSubmissionDraft = () => {
   }
 
   const scheduleSave = () => {
-    if (hydrating || !draft.value) return
+    if (hydrating) return
     dirty.value = true
     saveState.value = 'dirty'
     if (saveTimer) clearTimeout(saveTimer)
@@ -157,7 +192,7 @@ export const usePaperSubmissionDraft = () => {
   const setCurrentSection = (sectionId) => {
     if (!sectionId || currentSection.value === sectionId) return
     currentSection.value = sectionId
-    scheduleSave()
+    if (draft.value?.id) scheduleSave()
   }
 
   const replaceFile = (nextFile) => {
@@ -174,7 +209,7 @@ export const usePaperSubmissionDraft = () => {
   }
 
   const uploadFile = async (file, metadata) => {
-    if (!draft.value) throw new Error('Submission draft is not ready.')
+    await ensureDraft()
     uploadState.active += 1
     uploadState.role = metadata.role
     uploadState.error = ''
@@ -235,15 +270,19 @@ export const usePaperSubmissionDraft = () => {
   }
 
   const validate = async () => {
+    await ensureDraft()
     await flush()
     validation.value = await api.validateSubmissionDraft(draft.value.id)
     return validation.value
   }
 
   const discard = async () => {
-    if (!draft.value) return
+    if (!draft.value?.id) {
+      startBlank()
+      return
+    }
     await api.discardSubmissionDraft(draft.value.id)
-    dirty.value = false
+    startBlank()
   }
 
   const issuesForSection = (sectionId) =>
@@ -272,12 +311,15 @@ export const usePaperSubmissionDraft = () => {
     loading,
     saveState,
     saveStatusLabel,
+    hasRetainableDraft,
     uploadState,
     validation,
     conflict,
     lastError,
     dirty,
     loadOrCreate,
+    startBlank,
+    ensureDraft,
     saveNow,
     flush,
     setCurrentSection,

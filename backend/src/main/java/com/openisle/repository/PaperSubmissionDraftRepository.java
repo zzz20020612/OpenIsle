@@ -2,6 +2,7 @@ package com.openisle.repository;
 
 import com.openisle.model.PaperSubmissionDraft;
 import com.openisle.model.PaperSubmissionDraftStatus;
+import java.util.List;
 import java.util.Optional;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.Lock;
@@ -16,14 +17,31 @@ public interface PaperSubmissionDraftRepository
     PaperSubmissionDraftStatus status
   );
 
+  List<PaperSubmissionDraft> findByCreatedByIdAndStatusOrderByUpdatedAtDescIdDesc(
+    Long createdById,
+    PaperSubmissionDraftStatus status
+  );
+
   Optional<PaperSubmissionDraft>
     findFirstByCreatedByIdAndStatusAndRevisionSourcePaperIsNullOrderByUpdatedAtDescIdDesc(
       Long createdById,
       PaperSubmissionDraftStatus status
     );
 
+  List<PaperSubmissionDraft>
+    findByCreatedByIdAndStatusAndRevisionSourcePaperIsNullOrderByUpdatedAtDescIdDesc(
+      Long createdById,
+      PaperSubmissionDraftStatus status
+    );
+
   Optional<PaperSubmissionDraft>
     findFirstByCreatedByIdAndStatusAndRevisionSourcePaperIsNotNullOrderByUpdatedAtDescIdDesc(
+      Long createdById,
+      PaperSubmissionDraftStatus status
+    );
+
+  List<PaperSubmissionDraft>
+    findByCreatedByIdAndStatusAndRevisionSourcePaperIsNotNullOrderByUpdatedAtDescIdDesc(
       Long createdById,
       PaperSubmissionDraftStatus status
     );
