@@ -78,8 +78,8 @@ export async function googleAuthWithToken(
     const data = await res.json().catch(() => ({}))
 
     if (res.ok && data && data.token) {
-      setToken(data.token)
-      toast.success('登录成功')
+      await setToken(data.token)
+      toast.success('Logged in successfully.')
       registerPush?.()
       if (typeof redirect_success === 'function') redirect_success()
       return

@@ -34,7 +34,7 @@ export default defineNuxtPlugin(() => {
             requestToken &&
             requestToken === getToken()
           ) {
-            clearToken()
+            clearToken(requestToken)
           }
         } catch (e) {
           // ignore JSON parsing errors

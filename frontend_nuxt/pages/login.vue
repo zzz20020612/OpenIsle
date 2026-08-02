@@ -1,49 +1,79 @@
 <template>
-  <div class="login-page">
-    <div class="login-page-content">
-      <div class="login-page-header">
-        <div class="login-page-header-title">Welcome :)</div>
+  <main class="login-page">
+    <section class="login-panel" aria-labelledby="login-title">
+      <header class="login-heading">
+        <span>Author account</span>
+        <h1 id="login-title">Sign in to OpenIsle</h1>
+        <p>Continue to your submissions, revisions, and research workspace.</p>
+      </header>
+
+      <form class="login-form" @submit.prevent="submitLogin">
+        <label class="login-field" for="login-username">
+          <span>Email or username</span>
+          <BaseInput
+            id="login-username"
+            v-model="username"
+            icon="mail"
+            name="username"
+            autocomplete="username"
+            placeholder="you@example.edu"
+            :disabled="isWaitingForLogin"
+            required
+          />
+        </label>
+
+        <label class="login-field" for="login-password">
+          <span>Password</span>
+          <BaseInput
+            id="login-password"
+            v-model="password"
+            icon="lock"
+            type="password"
+            name="password"
+            autocomplete="current-password"
+            placeholder="Enter your password"
+            :disabled="isWaitingForLogin"
+            required
+          />
+        </label>
+
+        <p v-if="loginError" class="login-error" role="alert">{{ loginError }}</p>
+
+        <button class="login-submit" type="submit" :disabled="isWaitingForLogin">
+          <loading-four v-if="isWaitingForLogin" class="loading-icon" />
+          {{ isWaitingForLogin ? 'Signing in...' : 'Sign in' }}
+        </button>
+
+        <button
+          v-if="sessionUnavailable"
+          class="login-retry"
+          type="button"
+          :disabled="isWaitingForLogin"
+          @click="retryAccountConnection"
+        >
+          Retry account connection
+        </button>
+      </form>
+
+      <div class="login-links">
+        <NuxtLink to="/signup">Create an account</NuxtLink>
+        <NuxtLink :to="`/forgot-password?email=${encodeURIComponent(username)}`">Reset password</NuxtLink>
       </div>
 
-      <div class="email-login-page-content">
-        <BaseInput icon="mail" v-model="username" placeholder="邮箱/用户名" />
-
-        <BaseInput icon="lock" v-model="password" type="password" placeholder="密码" />
-
-        <div v-if="!isWaitingForLogin" class="login-page-button-primary" @click="submitLogin">
-          <div class="login-page-button-text">登录</div>
-        </div>
-
-        <div v-else class="login-page-button-primary disabled">
-          <div class="login-page-button-text">
-            <loading-four class="loading-icon" />
-            登录中...
-          </div>
-        </div>
-
-        <div class="login-page-button-secondary">
-          没有账号？ <a class="login-page-button-secondary-link" href="/signup">注册</a> |
-          <a class="login-page-button-secondary-link" :href="`/forgot-password?email=${username}`"
-            >找回密码</a
-          >
-        </div>
-        <div class="hint-message">
-          <info-icon />
-          使用右侧第三方OAuth注册/登录的用户可使用对应的邮箱进行重设密码
-        </div>
-      </div>
-    </div>
-
-    <ThirdPartyAuth mode="login" />
-  </div>
+      <div class="login-divider"><span>or continue with</span></div>
+      <ThirdPartyAuth mode="login" />
+    </section>
+  </main>
 </template>
 
 <script setup>
 import { toast } from '~/main'
-import { setToken } from '~/utils/auth'
+import { loadCurrentUser, setToken } from '~/utils/auth'
+import { AuthResultStatus } from '~/utils/authSessionCore'
 import BaseInput from '~/components/BaseInput.vue'
 import ThirdPartyAuth from '~/components/ThirdPartyAuth.vue'
 import { registerPush } from '~/utils/push'
+
 const config = useRuntimeConfig()
 const route = useRoute()
 const router = useRouter()
@@ -51,6 +81,8 @@ const API_BASE_URL = config.public.apiBaseUrl
 const username = ref('')
 const password = ref('')
 const isWaitingForLogin = ref(false)
+const loginError = ref('')
+const sessionUnavailable = ref(false)
 
 const loginRedirectPath = computed(() => {
   const redirect = Array.isArray(route.query.redirect)
@@ -61,41 +93,72 @@ const loginRedirectPath = computed(() => {
     : '/papers'
 })
 
-const submitLogin = async () => {
+const finishLogin = async () => {
+  sessionUnavailable.value = false
+  loginError.value = ''
+  toast.success('Logged in successfully.')
+  await router.replace(loginRedirectPath.value)
+  void registerPush()
+}
+
+const handleSessionResult = async (result) => {
+  if (result.status === AuthResultStatus.AUTHENTICATED) {
+    await finishLogin()
+    return true
+  }
+  if (result.status === AuthResultStatus.UNAVAILABLE) {
+    sessionUnavailable.value = true
+    loginError.value = 'Your credentials were accepted, but account details could not be loaded. Check the connection and retry.'
+    return false
+  }
+  loginError.value = 'The new session could not be verified. Please sign in again.'
+  return false
+}
+
+const retryAccountConnection = async () => {
+  if (isWaitingForLogin.value) return
+  isWaitingForLogin.value = true
+  loginError.value = ''
   try {
-    isWaitingForLogin.value = true
-    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    await handleSessionResult(await loadCurrentUser())
+  } finally {
+    isWaitingForLogin.value = false
+  }
+}
+
+const submitLogin = async () => {
+  if (isWaitingForLogin.value) return
+  loginError.value = ''
+  sessionUnavailable.value = false
+  isWaitingForLogin.value = true
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: username.value, password: password.value }),
+      body: JSON.stringify({ username: username.value.trim(), password: password.value }),
     })
-    const data = await res.json().catch(() => ({}))
-    if (res.ok && data.token) {
-      await setToken(data.token)
-      toast.success('登录成功')
-      await router.replace(loginRedirectPath.value)
-      void registerPush()
+    const data = await response.json().catch(() => ({}))
+
+    if (response.ok && data.token) {
+      await handleSessionResult(await setToken(data.token))
     } else if (data.reason_code === 'EMAIL_SEND_FAILED') {
-      const msg = data.error || data.message || res.statusText || '登录失败'
-      toast.error(`${res.status} ${msg} (${data.reason_code})`)
+      loginError.value = data.error || data.message || 'The verification email could not be sent.'
     } else if (data.reason_code === 'NOT_VERIFIED') {
-      toast.info('当前邮箱未验证，已经为您重新发送验证码')
+      toast.info('This email is not verified. A new verification code has been sent.')
       await navigateTo(
         { path: '/signup', query: { verify: '1', u: username.value } },
         { replace: true },
       )
     } else if (data.reason_code === 'IS_APPROVING') {
-      toast.info('您的注册正在审批中, 请留意邮件')
-      await navigateTo('/', { replace: true })
+      loginError.value = 'Your registration is still under review. Please check your email for updates.'
     } else if (data.reason_code === 'NOT_APPROVED') {
       await navigateTo({ path: '/signup-reason', query: { token: data.token } }, { replace: true })
     } else {
-      const msg = data.error || data.message || res.statusText || '登录失败'
-      const reason = data.reason_code ? ` (${data.reason_code})` : ''
-      toast.error(`${res.status} ${msg}${reason}`)
+      loginError.value = data.error || data.message || 'The username or password was not accepted.'
     }
-  } catch (e) {
-    toast.error(`登录失败: ${e.message}`)
+  } catch (error) {
+    loginError.value = `Unable to reach the sign-in service. ${error?.message || 'Try again shortly.'}`
   } finally {
     isWaitingForLogin.value = false
   }
@@ -104,143 +167,137 @@ const submitLogin = async () => {
 
 <style scoped>
 .login-page {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
-  background-color: var(--background-color);
+  min-height: calc(100vh - var(--header-height));
+  display: grid;
+  place-items: center;
+  padding: 48px 20px 72px;
+  background: #f1f4f3;
+  color: #19272f;
 }
 
-.login-page-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: calc(40% - 120px);
-  border-right: 1px solid var(--normal-border-color);
-  padding-right: 120px;
+.login-panel {
+  width: min(460px, 100%);
+  padding: 38px 42px;
+  border: 1px solid #cbd5d8;
+  background: #fff;
+  box-shadow: 0 18px 45px rgba(30, 48, 57, .1);
 }
 
-.login-page-header-title {
-  font-family: 'Pacifico', 'Comic Sans MS', cursive, 'Roboto', sans-serif;
-  font-size: 42px;
-  font-weight: bold;
-  width: 100%;
-  opacity: 0.75;
-}
-
-.login-page-header {
-  font-size: 42px;
-  font-weight: bold;
-  width: 100%;
-}
-
-.email-login-page-content {
-  margin-top: 40px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  gap: 20px;
-}
-
-.login-page-input {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  width: calc(100% - 40px);
-  padding: 15px 20px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.login-page-input-icon {
-  opacity: 0.5;
-  font-size: 16px;
-}
-
-.login-page-input-text {
-  border: none;
-  outline: none;
-  width: 100%;
-  font-size: 16px;
-}
-
-.login-page-button-primary {
-  margin-top: 20px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  width: calc(100% - 40px);
-  background-color: var(--primary-color);
-  color: white;
-  padding: 10px 20px;
-  border-radius: 10px;
-  cursor: pointer;
-  gap: 10px;
-}
-
-.login-page-button-primary:hover {
-  background-color: var(--primary-color-hover);
-}
-
-.login-page-button-primary.disabled {
-  background-color: var(--primary-color-disabled);
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.login-page-button-primary.disabled:hover {
-  background-color: var(--primary-color-disabled);
-}
-
-.login-page-button-text {
-  font-size: 16px;
-}
-
-.login-page-button-secondary {
-  margin-top: 20px;
-  font-size: 16px;
-  opacity: 0.7;
-}
-
-.login-page-button-secondary-link {
-  color: var(--primary-color);
-}
-
-.hint-message {
+.login-heading > span {
+  color: #2c657d;
   font-size: 12px;
-  opacity: 0.7;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
 }
 
-@media (max-width: 768px) {
-  .login-page {
-    flex-direction: column;
-    justify-content: flex-start;
-  }
+.login-heading h1 {
+  margin: 9px 0 0;
+  color: #17252d;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.2;
+}
 
-  .login-page-content {
-    margin-top: 20px;
-    width: calc(100% - 40px);
-    border-right: none;
-    padding-left: 20px;
-    padding-right: 20px;
-  }
+.login-heading p {
+  margin: 11px 0 0;
+  color: #627078;
+  font-size: 14px;
+  line-height: 1.55;
+}
 
-  .login-page-button-primary {
-    margin-top: 0px;
-  }
+.login-form { display: grid; gap: 17px; margin-top: 28px; }
+.login-field { display: grid; gap: 7px; }
 
-  .login-page-button-secondary {
-    margin-top: 0px;
-    font-size: 13px;
-  }
+.login-field > span {
+  color: #35454e;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.login-field :deep(.base-input) {
+  width: 100%;
+  min-height: 46px;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border-radius: 2px;
+  background: #fbfcfc;
+}
+
+.login-field :deep(.base-input-text) { font-size: 15px; }
+
+.login-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid #ad473e;
+  background: #fff5f3;
+  color: #8b352e;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.login-submit,
+.login-retry {
+  min-height: 46px;
+  border: 1px solid #28647f;
+  border-radius: 2px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 780;
+  cursor: pointer;
+}
+
+.login-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 2px;
+  background: #28647f;
+  color: #fff;
+}
+
+.login-submit:hover:not(:disabled) { background: #1f526b; }
+.login-submit:disabled, .login-retry:disabled { opacity: .58; cursor: wait; }
+.login-retry { background: #fff; color: #245a72; }
+.login-retry:hover:not(:disabled) { background: #edf4f6; }
+
+.login-links {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 18px;
+  font-size: 13px;
+}
+
+.login-links a { color: #285f77; text-decoration: none; }
+.login-links a:hover { text-decoration: underline; }
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 27px 0 17px;
+  color: #738087;
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.login-divider::before,
+.login-divider::after {
+  height: 1px;
+  flex: 1;
+  background: #d7dfe1;
+  content: '';
+}
+
+.login-panel :deep(.third-party-auth) { width: 100%; margin: 0; }
+
+@media (max-width: 600px) {
+  .login-page { align-items: start; padding: 24px 12px 50px; }
+  .login-panel { padding: 28px 22px; }
+  .login-heading h1 { font-size: 28px; }
 }
 </style>

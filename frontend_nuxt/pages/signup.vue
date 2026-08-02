@@ -174,8 +174,8 @@ const verifyCode = async () => {
     if (res.ok) {
       if (data.reason_code === 'VERIFIED_AND_APPROVED') {
         toast.success('注册成功')
-        setToken(data.token)
-        navigateTo('/', { replace: true })
+        await setToken(data.token)
+        await navigateTo('/', { replace: true })
       } else if (data.reason_code === 'VERIFIED') {
         if (registerMode.value === 'WHITELIST') {
           navigateTo(`/signup-reason?token=${data.token}`, { replace: true })

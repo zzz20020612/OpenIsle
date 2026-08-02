@@ -98,8 +98,8 @@ export async function twitterExchange(code, state, reason) {
 
     const data = await res.json()
     if (res.ok && data.token) {
-      setToken(data.token)
-      toast.success('登录成功')
+      await setToken(data.token)
+      toast.success('Logged in successfully.')
       registerPush()
       return { success: true, needReason: false }
     } else if (data.reason_code === 'NOT_APPROVED') {

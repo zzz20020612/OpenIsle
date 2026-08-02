@@ -225,7 +225,7 @@ const save = async () => {
       break
     }
     if (data.token) {
-      setToken(data.token)
+      await setToken(data.token)
       token = data.token
     }
     if (role.value === 'ADMIN') {
