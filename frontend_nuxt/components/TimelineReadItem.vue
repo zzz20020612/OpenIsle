@@ -1,11 +1,11 @@
 <template>
   <div class="timeline-container">
     <div class="timeline-header">
-      <div class="timeline-title">浏览了文章</div>
+      <div class="timeline-title">Viewed a paper record</div>
       <div class="timeline-date">{{ formattedDate }}</div>
     </div>
     <div class="article-container">
-      <NuxtLink :to="postLink" class="timeline-article-link">
+      <NuxtLink :to="recordLink" class="timeline-article-link">
         {{ item.post?.title }}
       </NuxtLink>
       <div class="timeline-snippet">
@@ -32,7 +32,10 @@ const props = defineProps({
   item: { type: Object, required: true },
 })
 
-const postLink = computed(() => {
+const recordLink = computed(() => {
+  const paperId = props.item.post?.paperId
+  if (paperId) return `/papers/${paperId}`
+  if (props.item.post?.type === 'PAPER') return '#'
   const id = props.item.post?.id
   return id ? `/posts/${id}` : '#'
 })
@@ -108,20 +111,6 @@ const hasMeta = computed(() => {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-}
-
-.article-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.article-tag {
-  background-color: var(--article-info-background-color);
-  border-radius: 6px;
-  padding: 2px 6px;
-  font-size: 12px;
-  color: var(--text-color);
 }
 
 .article-comment-count {

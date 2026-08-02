@@ -166,6 +166,7 @@ class UserControllerTest {
     post.setAuthor(user);
     Mockito.when(userService.findByIdentifier("bob")).thenReturn(Optional.of(user));
     Mockito.when(postService.getRecentPostsByUser("bob", 10)).thenReturn(java.util.List.of(post));
+    Mockito.when(userMapper.isPublicProfileContent(post)).thenReturn(true);
     PostMetaDto meta = new PostMetaDto();
     meta.setId(3L);
     meta.setTitle("hello");
@@ -191,6 +192,7 @@ class UserControllerTest {
     post.setAuthor(user);
     Mockito.when(userService.findByIdentifier("bob")).thenReturn(Optional.of(user));
     Mockito.when(subscriptionService.getSubscribedPosts("bob")).thenReturn(java.util.List.of(post));
+    Mockito.when(userMapper.isPublicProfileContent(post)).thenReturn(true);
     PostMetaDto meta = new PostMetaDto();
     meta.setId(6L);
     meta.setTitle("fav");
@@ -221,6 +223,7 @@ class UserControllerTest {
     Mockito.when(commentService.getRecentCommentsByUser("bob", 50)).thenReturn(
       java.util.List.of(comment)
     );
+    Mockito.when(userMapper.isPublicProfileContent(post)).thenReturn(true);
     CommentInfoDto info = new CommentInfoDto();
     info.setId(4L);
     info.setContent("hi");
@@ -258,6 +261,7 @@ class UserControllerTest {
     Mockito.when(commentService.getRecentCommentsByUser("bob", 50)).thenReturn(
       java.util.List.of(comment)
     );
+    Mockito.when(userMapper.isPublicProfileContent(post)).thenReturn(true);
     UserDto dtoAgg = new UserDto();
     dtoAgg.setId(2L);
     dtoAgg.setUsername("bob");

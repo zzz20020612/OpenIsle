@@ -52,7 +52,11 @@ public class UserVisitService {
     User user = userRepository
       .findByUsername(username)
       .orElseThrow(() -> new com.openisle.exception.NotFoundException("User not found"));
+    return countVisits(user);
+  }
 
+  public long countVisits(User user) {
+    String username = user.getUsername();
     // 如果缓存存在就返回
     String key1 = CachingConfig.VISIT_CACHE_NAME + ":" + LocalDate.now() + ":count:" + username;
     Integer cached = (Integer) redisTemplate.opsForValue().get(key1);

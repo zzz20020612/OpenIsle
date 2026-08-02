@@ -39,6 +39,10 @@ const placeholder = computed(() => {
 function onLoad() {
   loaded.value = true
 }
+
+function onError() {
+  loaded.value = false
+}
 </script>
 
 <style scoped>

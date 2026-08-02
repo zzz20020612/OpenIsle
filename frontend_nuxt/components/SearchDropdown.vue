@@ -52,6 +52,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Dropdown from '~/components/Dropdown.vue'
 import { stripMarkdown } from '~/utils/markdown'
+import { resolveCommentPath, resolveContentPath } from '~/utils/contentRoutes'
 import { useIsMobile } from '~/utils/screen'
 const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
@@ -162,13 +163,11 @@ watch(selected, (val) => {
   const opt = results.value.find((r) => r.id === val)
   if (!opt) return
   if (opt.type === 'post' || opt.type === 'post_title') {
-    navigateTo(`/posts/${opt.id}`, { replace: true })
+    navigateTo(resolveContentPath(opt), { replace: true })
   } else if (opt.type === 'user') {
     navigateTo(`/users/${opt.id}`, { replace: true })
   } else if (opt.type === 'comment') {
-    if (opt.postId) {
-      navigateTo(`/posts/${opt.postId}#comment-${opt.id}`, { replace: true })
-    }
+    if (opt.postId) navigateTo(resolveCommentPath(opt, opt.id), { replace: true })
   } else if (opt.type === 'category') {
     navigateTo({ path: '/', query: { category: opt.id } })
   } else if (opt.type === 'tag') {

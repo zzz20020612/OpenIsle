@@ -56,7 +56,7 @@ const resolvedLink = computed(() => {
   return null
 })
 
-const altText = computed(() => props.alt || '用户头像')
+const altText = computed(() => props.alt || 'User avatar')
 
 const sizeStyle = computed(() => {
   var style = {}
@@ -85,6 +85,7 @@ const wrapperAttrs = computed(() => {
 
 const handleClick = () => {
   if (props.disableLink) return
+  if (!resolvedLink.value || resolvedLink.value === useRoute().path) return
   navigateTo(resolvedLink.value)
 }
 </script>

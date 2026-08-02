@@ -1325,7 +1325,7 @@
 }
 
 .paper-author-table {
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--paper-line);
   border-radius: 13px;
   background: var(--paper-panel);
@@ -1334,8 +1334,8 @@
 .paper-author-table-header,
 .paper-author-table-row {
   display: grid;
-  grid-template-columns: 72px minmax(180px, 1fr) minmax(230px, auto);
-  gap: 12px;
+  grid-template-columns: 48px minmax(0, 1fr) minmax(150px, auto);
+  gap: 10px;
   align-items: center;
 }
 
@@ -1443,8 +1443,10 @@
 }
 
 .paper-author-actions.compact {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
 }
 
 .paper-button.small {
@@ -2074,11 +2076,82 @@
   line-height: 1.55;
 }
 
+.expert-profile-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.8fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.expert-profile-facts {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--paper-line);
+  background: var(--paper-soft);
+}
+
+.expert-profile-facts div {
+  display: grid;
+  gap: 4px;
+}
+
+.expert-profile-facts span,
+.expert-paper-row small,
+.paper-muted {
+  color: var(--paper-muted);
+  font-size: 12px;
+}
+
+.expert-profile-facts strong,
+.expert-profile-facts a {
+  color: var(--paper-ink);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.paper-section-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.expert-paper-list {
+  display: grid;
+  border-top: 1px solid var(--paper-line);
+}
+
+.expert-paper-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--paper-line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.expert-paper-row strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--paper-ink);
+  line-height: 1.35;
+}
+
+.paper-score-chip.compact {
+  min-width: 88px;
+  justify-content: center;
+}
+
 @media (max-width: 980px) {
   .paper-grid,
   .paper-detail-layout,
   .paper-submit-layout,
-  .paper-admin-layout {
+  .paper-admin-layout,
+  .expert-profile-panel {
     grid-template-columns: 1fr;
   }
 
@@ -2141,7 +2214,8 @@
   .paper-feed-row,
   .paper-declaration-grid,
   .paper-review-grid,
-  .paper-admin-row {
+  .paper-admin-row,
+  .expert-paper-row {
     grid-template-columns: 1fr;
   }
 

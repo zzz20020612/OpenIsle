@@ -5,39 +5,46 @@
     </div>
 
     <div v-else>
-      <div class="profile-page-header">
-        <div class="profile-page-header-avatar">
-          <BaseUserAvatar
-            :src="user.avatar"
-            :user-id="user.id"
-            alt="avatar"
-            class="profile-page-header-avatar-img"
-          />
-        </div>
+      <header class="profile-page-header">
+        <BaseUserAvatar
+          :src="user.avatar"
+          :user-id="user.id"
+          alt="avatar"
+          class="profile-page-header-avatar-img"
+        />
         <div class="profile-page-header-user-info">
-          <div class="profile-page-header-user-info-name">{{ user.username }}</div>
-          <div class="profile-page-header-user-info-description">{{ user.introduction }}</div>
+          <h1 class="profile-page-header-user-info-name">{{ user.username }}</h1>
+          <p class="profile-page-header-user-info-description">
+            {{ user.introduction || 'No profile summary yet.' }}
+          </p>
           <div class="profile-page-header-user-info-buttons">
-            <div
+            <button
               v-if="!isMine && !subscribed"
               class="profile-page-header-subscribe-button"
+              type="button"
               @click="subscribeUser"
             >
               <add-user />
-              关注
-            </div>
-            <div
+              Follow
+            </button>
+            <button
               v-if="!isMine && subscribed"
               class="profile-page-header-unsubscribe-button"
+              type="button"
               @click="unsubscribeUser"
             >
               <reduce-user />
-              取消关注
-            </div>
-            <div v-if="!isMine" class="profile-page-header-send-mail-button" @click="sendMessage">
+              Unfollow
+            </button>
+            <button
+              v-if="!isMine"
+              class="profile-page-header-send-mail-button"
+              type="button"
+              @click="sendMessage"
+            >
               <message-one />
-              发私信
-            </div>
+              Message
+            </button>
           </div>
           <LevelProgress
             :exp="levelInfo.exp"
@@ -45,159 +52,152 @@
             :next-exp="levelInfo.nextExp"
           />
           <div class="profile-level-target">
-            目标 Lv.{{ levelInfo.currentLevel + 1 }}
+            Target Lv.{{ levelInfo.currentLevel + 1 }}
             <ToolTip
-              content="经验值可通过发帖、评论等操作获得，达到目标后即可提升等级，解锁更多功能。"
+              content="Experience is earned through publishing, discussion, and other platform activity."
               placement="bottom"
             >
               <info-icon class="profile-exp-info" />
             </ToolTip>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div class="profile-info">
+      <section class="profile-info">
         <div class="profile-info-item">
-          <div class="profile-info-item-label">加入时间:</div>
-          <div class="profile-info-item-value">{{ formatDate(user.createdAt) }}</div>
+          <span class="profile-info-item-label">Joined</span>
+          <strong class="profile-info-item-value">{{ formatDate(user.createdAt) }}</strong>
         </div>
         <div class="profile-info-item">
-          <div class="profile-info-item-label">最后发帖时间:</div>
-          <div class="profile-info-item-value">
-            {{ user.lastPostTime != null ? formatDate(user.lastPostTime) : '暂无帖子' }}
-          </div>
+          <span class="profile-info-item-label">Latest paper activity</span>
+          <strong class="profile-info-item-value">
+            {{ user.lastPostTime ? formatDate(user.lastPostTime) : 'No records yet' }}
+          </strong>
         </div>
         <div class="profile-info-item">
-          <div class="profile-info-item-label">最后评论时间:</div>
-          <div class="profile-info-item-value">
-            {{ user.lastCommentTime != null ? formatDate(user.lastCommentTime) : '暂无评论' }}
-          </div>
+          <span class="profile-info-item-label">Latest discussion</span>
+          <strong class="profile-info-item-value">
+            {{ user.lastCommentTime ? formatDate(user.lastCommentTime) : 'No discussion yet' }}
+          </strong>
         </div>
         <div class="profile-info-item">
-          <div class="profile-info-item-label">浏览量:</div>
-          <div class="profile-info-item-value">{{ user.totalViews }}</div>
+          <span class="profile-info-item-label">Views</span>
+          <strong class="profile-info-item-value">{{ user.totalViews || 0 }}</strong>
         </div>
-      </div>
+      </section>
 
       <BaseTabs v-model="selectedTab" :tabs="tabs">
         <div v-if="tabLoading" class="tab-loading">
           <l-hatch size="28" stroke="4" speed="3.5" color="var(--primary-color)" />
         </div>
         <template v-else>
-          <div v-if="selectedTab === 'summary'" class="profile-summary">
+          <section v-if="selectedTab === 'summary'" class="profile-summary">
             <div class="total-summary">
-              <div class="summary-title">统计信息</div>
+              <h2 class="summary-title">Statistics</h2>
               <div class="total-summary-content">
                 <div class="total-summary-item">
-                  <div class="total-summary-item-label">访问天数</div>
-                  <div class="total-summary-item-value">{{ user.visitedDays }}</div>
+                  <span class="total-summary-item-label">Active days</span>
+                  <strong class="total-summary-item-value">{{ user.visitedDays || 0 }}</strong>
                 </div>
                 <div class="total-summary-item">
-                  <div class="total-summary-item-label">已读帖子</div>
-                  <div class="total-summary-item-value">{{ user.readPosts }}</div>
+                  <span class="total-summary-item-label">Read records</span>
+                  <strong class="total-summary-item-value">{{ user.readPosts || 0 }}</strong>
                 </div>
                 <div class="total-summary-item">
-                  <div class="total-summary-item-label">已送出的💗</div>
-                  <div class="total-summary-item-value">{{ user.likesSent }}</div>
+                  <span class="total-summary-item-label">Reactions sent</span>
+                  <strong class="total-summary-item-value">{{ user.likesSent || 0 }}</strong>
                 </div>
                 <div class="total-summary-item">
-                  <div class="total-summary-item-label">已收到的💗</div>
-                  <div class="total-summary-item-value">{{ user.likesReceived }}</div>
+                  <span class="total-summary-item-label">Reactions received</span>
+                  <strong class="total-summary-item-value">{{ user.likesReceived || 0 }}</strong>
                 </div>
               </div>
             </div>
+
             <div class="summary-divider">
               <div class="hot-reply">
-                <div class="summary-title">热门回复</div>
-                <div class="summary-content" v-if="hotReplies.length > 0">
-                  <BaseTimeline :items="hotReplies">
-                    <template #item="{ item }">
-                      在
-                      <NuxtLink :to="`/posts/${item.comment.post.id}`" class="timeline-link">
-                        {{ item.comment.post.title }}
-                      </NuxtLink>
-                      <template v-if="item.comment.parentComment">
-                        <NuxtLink
-                          :to="`/posts/${item.comment.post.id}#comment-${item.comment.parentComment.id}`"
-                          class="timeline-comment-link"
-                        >
-                          {{ stripMarkdownLength(item.comment.parentComment.content, 200) }}
-                        </NuxtLink>
-                        <next class="reply-icon" /> 回复了
-                      </template>
-                      <template v-else> 下评论了 </template>
+                <h2 class="summary-title">Popular replies</h2>
+                <BaseTimeline v-if="hotReplies.length > 0" :items="hotReplies">
+                  <template #item="{ item }">
+                    <NuxtLink :to="recordLink(item.comment.post)" class="timeline-link">
+                      {{ item.comment.post.title }}
+                    </NuxtLink>
+                    <template v-if="item.comment.parentComment">
                       <NuxtLink
-                        :to="`/posts/${item.comment.post.id}#comment-${item.comment.id}`"
+                        :to="commentLink(item.comment.post, item.comment.parentComment.id)"
                         class="timeline-comment-link"
                       >
-                        {{ stripMarkdownLength(item.comment.content, 200) }}
+                        {{ stripMarkdownLength(item.comment.parentComment.content, 200) }}
                       </NuxtLink>
-                      <div class="timeline-date">
-                        {{ formatDate(item.comment.createdAt) }}
-                      </div>
+                      <next class="reply-icon" />
+                      replied with
                     </template>
-                  </BaseTimeline>
-                </div>
-                <div v-else>
-                  <div class="summary-empty">暂无热门回复</div>
-                </div>
+                    <template v-else> commented with </template>
+                    <NuxtLink
+                      :to="commentLink(item.comment.post, item.comment.id)"
+                      class="timeline-comment-link"
+                    >
+                      {{ stripMarkdownLength(item.comment.content, 200) }}
+                    </NuxtLink>
+                    <div class="timeline-date">{{ formatDate(item.comment.createdAt) }}</div>
+                  </template>
+                </BaseTimeline>
+                <div v-else class="summary-empty">No popular replies yet.</div>
               </div>
+
               <div class="hot-topic">
-                <div class="summary-title">热门话题</div>
-                <div class="summary-content" v-if="hotPosts.length > 0">
-                  <BaseTimeline :items="hotPosts">
-                    <template #item="{ item }">
-                      <TimelinePostItem :item="item" />
-                    </template>
-                  </BaseTimeline>
-                </div>
-                <div v-else>
-                  <div class="summary-empty">暂无热门话题</div>
-                </div>
+                <h2 class="summary-title">Popular records</h2>
+                <BaseTimeline v-if="hotPosts.length > 0" :items="hotPosts">
+                  <template #item="{ item }">
+                    <TimelinePostItem :item="item" />
+                  </template>
+                </BaseTimeline>
+                <div v-else class="summary-empty">No popular records yet.</div>
               </div>
+
               <div class="hot-tag">
-                <div class="summary-title">TA创建的tag</div>
-                <div class="summary-content" v-if="hotTags.length > 0">
-                  <BaseTimeline :items="hotTags">
-                    <template #item="{ item }">
-                      <TimelineTagItem :item="item" />
-                    </template>
-                  </BaseTimeline>
-                </div>
-                <div v-else>
-                  <div class="summary-empty">暂无标签</div>
-                </div>
+                <h2 class="summary-title">Created tags</h2>
+                <BaseTimeline v-if="hotTags.length > 0" :items="hotTags">
+                  <template #item="{ item }">
+                    <TimelineTagItem :item="item" />
+                  </template>
+                </BaseTimeline>
+                <div v-else class="summary-empty">No created tags yet.</div>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div v-else-if="selectedTab === 'timeline'" class="profile-timeline">
+          <section v-else-if="selectedTab === 'timeline'" class="profile-timeline">
             <div class="timeline-tabs">
-              <div
+              <button
                 :class="['timeline-tab-item', { selected: timelineFilter === 'all' }]"
+                type="button"
                 @click="timelineFilter = 'all'"
               >
-                全部
-              </div>
-              <div
+                All
+              </button>
+              <button
                 :class="['timeline-tab-item', { selected: timelineFilter === 'articles' }]"
+                type="button"
                 @click="timelineFilter = 'articles'"
               >
-                文章
-              </div>
-              <div
+                Records
+              </button>
+              <button
                 :class="['timeline-tab-item', { selected: timelineFilter === 'comments' }]"
+                type="button"
                 @click="timelineFilter = 'comments'"
               >
-                评论和回复
-              </div>
-              <div
+                Discussions
+              </button>
+              <button
                 v-if="isMine"
                 :class="['timeline-tab-item', { selected: timelineFilter === 'reads' }]"
+                type="button"
                 @click="timelineFilter = 'reads'"
               >
-                浏览记录
-              </div>
+                Reading history
+              </button>
             </div>
             <BasePlaceholder
               v-if="
@@ -205,24 +205,18 @@
                   ? readPosts.length === 0
                   : filteredTimelineItems.length === 0
               "
-              :text="timelineFilter === 'reads' ? '暂无浏览记录' : '暂无时间线'"
+              :text="timelineFilter === 'reads' ? 'No reading history yet.' : 'No activity yet.'"
               icon="inbox"
             />
             <div class="timeline-list">
               <BaseTimeline v-if="timelineFilter !== 'reads'" :items="filteredTimelineItems">
                 <template #item="{ item }">
-                  <template v-if="item.type === 'post'">
-                    <TimelinePostItem :item="item" />
-                  </template>
-                  <template v-else-if="item.type === 'comment'">
-                    <TimelineCommentGroup :item="item" />
-                  </template>
-                  <template v-else-if="item.type === 'reply'">
-                    <TimelineCommentGroup :item="item" />
-                  </template>
-                  <template v-else-if="item.type === 'tag'">
-                    <TimelineTagItem :item="item" />
-                  </template>
+                  <TimelinePostItem v-if="item.type === 'post'" :item="item" />
+                  <TimelineCommentGroup
+                    v-else-if="item.type === 'comment' || item.type === 'reply'"
+                    :item="item"
+                  />
+                  <TimelineTagItem v-else-if="item.type === 'tag'" :item="item" />
                 </template>
               </BaseTimeline>
               <BaseTimeline v-else :items="readPosts">
@@ -231,51 +225,47 @@
                 </template>
               </BaseTimeline>
             </div>
-          </div>
+          </section>
 
-          <div v-else-if="selectedTab === 'following'" class="follow-container">
+          <section v-else-if="selectedTab === 'following'" class="follow-container">
             <div class="follow-tabs">
-              <div
+              <button
                 :class="['follow-tab-item', { selected: followTab === 'followers' }]"
+                type="button"
                 @click="followTab = 'followers'"
               >
-                关注者
-              </div>
-              <div
+                Followers
+              </button>
+              <button
                 :class="['follow-tab-item', { selected: followTab === 'following' }]"
+                type="button"
                 @click="followTab = 'following'"
               >
-                正在关注
-              </div>
+                Following
+              </button>
             </div>
             <div class="follow-list">
               <UserList v-if="followTab === 'followers'" :users="followers" />
               <UserList v-else :users="followings" />
             </div>
-          </div>
+          </section>
 
-          <div v-else-if="selectedTab === 'favorites'" class="favorites-container">
-            <div v-if="favoritePosts.length > 0">
-              <BaseTimeline :items="favoritePosts">
-                <template #item="{ item }">
-                  <NuxtLink :to="`/posts/${item.post.id}`" class="timeline-link">
-                    {{ item.post.title }}
-                  </NuxtLink>
-                  <div class="timeline-snippet">
-                    {{ stripMarkdown(item.post.snippet) }}
-                  </div>
-                  <div class="timeline-date">{{ formatDate(item.post.createdAt) }}</div>
-                </template>
-              </BaseTimeline>
-            </div>
-            <div v-else>
-              <BasePlaceholder text="暂无收藏文章" icon="inbox" />
-            </div>
-          </div>
+          <section v-else-if="selectedTab === 'favorites'" class="favorites-container">
+            <BaseTimeline v-if="favoritePosts.length > 0" :items="favoritePosts">
+              <template #item="{ item }">
+                <NuxtLink :to="recordLink(item.post)" class="timeline-link">
+                  {{ item.post.title }}
+                </NuxtLink>
+                <div class="timeline-snippet">{{ stripMarkdown(item.post.snippet) }}</div>
+                <div class="timeline-date">{{ formatDate(item.post.createdAt) }}</div>
+              </template>
+            </BaseTimeline>
+            <BasePlaceholder v-else text="No followed records yet." icon="inbox" />
+          </section>
 
-          <div v-else-if="selectedTab === 'achievements'" class="achievements-container">
+          <section v-else-if="selectedTab === 'achievements'" class="achievements-container">
             <AchievementList :medals="medals" :can-select="isMine" />
-          </div>
+          </section>
         </template>
       </BaseTabs>
     </div>
@@ -283,8 +273,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AchievementList from '~/components/AchievementList.vue'
 import BasePlaceholder from '~/components/BasePlaceholder.vue'
 import BaseTimeline from '~/components/BaseTimeline.vue'
@@ -301,16 +290,23 @@ import { authState, getToken } from '~/utils/auth'
 import { prevLevelExp } from '~/utils/level'
 import { stripMarkdown, stripMarkdownLength } from '~/utils/markdown'
 import TimeManager from '~/utils/time'
+
 const config = useRuntimeConfig()
+const route = useRoute()
 const API_BASE_URL = config.public.apiBaseUrl
+const username = computed(() => String(route.params.id || ''))
+const user = ref({})
 
 definePageMeta({
   alias: ['/users/:id/'],
+  keepalive: false,
+  key: (route) => route.fullPath,
 })
-const route = useRoute()
-const username = route.params.id
 
-const user = ref({})
+useHead(() => ({
+  title: `${user.value.username || 'Profile'} - Open Research Evaluation`,
+}))
+
 const hotPosts = ref([])
 const hotReplies = ref([])
 const hotTags = ref([])
@@ -318,35 +314,57 @@ const favoritePosts = ref([])
 const timelineItems = ref([])
 const readPosts = ref([])
 const timelineFilter = ref('all')
-const filteredTimelineItems = computed(() => {
-  if (timelineFilter.value === 'articles') {
-    return timelineItems.value.filter((item) => item.type === 'post')
-  } else if (timelineFilter.value === 'comments') {
-    return timelineItems.value.filter((item) => item.type === 'comment' || item.type === 'reply')
-  } else if (timelineFilter.value === 'reads') {
-    return []
-  }
-  return timelineItems.value
-})
 const followers = ref([])
 const followings = ref([])
 const medals = ref([])
 const subscribed = ref(false)
 const isLoading = ref(true)
 const tabLoading = ref(false)
+const followTab = ref('followers')
 const selectedTab = ref(
   ['summary', 'timeline', 'following', 'favorites', 'achievements'].includes(route.query.tab)
     ? route.query.tab
     : 'summary',
 )
+
 const tabs = [
-  { key: 'summary', label: '总结', icon: 'chart-line' },
-  { key: 'timeline', label: '时间线', icon: 'alarm-clock' },
-  { key: 'following', label: '关注', icon: 'add-user' },
-  { key: 'favorites', label: '收藏', icon: 'bookmark' },
-  { key: 'achievements', label: '勋章', icon: 'medal-one' },
+  { key: 'summary', label: 'Summary', icon: 'chart-line' },
+  { key: 'timeline', label: 'Timeline', icon: 'alarm-clock' },
+  { key: 'following', label: 'Network', icon: 'add-user' },
+  { key: 'favorites', label: 'Following', icon: 'bookmark' },
+  { key: 'achievements', label: 'Badges', icon: 'medal-one' },
 ]
-const followTab = ref('followers')
+
+const requestController = new AbortController()
+const isAbortError = (error) => error?.name === 'AbortError'
+const redirectingTo404 = ref(false)
+
+onBeforeUnmount(() => {
+  requestController.abort()
+})
+
+const profileFetch = async (path, options = {}) => {
+  try {
+    return await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      signal: requestController.signal,
+    })
+  } catch (error) {
+    if (isAbortError(error)) return null
+    throw error
+  }
+}
+
+const filteredTimelineItems = computed(() => {
+  if (timelineFilter.value === 'articles') {
+    return timelineItems.value.filter((item) => item.type === 'post')
+  }
+  if (timelineFilter.value === 'comments') {
+    return timelineItems.value.filter((item) => item.type === 'comment' || item.type === 'reply')
+  }
+  if (timelineFilter.value === 'reads') return []
+  return timelineItems.value
+})
 
 const levelInfo = computed(() => {
   const exp = user.value.experience || 0
@@ -359,62 +377,49 @@ const levelInfo = computed(() => {
   return { exp, currentLevel, nextExp, percent }
 })
 
-const isMine = computed(function () {
-  const mine = authState.username === username || String(authState.userId) === username
-  console.log(mine)
-  return mine
-})
-
-const formatDate = (d) => {
-  if (!d) return ''
-  return TimeManager.format(d)
+const isMine = computed(
+  () => authState.username === username.value || String(authState.userId) === username.value,
+)
+const formatDate = (date) => (date ? TimeManager.format(date) : '')
+const recordLink = (post) => {
+  if (post?.paperId) return `/papers/${post.paperId}`
+  if (post?.type === 'PAPER') return '#'
+  return post?.id ? `/posts/${post.id}` : '#'
+}
+const commentLink = (post, commentId) => {
+  const base = recordLink(post)
+  return commentId ? `${base}#comment-${commentId}` : base
 }
 
 const fetchUser = async () => {
   const token = getToken()
   const headers = token ? { Authorization: `Bearer ${token}` } : {}
-  const res = await fetch(`${API_BASE_URL}/api/users/${username}`, { headers })
-  if (res.ok) {
+  const res = await profileFetch(`/api/users/${username.value}`, { headers })
+  if (res?.ok) {
     const data = await res.json()
     user.value = data
-    subscribed.value = !!data.subscribed
-  } else if (res.status === 404) {
-    navigateTo('/404')
+    subscribed.value = Boolean(data.subscribed)
+  } else if (res?.status === 404) {
+    redirectingTo404.value = true
+    await navigateTo('/404', { replace: true })
   }
 }
 
 const fetchSummary = async () => {
-  const postsRes = await fetch(`${API_BASE_URL}/api/users/${username}/hot-posts`)
-  if (postsRes.ok) {
-    const data = await postsRes.json()
-    hotPosts.value = data.map((p) => ({
-      icon: 'file-text',
-      type: 'post',
-      post: p,
-      createdAt: p.createdAt,
-    }))
-  }
-
-  const repliesRes = await fetch(`${API_BASE_URL}/api/users/${username}/hot-replies`)
-  if (repliesRes.ok) {
-    const data = await repliesRes.json()
-    hotReplies.value = data.map((c) => ({ icon: 'comment-icon', comment: c }))
-  }
-
-  const tagsRes = await fetch(`${API_BASE_URL}/api/users/${username}/hot-tags`)
-  if (tagsRes.ok) {
-    const data = await tagsRes.json()
-    hotTags.value = data.map((t) => ({
-      icon: 'tag-one',
-      type: 'tag',
-      tag: t,
-      createdAt: t.createdAt,
-    }))
-  }
+  const [postsRes, repliesRes, tagsRes] = await Promise.all([
+    profileFetch(`/api/users/${username.value}/hot-posts`),
+    profileFetch(`/api/users/${username.value}/hot-replies`),
+    profileFetch(`/api/users/${username.value}/hot-tags`),
+  ])
+  const posts = postsRes?.ok ? await postsRes.json() : []
+  const replies = repliesRes?.ok ? await repliesRes.json() : []
+  const tags = tagsRes?.ok ? await tagsRes.json() : []
+  hotPosts.value = posts.map((post) => ({ icon: 'file-text', type: 'post', post, createdAt: post.createdAt }))
+  hotReplies.value = replies.map((comment) => ({ icon: 'comment-icon', comment }))
+  hotTags.value = tags.map((tag) => ({ icon: 'tag-one', type: 'tag', tag, createdAt: tag.createdAt }))
 }
 
 const isDiscussionItem = (item) => item && (item.type === 'comment' || item.type === 'reply')
-
 const toDateKey = (value) => {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
@@ -439,12 +444,8 @@ const combineDiscussionItems = (items) => {
         comment: item.comment,
         createdAt: item.createdAt,
       })
-      if (item.type === 'comment' && last.type === 'reply') {
-        last.type = 'comment'
-      }
-      if (new Date(item.createdAt) > new Date(last.createdAt)) {
-        last.createdAt = item.createdAt
-      }
+      if (item.type === 'comment' && last.type === 'reply') last.type = 'comment'
+      if (new Date(item.createdAt) > new Date(last.createdAt)) last.createdAt = item.createdAt
     } else {
       result.push({
         type: item.type,
@@ -466,243 +467,171 @@ const combineDiscussionItems = (items) => {
 
 const fetchTimeline = async () => {
   const [postsRes, repliesRes, tagsRes] = await Promise.all([
-    fetch(`${API_BASE_URL}/api/users/${username}/posts?limit=50`),
-    fetch(`${API_BASE_URL}/api/users/${username}/replies?limit=50`),
-    fetch(`${API_BASE_URL}/api/users/${username}/tags?limit=50`),
+    profileFetch(`/api/users/${username.value}/posts?limit=50`),
+    profileFetch(`/api/users/${username.value}/replies?limit=50`),
+    profileFetch(`/api/users/${username.value}/tags?limit=50`),
   ])
-  const posts = postsRes.ok ? await postsRes.json() : []
-  const replies = repliesRes.ok ? await repliesRes.json() : []
-  const tags = tagsRes.ok ? await tagsRes.json() : []
+  const posts = postsRes?.ok ? await postsRes.json() : []
+  const replies = repliesRes?.ok ? await repliesRes.json() : []
+  const tags = tagsRes?.ok ? await tagsRes.json() : []
   const mapped = [
-    ...posts.map((p) => ({
-      type: 'post',
-      icon: 'file-text',
-      post: p,
-      createdAt: p.createdAt,
-    })),
-    ...replies.map((r) => ({
-      type: r.parentComment ? 'reply' : 'comment',
+    ...posts.map((post) => ({ type: 'post', icon: 'file-text', post, createdAt: post.createdAt })),
+    ...replies.map((comment) => ({
+      type: comment.parentComment ? 'reply' : 'comment',
       icon: 'comment-icon',
-      comment: r,
-      createdAt: r.createdAt,
+      comment,
+      createdAt: comment.createdAt,
     })),
-    ...tags.map((t) => ({
-      type: 'tag',
-      icon: 'tag-one',
-      tag: t,
-      createdAt: t.createdAt,
-    })),
+    ...tags.map((tag) => ({ type: 'tag', icon: 'tag-one', tag, createdAt: tag.createdAt })),
   ]
   mapped.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   timelineItems.value = combineDiscussionItems(mapped)
 }
 
 const fetchReadHistory = async () => {
-  if (!isMine.value) {
+  if (!isMine.value || !getToken()) {
     readPosts.value = []
     return
   }
-  const token = getToken()
-  if (!token) {
-    readPosts.value = []
-    return
-  }
-  const res = await fetch(`${API_BASE_URL}/api/users/${username}/read-posts?limit=50`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const res = await profileFetch(`/api/users/${username.value}/read-posts?limit=50`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
   })
-  if (res.ok) {
-    const data = await res.json()
-    readPosts.value = data.map((r) => ({ ...r, icon: 'file-text' }))
-  } else {
-    readPosts.value = []
-  }
+  readPosts.value = res?.ok ? (await res.json()).map((item) => ({ ...item, icon: 'file-text' })) : []
 }
 
 const fetchFollowUsers = async () => {
   const [followerRes, followingRes] = await Promise.all([
-    fetch(`${API_BASE_URL}/api/users/${username}/followers`),
-    fetch(`${API_BASE_URL}/api/users/${username}/following`),
+    profileFetch(`/api/users/${username.value}/followers`),
+    profileFetch(`/api/users/${username.value}/following`),
   ])
-  followers.value = followerRes.ok ? await followerRes.json() : []
-  followings.value = followingRes.ok ? await followingRes.json() : []
+  followers.value = followerRes?.ok ? await followerRes.json() : []
+  followings.value = followingRes?.ok ? await followingRes.json() : []
 }
 
 const fetchFavorites = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/users/${username}/subscribed-posts`)
-  if (res.ok) {
-    const data = await res.json()
-    favoritePosts.value = data.map((p) => ({ icon: 'bookmark', post: p }))
-  } else {
-    favoritePosts.value = []
-  }
-}
-
-const loadSummary = async () => {
-  tabLoading.value = true
-  await fetchSummary()
-  tabLoading.value = false
-}
-
-const loadTimeline = async () => {
-  tabLoading.value = true
-  await fetchTimeline()
-  tabLoading.value = false
-}
-
-const loadReadHistory = async () => {
-  tabLoading.value = true
-  await fetchReadHistory()
-  tabLoading.value = false
-}
-
-const loadFollow = async () => {
-  tabLoading.value = true
-  await fetchFollowUsers()
-  tabLoading.value = false
-}
-
-const loadFavorites = async () => {
-  tabLoading.value = true
-  await fetchFavorites()
-  tabLoading.value = false
+  const res = await profileFetch(`/api/users/${username.value}/subscribed-posts`)
+  favoritePosts.value = res?.ok ? (await res.json()).map((post) => ({ icon: 'bookmark', post })) : []
 }
 
 const fetchAchievements = async () => {
-  const res = await fetch(`${API_BASE_URL}/api/medals?userId=${user.value.id}`)
-  if (res.ok) {
+  const res = await profileFetch(`/api/medals?userId=${user.value.id}`)
+  if (res?.ok) {
     medals.value = await res.json()
   } else {
     medals.value = []
-    toast.error('获取成就失败')
+    toast.error('Unable to load badges.')
   }
 }
 
-const loadAchievements = async () => {
+const withTabLoading = async (fn) => {
   tabLoading.value = true
-  await fetchAchievements()
-  tabLoading.value = false
+  try {
+    await fn()
+  } finally {
+    tabLoading.value = false
+  }
 }
 
 const subscribeUser = async () => {
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please sign in first.')
     return
   }
-  const res = await fetch(`${API_BASE_URL}/api/subscriptions/users/${username}`, {
+  const res = await profileFetch(`/api/subscriptions/users/${username.value}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   })
-  if (res.ok) {
+  if (res?.ok) {
     subscribed.value = true
-    toast.success('已关注')
+    toast.success('Followed.')
   } else {
-    toast.error('操作失败')
+    toast.error('Unable to follow this user.')
   }
 }
 
 const unsubscribeUser = async () => {
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please sign in first.')
     return
   }
-  const res = await fetch(`${API_BASE_URL}/api/subscriptions/users/${username}`, {
+  const res = await profileFetch(`/api/subscriptions/users/${username.value}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   })
-  if (res.ok) {
+  if (res?.ok) {
     subscribed.value = false
-    toast.success('已取消关注')
+    toast.success('Unfollowed.')
   } else {
-    toast.error('操作失败')
+    toast.error('Unable to unfollow this user.')
   }
 }
 
 const sendMessage = async () => {
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please sign in first.')
     return
   }
   try {
-    const response = await fetch(`${API_BASE_URL}/api/messages/conversations`, {
+    const response = await profileFetch('/api/messages/conversations', {
       method: 'POST',
-      body: JSON.stringify({
-        recipientId: user.value.id,
-      }),
+      body: JSON.stringify({ recipientId: user.value.id }),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     })
     const result = await response.json()
-    navigateTo(`/message-box/${result.conversationId}`)
-  } catch (e) {
-    toast.error('无法发起私信')
-    console.error(e)
+    await navigateTo(`/message-box/${result.conversationId}`)
+  } catch (error) {
+    toast.error('Unable to start a message thread.')
   }
 }
 
-const gotoTag = (tag) => {
-  const value = encodeURIComponent(tag.id ?? tag.name)
-  navigateTo({ path: '/', query: { tags: value } })
+const loadInitialTab = async () => {
+  if (selectedTab.value === 'summary') await withTabLoading(fetchSummary)
+  else if (selectedTab.value === 'timeline') await withTabLoading(fetchTimeline)
+  else if (selectedTab.value === 'following') await withTabLoading(fetchFollowUsers)
+  else if (selectedTab.value === 'favorites') await withTabLoading(fetchFavorites)
+  else if (selectedTab.value === 'achievements') await withTabLoading(fetchAchievements)
 }
 
 const init = async () => {
   try {
     await fetchUser()
-    if (selectedTab.value === 'summary') {
-      await loadSummary()
-    } else if (selectedTab.value === 'timeline') {
-      await loadTimeline()
-    } else if (selectedTab.value === 'following') {
-      await loadFollow()
-    } else if (selectedTab.value === 'favorites') {
-      await loadFavorites()
-    } else if (selectedTab.value === 'achievements') {
-      await loadAchievements()
-    }
-  } catch (e) {
-    console.error(e)
+  } catch (error) {
+    if (!isAbortError(error)) throw error
   } finally {
-    isLoading.value = false
+    if (!requestController.signal.aborted) isLoading.value = false
   }
+  if (requestController.signal.aborted || redirectingTo404.value) return
+  await loadInitialTab()
 }
 
 onMounted(init)
 
-watch(selectedTab, async (val) => {
-  // navigateTo({ query: { ...route.query, tab: val } }, { replace: true })
-  if (val === 'timeline') {
-    if (timelineFilter.value === 'reads') {
-      if (readPosts.value.length === 0) {
-        await loadReadHistory()
-      }
-    } else if (timelineItems.value.length === 0) {
-      await loadTimeline()
-    }
-  } else if (val === 'following' && followers.value.length === 0 && followings.value.length === 0) {
-    await loadFollow()
-  } else if (val === 'favorites' && favoritePosts.value.length === 0) {
-    await loadFavorites()
-  } else if (val === 'achievements' && medals.value.length === 0) {
-    await loadAchievements()
+watch(selectedTab, async (tab) => {
+  if (tab === 'timeline') {
+    if (timelineFilter.value === 'reads' && readPosts.value.length === 0) await withTabLoading(fetchReadHistory)
+    else if (timelineItems.value.length === 0) await withTabLoading(fetchTimeline)
+  } else if (tab === 'following' && followers.value.length === 0 && followings.value.length === 0) {
+    await withTabLoading(fetchFollowUsers)
+  } else if (tab === 'favorites' && favoritePosts.value.length === 0) {
+    await withTabLoading(fetchFavorites)
+  } else if (tab === 'achievements' && medals.value.length === 0) {
+    await withTabLoading(fetchAchievements)
+  } else if (tab === 'summary' && hotPosts.value.length === 0 && hotReplies.value.length === 0) {
+    await withTabLoading(fetchSummary)
   }
 })
 
-watch(timelineFilter, async (val) => {
+watch(timelineFilter, async (filter) => {
   if (selectedTab.value !== 'timeline') return
-  if (val === 'reads') {
-    if (readPosts.value.length === 0) {
-      await loadReadHistory()
-    }
-  } else if (timelineItems.value.length === 0) {
-    await loadTimeline()
-  }
+  if (filter === 'reads' && readPosts.value.length === 0) await withTabLoading(fetchReadHistory)
+  else if (filter !== 'reads' && timelineItems.value.length === 0) await withTabLoading(fetchTimeline)
 })
 
-watch(isMine, (val) => {
-  if (!val && timelineFilter.value === 'reads') {
-    timelineFilter.value = 'all'
-  }
+watch(isMine, (value) => {
+  if (!value && timelineFilter.value === 'reads') timelineFilter.value = 'all'
 })
 </script>
 
@@ -722,11 +651,12 @@ watch(isMine, (val) => {
   display: flex;
   align-items: center;
   padding: 20px;
+  gap: 20px;
 }
 
 .profile-page-header-avatar-img {
-  width: 200px;
-  height: 200px;
+  width: 160px;
+  height: 160px;
   border-radius: 50%;
 }
 
@@ -737,22 +667,21 @@ watch(isMine, (val) => {
 }
 
 .profile-page-header-user-info {
-  margin-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .profile-page-header-user-info-name {
-  font-size: 24px;
-  font-weight: bold;
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
 }
 
 .profile-page-header-user-info-description {
-  font-size: 20px;
+  margin: 0;
+  font-size: 15px;
   color: #666;
-}
-
-.reply-icon {
-  color: var(--primary-color);
-  margin-left: 5px;
 }
 
 .profile-page-header-user-info-buttons {
@@ -761,94 +690,33 @@ watch(isMine, (val) => {
   gap: 10px;
 }
 
-.profile-page-header-subscribe-button {
-  display: flex;
+.profile-page-header-subscribe-button,
+.profile-page-header-unsubscribe-button,
+.profile-page-header-send-mail-button {
+  display: inline-flex;
   flex-direction: row;
   gap: 5px;
   align-items: center;
   font-size: 14px;
   border-radius: 8px;
-  padding: 5px 10px;
-  color: white;
-  background-color: var(--primary-color);
-  margin-top: 15px;
+  padding: 6px 10px;
   width: fit-content;
   cursor: pointer;
 }
 
-.profile-page-header-subscribe-button:hover {
-  background-color: var(--primary-color-hover);
+.profile-page-header-subscribe-button {
+  color: white;
+  border: 1px solid var(--primary-color);
+  background-color: var(--primary-color);
 }
 
-.profile-page-header-unsubscribe-button {
-  display: flex;
-  flex-direction: row;
-  gap: 5px;
-  align-items: center;
-  font-size: 14px;
-  border-radius: 8px;
-  padding: 5px 10px;
+.profile-page-header-unsubscribe-button,
+.profile-page-header-send-mail-button {
   color: var(--primary-color);
   background-color: var(--background-color);
   border: 1px solid var(--primary-color);
-  margin-top: 15px;
-  width: fit-content;
-  cursor: pointer;
 }
 
-.profile-page-header-send-mail-button {
-  display: flex;
-  flex-direction: row;
-  gap: 5px;
-  align-items: center;
-  font-size: 14px;
-  border-radius: 8px;
-  padding: 5px 10px;
-  color: var(--primary-color);
-  border: 1px solid var(--primary-color);
-  margin-top: 15px;
-  width: fit-content;
-  cursor: pointer;
-}
-
-.profile-page-header-unsubscribe-button:hover,
-.profile-page-header-send-mail-button:hover {
-  background-color: var(--secondary-color-hover);
-}
-
-.profile-level-container {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 10px;
-  font-size: 14px;
-}
-
-.profile-level-current {
-  font-weight: bold;
-}
-
-.profile-level-bar {
-  width: 200px;
-  height: 8px;
-  background-color: var(--normal-background-color);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.profile-level-bar-inner {
-  height: 100%;
-  background-color: var(--primary-color);
-}
-
-.profile-level-info {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-  align-items: center;
-}
-
-.profile-level-exp,
 .profile-level-target {
   font-size: 12px;
   opacity: 0.8;
@@ -868,7 +736,7 @@ watch(isMine, (val) => {
 .profile-info-item {
   display: flex;
   flex-direction: row;
-  gap: 5px;
+  gap: 6px;
   align-items: center;
   padding: 10px 0;
   white-space: nowrap;
@@ -905,7 +773,7 @@ watch(isMine, (val) => {
   align-items: center;
   justify-content: center;
   padding: 10px 0;
-  width: 200px;
+  width: 160px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -919,26 +787,20 @@ watch(isMine, (val) => {
   display: flex;
   flex-direction: column;
   padding: 20px;
-  row-gap: 40px;     /* 行间距 */
-  column-gap: 20px;  /* 列间距 */
+  row-gap: 32px;
 }
 
 .summary-title {
   font-size: 20px;
-  margin-bottom: 10px;
-  font-weight: bold;
-}
-
-.total-summary {
-  width: 100%;
+  margin: 0 0 10px;
+  font-weight: 700;
 }
 
 .total-summary-content {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  row-gap: 0px;
-  column-gap: 20px;
+  gap: 14px 24px;
 }
 
 .total-summary-item {
@@ -949,20 +811,20 @@ watch(isMine, (val) => {
 }
 
 .total-summary-item-label {
-  font-size: 18px;
+  font-size: 16px;
   opacity: 0.7;
 }
 
 .total-summary-item-value {
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .summary-divider {
   display: flex;
   flex-direction: row;
-  row-gap: 40px;     /* 行间距 */
-  column-gap: 20px;  /* 列间距 */
+  row-gap: 32px;
+  column-gap: 20px;
   width: 100%;
   flex-wrap: wrap;
 }
@@ -973,24 +835,32 @@ watch(isMine, (val) => {
   width: 40%;
 }
 
-.timeline-tabs {
+.timeline-tabs,
+.follow-tabs {
   display: flex;
   flex-direction: row;
   border-bottom: 1px solid var(--normal-border-color);
 }
 
-.timeline-list {
-  padding: 10px 20px;
-}
-
-.timeline-tab-item {
+.timeline-tab-item,
+.follow-tab-item {
   padding: 10px 20px;
   cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--text-color);
 }
 
-.timeline-tab-item.selected {
+.timeline-tab-item.selected,
+.follow-tab-item.selected {
   color: var(--primary-color);
   border-bottom: 2px solid var(--primary-color);
+}
+
+.timeline-list,
+.favorites-container,
+.follow-list {
+  padding: 10px 20px;
 }
 
 .timeline-date {
@@ -1007,93 +877,16 @@ watch(isMine, (val) => {
 }
 
 .timeline-link {
-  font-weight: bold;
+  font-weight: 700;
   text-decoration: none;
   color: var(--text-color);
   word-break: break-word;
 }
 
-.timeline-link:hover {
+.timeline-link:hover,
+.timeline-comment-link:hover {
+  color: var(--primary-color);
   text-decoration: underline;
-}
-
-.summary-empty {
-  margin-top: 10px;
-  font-size: 14px;
-  opacity: 0.5;
-}
-
-.summary-content {
-  margin-top: 10px;
-}
-
-.tab-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 40px 0;
-}
-
-.ttimeline-container {
-  margin-top: 2px;
-  padding-bottom: 30px;
-}
-
-.timeline-header {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.tags-container {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-  padding-top: 5px;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.tags-container-item {
-  display: flex;
-  flex-direction: row;
-  gap: 5px;
-  align-items: center;
-}
-
-.timeline-tag-title {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.comment-content {
-  display: flex;
-  flex-direction: column;
-  margin-top: 10px;
-  gap: 5px;
-}
-
-.comment-content-item-main {
-  display: flex;
-  flex-direction: row;
-  gap: 5px;
-  align-items: flex-start;
-}
-
-.comment-content-item-icon {
-  width: 20px;
-  height: 25px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.comment-content-item {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: space-between;
 }
 
 .timeline-comment-link {
@@ -1103,55 +896,22 @@ watch(isMine, (val) => {
   margin-left: 5px;
 }
 
-.timeline-comment-link:hover {
+.reply-icon {
   color: var(--primary-color);
+  margin-left: 5px;
 }
 
-.timeline-article-link {
-  color: var(--text-color);
-  font-weight: bold;
-  font-size: 20px;
-  word-break: break-word;
-  text-decoration: underline;
-}
-
-.timeline-article-link:hover {
-  color: var(--primary-color);
-}
-
-.article-container {
-  padding: 20px;
-  border-radius: 10px;
-  border: 1px solid var(--normal-border-color);
+.summary-empty {
   margin-top: 10px;
+  font-size: 14px;
+  opacity: 0.5;
 }
 
-.follow-container {
-}
-
-.favorites-container {
-  padding: 10px;
-}
-
-.follow-tabs {
+.tab-loading {
   display: flex;
-  flex-direction: row;
-  border-bottom: 1px solid var(--normal-border-color);
-  margin-bottom: 10px;
-}
-
-.follow-tab-item {
-  padding: 10px 20px;
-  cursor: pointer;
-}
-
-.follow-tab-item.selected {
-  color: var(--primary-color);
-  border-bottom: 2px solid var(--primary-color);
-}
-
-.follow-list {
-  padding-left: 20px;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 0;
 }
 
 @media (max-width: 768px) {
@@ -1159,14 +919,17 @@ watch(isMine, (val) => {
     width: 100vw;
   }
 
+  .profile-page-header {
+    align-items: flex-start;
+  }
+
   .profile-page-header-avatar-img {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
+    width: 96px;
+    height: 96px;
   }
 
   :deep(.base-tabs-item) {
-    width: 100px;
+    width: 110px;
   }
 
   .summary-divider {

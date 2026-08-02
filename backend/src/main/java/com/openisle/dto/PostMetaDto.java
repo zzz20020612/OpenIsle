@@ -1,5 +1,6 @@
 package com.openisle.dto;
 
+import com.openisle.model.PostType;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Data;
@@ -9,6 +10,8 @@ import lombok.Data;
 public class PostMetaDto {
 
   private Long id;
+  private Long paperId;
+  private PostType type;
   private String title;
   private String snippet;
   private LocalDateTime createdAt;

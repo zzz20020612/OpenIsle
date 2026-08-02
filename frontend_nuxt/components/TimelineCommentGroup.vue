@@ -9,10 +9,7 @@
         <div class="comment-content-item-main">
           <comment-one class="comment-content-item-icon" />
           <div class="comment-content-item-text">
-            <NuxtLink
-              :to="`/posts/${entry.comment.post.id}#comment-${entry.comment.id}`"
-              class="timeline-comment-link"
-            >
+            <NuxtLink :to="commentLink(entry.comment)" class="timeline-comment-link">
               {{ stripContent(entry.comment.content) }}
             </NuxtLink>
           </div>
@@ -33,42 +30,45 @@ const props = defineProps({
 })
 
 const entries = computed(() => {
-  if (Array.isArray(props.item.entries)) {
-    return props.item.entries
-  }
-  if (props.item.comment) {
-    return [
-      {
-        type: props.item.type,
-        comment: props.item.comment,
-        createdAt: props.item.createdAt,
-      },
-    ]
-  }
-  return []
+  if (Array.isArray(props.item.entries)) return props.item.entries
+  if (!props.item.comment) return []
+  return [
+    {
+      type: props.item.type,
+      comment: props.item.comment,
+      createdAt: props.item.createdAt,
+    },
+  ]
 })
 
 const formattedDate = computed(() => TimeManager.formatWithDay(props.item.createdAt))
-
 const hasReplies = computed(() => entries.value.some((entry) => !!entry.comment.parentComment))
 const hasComments = computed(() => entries.value.some((entry) => !entry.comment.parentComment))
 
 const headerText = computed(() => {
   const count = entries.value.length
   if (count === 0) return ''
-  if (hasComments.value && hasReplies.value) {
-    return `发布了${count}条评论/回复`
-  }
-  if (hasReplies.value) {
-    return `发布了${count}条回复`
-  }
-  return `发布了${count}条评论`
+  const noun = count === 1 ? 'discussion note' : 'discussion notes'
+  if (hasComments.value && hasReplies.value) return `Added ${count} ${noun} and replies`
+  if (hasReplies.value) return `Added ${count} ${count === 1 ? 'reply' : 'replies'}`
+  return `Added ${count} ${noun}`
 })
+
+const commentLink = (comment) => {
+  const paperId = comment?.post?.paperId
+  const postId = comment?.post?.id
+  const base = paperId
+    ? `/papers/${paperId}`
+    : comment?.post?.type === 'PAPER'
+      ? '#'
+      : postId
+        ? `/posts/${postId}`
+        : '#'
+  return comment?.id ? `${base}#comment-${comment.id}` : base
+}
 
 const formatEntryDate = (date) => TimeManager.format(date)
 const stripContent = (content) => stripMarkdownLength(content ?? '', 200)
-const parentSnippet = (entry) =>
-  stripMarkdownLength(entry.comment.parentComment?.content ?? '', 200)
 </script>
 
 <style scoped>
@@ -110,11 +110,6 @@ const parentSnippet = (entry) =>
   gap: 6px;
 }
 
-.comment-content-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
 .comment-content-item-main {
   display: flex;
   gap: 8px;
@@ -128,17 +123,6 @@ const parentSnippet = (entry) =>
   margin-top: 2px;
 }
 
-.comment-content-item-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.comment-content-item-prefix {
-  font-size: 14px;
-  color: var(--text-color);
-}
-
 .timeline-comment-link {
   font-size: 14px;
   color: var(--link-color);
@@ -149,17 +133,7 @@ const parentSnippet = (entry) =>
   color: var(--primary-color);
 }
 
-.timeline-link {
-  color: var(--link-color);
-  text-decoration: none;
-}
-
-.timeline-link:hover {
-  text-decoration: underline;
-}
-
 @media (max-width: 768px) {
-  .comment-content-item-prefix,
   .timeline-comment-link {
     font-size: 13px;
   }

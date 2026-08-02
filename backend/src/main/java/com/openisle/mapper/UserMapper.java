@@ -4,7 +4,9 @@ import com.openisle.dto.*;
 import com.openisle.model.Comment;
 import com.openisle.model.Post;
 import com.openisle.model.PostRead;
+import com.openisle.model.PostType;
 import com.openisle.model.User;
+import com.openisle.repository.PaperProfileRepository;
 import com.openisle.service.*;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,8 @@ public class UserMapper {
   private final MedalService medalService;
   private final CategoryMapper categoryMapper;
   private final TagMapper tagMapper;
+  private final PaperProfileRepository paperProfileRepository;
+  private final PaperAccessPolicy paperAccessPolicy;
 
   @Value("${app.snippet-length}")
   private int snippetLength;
@@ -51,14 +55,14 @@ public class UserMapper {
     dto.setAvatar(user.getAvatar());
     dto.setRole(user.getRole().name());
     dto.setIntroduction(user.getIntroduction());
-    dto.setFollowers(subscriptionService.countSubscribers(user.getUsername()));
-    dto.setFollowing(subscriptionService.countSubscribed(user.getUsername()));
+    dto.setFollowers(subscriptionService.countSubscribers(user));
+    dto.setFollowing(subscriptionService.countSubscribed(user));
     dto.setCreatedAt(user.getCreatedAt());
     dto.setLastPostTime(postService.getLastPostTime(user.getUsername()));
     dto.setLastCommentTime(commentService.getLastCommentTimeOfUserByUserId(user.getId()));
     dto.setTotalViews(postService.getTotalViews(user.getUsername()));
-    dto.setVisitedDays(userVisitService.countVisits(user.getUsername()));
-    dto.setReadPosts(postReadService.countReads(user.getUsername()));
+    dto.setVisitedDays(userVisitService.countVisits(user));
+    dto.setReadPosts(postReadService.countReads(user));
     dto.setLikesSent(reactionService.countLikesSent(user.getUsername()));
     dto.setLikesReceived(reactionService.countLikesReceived(user.getUsername()));
     dto.setExperience(user.getExperience());
@@ -81,6 +85,11 @@ public class UserMapper {
   public PostMetaDto toMetaDto(Post post) {
     PostMetaDto dto = new PostMetaDto();
     dto.setId(post.getId());
+    dto.setType(post.getType());
+    paperProfileRepository
+      .findByPostId(post.getId())
+      .filter(paperAccessPolicy::canAppearInFeed)
+      .ifPresent(paper -> dto.setPaperId(paper.getId()));
     dto.setTitle(post.getTitle());
     String content = post.getContent();
     if (content == null) {
@@ -99,6 +108,19 @@ public class UserMapper {
     dto.setViews(post.getViews());
     dto.setCommentCount(post.getCommentCount());
     return dto;
+  }
+
+  public boolean isPublicProfileContent(Post post) {
+    if (post == null) {
+      return false;
+    }
+    if (post.getType() != PostType.PAPER) {
+      return true;
+    }
+    return paperProfileRepository
+      .findByPostId(post.getId())
+      .map(paperAccessPolicy::canAppearInFeed)
+      .orElse(false);
   }
 
   public CommentInfoDto toCommentInfoDto(Comment comment) {

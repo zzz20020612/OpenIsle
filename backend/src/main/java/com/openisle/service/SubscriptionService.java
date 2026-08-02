@@ -156,11 +156,19 @@ public class SubscriptionService {
 
   public long countSubscribers(String username) {
     User user = userRepo.findByUsername(username).orElseThrow();
+    return countSubscribers(user);
+  }
+
+  public long countSubscribers(User user) {
     return userSubRepo.countByTarget(user);
   }
 
   public long countSubscribed(String username) {
     User user = userRepo.findByUsername(username).orElseThrow();
+    return countSubscribed(user);
+  }
+
+  public long countSubscribed(User user) {
     return userSubRepo.countBySubscriber(user);
   }
 

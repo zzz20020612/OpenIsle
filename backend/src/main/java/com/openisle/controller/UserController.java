@@ -168,6 +168,7 @@ public class UserController {
     return postService
       .getRecentPostsByUser(user.getUsername(), l)
       .stream()
+      .filter(userMapper::isPublicProfileContent)
       .map(userMapper::toMetaDto)
       .collect(java.util.stream.Collectors.toList());
   }
@@ -188,6 +189,7 @@ public class UserController {
     return subscriptionService
       .getSubscribedPosts(user.getUsername())
       .stream()
+      .filter(userMapper::isPublicProfileContent)
       .limit(l)
       .map(userMapper::toMetaDto)
       .collect(java.util.stream.Collectors.toList());
@@ -211,6 +213,7 @@ public class UserController {
     return commentService
       .getRecentCommentsByUser(user.getUsername(), l)
       .stream()
+      .filter(comment -> userMapper.isPublicProfileContent(comment.getPost()))
       .map(userMapper::toCommentInfoDto)
       .collect(java.util.stream.Collectors.toList());
   }
@@ -237,6 +240,7 @@ public class UserController {
       postReadService
         .getRecentReadsByUser(user.getUsername(), l)
         .stream()
+        .filter(read -> userMapper.isPublicProfileContent(read.getPost()))
         .map(userMapper::toPostReadDto)
         .collect(java.util.stream.Collectors.toList())
     );
@@ -259,6 +263,7 @@ public class UserController {
     return postService
       .getPostsByIds(ids)
       .stream()
+      .filter(userMapper::isPublicProfileContent)
       .map(userMapper::toMetaDto)
       .collect(java.util.stream.Collectors.toList());
   }
@@ -282,6 +287,7 @@ public class UserController {
     return commentService
       .getCommentsByIds(ids)
       .stream()
+      .filter(comment -> userMapper.isPublicProfileContent(comment.getPost()))
       .map(userMapper::toCommentInfoDto)
       .collect(java.util.stream.Collectors.toList());
   }
@@ -394,11 +400,13 @@ public class UserController {
     java.util.List<PostMetaDto> posts = postService
       .getRecentPostsByUser(user.getUsername(), pLimit)
       .stream()
+      .filter(userMapper::isPublicProfileContent)
       .map(userMapper::toMetaDto)
       .collect(java.util.stream.Collectors.toList());
     java.util.List<CommentInfoDto> replies = commentService
       .getRecentCommentsByUser(user.getUsername(), rLimit)
       .stream()
+      .filter(comment -> userMapper.isPublicProfileContent(comment.getPost()))
       .map(userMapper::toCommentInfoDto)
       .collect(java.util.stream.Collectors.toList());
     UserAggregateDto dto = new UserAggregateDto();

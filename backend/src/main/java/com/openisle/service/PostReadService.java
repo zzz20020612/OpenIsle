@@ -58,6 +58,10 @@ public class PostReadService {
     User user = userRepository
       .findByUsername(username)
       .orElseThrow(() -> new com.openisle.exception.NotFoundException("User not found"));
+    return countReads(user);
+  }
+
+  public long countReads(User user) {
     return postReadRepository.countByUser(user);
   }
 

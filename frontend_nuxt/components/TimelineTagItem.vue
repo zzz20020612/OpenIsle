@@ -2,9 +2,9 @@
   <div class="timeline-tag-item">
     <div class="tags-container">
       <div class="tags-container-item">
-        <div class="timeline-tag-title">创建了标签</div>
+        <div class="timeline-tag-title">Created a tag</div>
         <ArticleTags v-if="tag" :tags="[tag]" />
-        <span class="timeline-tag-count" v-if="tag?.count"> x{{ tag.count }}</span>
+        <span class="timeline-tag-count" v-if="tag?.count">x{{ tag.count }}</span>
       </div>
       <div v-if="timelineDate" class="timeline-date">{{ timelineDate }}</div>
     </div>
@@ -22,30 +22,12 @@ const props = defineProps({
   item: { type: Object, required: true },
 })
 
-const emit = defineEmits(['tag-click'])
-
 const tag = computed(() => props.item?.tag ?? null)
-const hasDescription = computed(() => {
-  const description = tag.value?.description
-  return !!description
-})
-
+const hasDescription = computed(() => !!tag.value?.description)
 const timelineDate = computed(() => {
   const date = props.item?.createdAt ?? tag.value?.createdAt
   return date ? TimeManager.format(date) : ''
 })
-
-const summaryDate = computed(() => {
-  const date = tag.value?.createdAt ?? props.item?.createdAt
-  return date ? TimeManager.format(date) : ''
-})
-
-const isClickable = computed(() => props.mode === 'summary' && !!tag.value)
-
-const handleTagClick = () => {
-  if (!isClickable.value) return
-  emit('tag-click', tag.value)
-}
 </script>
 
 <style scoped>
@@ -91,21 +73,5 @@ const handleTagClick = () => {
   font-size: 14px;
   color: #666;
   margin-top: 5px;
-}
-
-.timeline-link {
-  font-weight: bold;
-  color: var(--primary-color);
-  text-decoration: none;
-  word-break: break-word;
-  cursor: default;
-}
-
-.timeline-link.clickable {
-  cursor: pointer;
-}
-
-.timeline-link.clickable:hover {
-  text-decoration: underline;
 }
 </style>
