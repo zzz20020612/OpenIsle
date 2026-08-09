@@ -40,10 +40,6 @@
             <peoples-two class="menu-item-icon" />
             <span class="menu-item-text">Experts</span>
           </div>
-          <div class="menu-item disabled">
-            <code-icon class="menu-item-icon" />
-            <span class="menu-item-text">Knowledge</span>
-          </div>
         </div>
       </div>
 
@@ -89,6 +85,7 @@ const showUnreadMessageCount = computed(() =>
 
 const primaryItems = computed(() => [
   { to: '/papers', label: 'Papers', icon: 'hashtag-key' },
+  { to: '/literature', label: 'Knowledge Base', icon: 'code-icon' },
   { to: '/papers/submit', label: 'Submit', icon: 'edit' },
   { to: '/papers/rankings', label: 'Rankings', icon: 'chart-line' },
   {

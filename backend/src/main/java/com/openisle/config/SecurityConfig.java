@@ -143,6 +143,8 @@ public class SecurityConfig {
           .permitAll()
           .requestMatchers(HttpMethod.GET, "/api/papers/**")
           .permitAll()
+          .requestMatchers(HttpMethod.GET, "/api/literature/**")
+          .permitAll()
           .requestMatchers(HttpMethod.GET, "/api/experts/**")
           .permitAll()
           .requestMatchers(HttpMethod.GET, "/api/comments/**")
