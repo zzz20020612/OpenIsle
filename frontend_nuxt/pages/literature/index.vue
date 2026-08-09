@@ -10,7 +10,10 @@
             These records are separate from author submissions.
           </p>
         </div>
-        <NuxtLink class="paper-button" to="/papers">Submission papers</NuxtLink>
+        <div class="literature-header-actions">
+          <NuxtLink class="paper-button" to="/papers">Submission papers</NuxtLink>
+          <NuxtLink class="paper-button primary" to="/literature/workflow">Knowledge workflow</NuxtLink>
+        </div>
       </header>
 
       <form class="literature-search paper-panel" @submit.prevent="applySearch">
@@ -142,6 +145,12 @@ function formatAuthors(value) {
 <style scoped>
 .literature-container {
   max-width: 1040px;
+}
+
+.literature-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .literature-search {

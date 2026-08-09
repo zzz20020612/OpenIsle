@@ -1,0 +1,36 @@
+{
+  "_说明": "期刊分级配置模板。复制为 journal_tiers.json 后按研究领域自定义。tier1 权重最高，tier2 次之，tier3 再次。未匹配的期刊自动归为 'other'。",
+  "_instructions": "Copy this file to journal_tiers.json and customize the journal lists for your research field.",
+  "tier1": [
+    "Nature",
+    "Science",
+    "Cell",
+    "The Lancet"
+  ],
+  "tier2": [
+    "PNAS",
+    "Nature Climate Change",
+    "Nature Sustainability",
+    "Nature Geoscience",
+    "Nature Food",
+    "Nature Energy",
+    "Nature Water",
+    "Nature Communications",
+    "Science Advances",
+    "Science Bulletin"
+  ],
+  "tier3": [
+    "Environmental Science & Technology",
+    "Water Research",
+    "Global Environmental Change",
+    "Journal of Cleaner Production",
+    "Resources Conservation and Recycling",
+    "Waste Management",
+    "Bioresource Technology",
+    "ACS Sustainable Chemistry & Engineering",
+    "Chemical Engineering Journal",
+    "Science of the Total Environment",
+    "Journal of Hazardous Materials",
+    "Environment International"
+  ]
+}

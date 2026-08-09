@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Render Test</title>
+    <style>
+        :root {
+            --surface: #ffffff;
+            --border: #e5e7eb;
+            --text: #1f2937;
+            --text-secondary: #6b7280;
+            --primary: #2563eb;
+            --radius: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f3f4f6;
+            padding: 20px;
+        }
+        .test-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+        .graph-container {
+            width: 100%;
+            height: 620px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        .graph-container svg { width: 100%; height: 100%; display: block; }
+        .graph-container .graph-node { cursor: pointer; }
+        .graph-container .graph-node circle { stroke: #fff; stroke-width: 2px; transition: r 0.15s; }
+        .graph-container .graph-node:hover circle { stroke: var(--primary); }
+        .graph-container .graph-node text { fill: var(--text); pointer-events: none; }
+        .graph-container .graph-link { stroke: #cbd5e1; stroke-opacity: 0.7; }
+        .graph-container .graph-link.cites { stroke: #64748b; stroke-opacity: 0.85; }
+        .graph-container .graph-link.authored { stroke: #6366f1; }
+        .graph-focus-badge {
+            position: absolute; bottom: 14px; right: 14px; z-index: 10;
+            background: rgba(79, 70, 229, 0.92); color: #fff;
+            padding: 6px 14px; border-radius: 999px; font-size: 12px;
+            box-shadow: var(--shadow); cursor: pointer; pointer-events: auto;
+            white-space: nowrap; max-width: 50%; overflow: hidden; text-overflow: ellipsis;
+        }
+        .graph-tooltip {
+            position: absolute; background: rgba(30, 41, 59, 0.92); color: #fff;
+            padding: 8px 10px; border-radius: 6px; font-size: 12px; pointer-events: none;
+            max-width: 260px; line-height: 1.4; display: none; z-index: 50;
+        }
+        .graph-legend {
+            position: absolute; bottom: 14px; left: 14px; z-index: 10;
+            display: flex; flex-direction: column; gap: 6px;
+            background: rgba(255,255,255,0.92); padding: 10px 12px;
+            border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            font-size: 12px; color: #4b5563;
+            max-height: 40%; overflow: auto;
+        }
+        .graph-controls {
+            position: absolute; top: 14px; right: 14px; z-index: 10;
+            display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+        }
+        .graph-controls-toggle {
+            width: 34px; height: 34px; border-radius: 50%; padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; background: #fff; border: 1px solid var(--border);
+            box-shadow: var(--shadow); cursor: pointer; opacity: 0.85; transition: 0.15s;
+        }
+        .graph-controls-panel {
+            display: flex; flex-direction: column; gap: 6px;
+            background: #fff; padding: 10px; border-radius: 8px;
+            border: 1px solid var(--border); box-shadow: var(--shadow);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-card">
+        <h2>力导向图谱渲染测试</h2>
+        <p style="color:var(--text-secondary);">静态数据：3 个论文节点 + 2 个作者节点 + 2 条 authored 边 + 1 条 cites 边</p>
+        <div id="chart" class="graph-container"></div>
+    </div>
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/charts.js"></script>
+    <script>
+        const nodes = [
+            { id: 'p1', label: 'Livestock grazing effects on soil carbon', type: 'paper', paper_id: 1, year: 2022, citation_count: 45, doi: '10.1/1' },
+            { id: 'p2', label: 'Grazing intensity and biodiversity', type: 'paper', paper_id: 2, year: 2021, citation_count: 30, doi: '10.1/2' },
+            { id: 'p3', label: 'Carbon sequestration in grasslands', type: 'paper', paper_id: 3, year: 2023, citation_count: 12, doi: '10.1/3' },
+            { id: 'a1', label: 'Zhang Wei', type: 'author', author_id: 1 },
+            { id: 'a2', label: 'Li Hua', type: 'author', author_id: 2 }
+        ];
+        const edges = [
+            { source: 'p1', target: 'a1', type: 'authored', weight: 2 },
+            { source: 'p1', target: 'a2', type: 'authored', weight: 1 },
+            { source: 'p2', target: 'a2', type: 'authored', weight: 1 },
+            { source: 'p3', target: 'p1', type: 'cites', weight: 1 }
+        ];
+        const chart = document.getElementById('chart');
+        Charts.forceGraph(chart, nodes, edges, {
+            show_labels: true,
+            onNodeClick: (n) => console.log('clicked', n)
+        });
+    </script>
+</body>
+</html>

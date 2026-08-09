@@ -11,6 +11,7 @@ $services = @(
   'mysql',
   'redis',
   'rabbitmq',
+  'literature-system',
   'websocket-service',
   'ai-screening',
   'springboot',

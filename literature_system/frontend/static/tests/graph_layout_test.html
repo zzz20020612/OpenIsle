@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Layout Test</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body { margin: 0; padding: 0; }
+        .mock-content { padding: 24px; }
+    </style>
+</head>
+<body>
+    <div class="mock-content">
+        <h2 style="margin-top:0;">引用网络 / 关系图谱</h2>
+        <div class="graph-layout">
+            <div id="graph-sidebar"></div>
+            <div id="graph-chart" class="graph-container"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/components.js"></script>
+    <script src="/static/js/charts.js"></script>
+    <script>
+        const chartEl = document.getElementById('graph-chart');
+        const sidebarEl = document.getElementById('graph-sidebar');
+
+        let state = {
+            year_from: '', year_to: '', min_citations: 0, max_nodes: 80, show_labels: true,
+            entity_types: { paper: true, author: true, keyword: true, data_point: true },
+            citation_only: false,
+            node_search: ''
+        };
+
+        sidebarEl.innerHTML = Components.renderGraphSidebar(state, (newState) => {
+            console.log('sidebar change', newState);
+        });
+
+        // Simulate API data: 80 nodes, 25 edges (matching real /graph response)
+        const nodes = [
+            { id: 'p1', label: 'Paper A', type: 'paper', paper_id: 1, year: 2022, citation_count: 100 },
+            { id: 'p2', label: 'Paper B', type: 'paper', paper_id: 2, year: 2021, citation_count: 50 },
+            { id: 'p3', label: 'Paper C', type: 'paper', paper_id: 3, year: 2023, citation_count: 30 },
+            { id: 'p4', label: 'Paper D', type: 'paper', paper_id: 4, year: 2020, citation_count: 20 },
+            { id: 'a1', label: 'Author 1', type: 'author', author_id: 1 },
+            { id: 'a2', label: 'Author 2', type: 'author', author_id: 2 },
+            { id: 'a3', label: 'Author 3', type: 'author', author_id: 3 },
+            { id: 'k1', label: 'grazing', type: 'keyword' },
+            { id: 'k2', label: 'livestock', type: 'keyword' },
+            { id: 'd1', label: 'Data 1', type: 'data_point' }
+        ];
+        const edges = [
+            { source: 'p1', target: 'a1', type: 'authored' },
+            { source: 'p1', target: 'a2', type: 'authored' },
+            { source: 'p2', target: 'a2', type: 'authored' },
+            { source: 'p3', target: 'a3', type: 'authored' },
+            { source: 'p1', target: 'p2', type: 'cites' },
+            { source: 'p1', target: 'k1', type: 'has_keyword' },
+            { source: 'p2', target: 'k2', type: 'has_keyword' },
+            { source: 'p1', target: 'd1', type: 'has_data' }
+        ];
+
+        Charts.forceGraph(chartEl, nodes, edges, {
+            show_labels: true,
+            problemNodeIds: new Set(['p4', 'd1']),
+            onNodeClick: (n) => console.log('clicked', n)
+        });
+    </script>
+</body>
+</html>

@@ -148,6 +148,7 @@ services:
       REDIS_PORT: 6379
       JAVA_OPTS: "-Duser.timezone=Asia/Shanghai"
       AI_SCREENING_SERVICE_URL: http://ai-screening:${AI_SCREENING_PORT:-8090}
+      LITERATURE_API_BASE_URL: http://literature-system:8088
     ports:
       - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
     volumes:
@@ -175,6 +176,39 @@ services:
       start_period: 60s
     networks:
       - openisle-network
+    profiles:
+      - dev
+      - prod
+
+  literature-system:
+    build:
+      context: ..
+      dockerfile: docker/literature-system.Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME}-openisle-literature
+    env_file:
+      - ${ENV_FILE:-../.env}
+    environment:
+      DB_TYPE: sqlite
+      SQLITE_PATH: /app/data/literature.db
+      PDF_DOWNLOAD_DIR: /app/data/pdfs
+      FRONTEND_DIR: /app/frontend
+      SEARCH_API_PORT: 8088
+      MINERU_API_KEY: ${MINERU_API_KEY:-}
+      CROSSREF_ARTICLE_TYPES_FILTER: ${CROSSREF_ARTICLE_TYPES_FILTER:-journal-article}
+      UNPAYWALL_EMAIL: ${UNPAYWALL_EMAIL:-adminmail@openisle.com}
+    ports:
+      - "${LITERATURE_PORT:-8088}:8088"
+    volumes:
+      - literature-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    networks:
+      - openisle-network
+    restart: unless-stopped
     profiles:
       - dev
       - prod
@@ -438,6 +472,8 @@ volumes:
     name: "${COMPOSE_PROJECT_NAME}_frontend-service-node-modules"
   frontend-static:
     name: "${COMPOSE_PROJECT_NAME}_frontend-static"
+  literature-data:
+    name: "${COMPOSE_PROJECT_NAME}_literature-data"
   opensearch-data:
     name: "${COMPOSE_PROJECT_NAME}_opensearch-data"
   opensearch-snapshots:

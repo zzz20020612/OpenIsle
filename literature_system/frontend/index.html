@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文献系统</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=432742d0">
+</head>
+<body>
+    <div id="app">
+        <aside class="sidebar">
+            <div class="brand">
+                <h1 data-i18n="brand.title">文献系统</h1>
+                <div class="subtitle" data-i18n="brand.subtitle">学术文献知识共享平台</div>
+            </div>
+            <nav class="nav">
+                <a class="nav-item active" href="#/dashboard" data-route="dashboard">
+                    <span class="icon">◈</span> <span data-i18n="nav.dashboard">仪表盘</span>
+                </a>
+                <a class="nav-item" href="#/search" data-route="search">
+                    <span class="icon">⌕</span> <span data-i18n="nav.search">检索与知识库</span>
+                </a>
+                <a class="nav-item" href="#/timeline" data-route="timeline">
+                    <span class="icon">◴</span> <span data-i18n="nav.timeline">时间线</span>
+                </a>
+                <a class="nav-item" href="#/network" data-route="network">
+                    <span class="icon">◎</span> <span data-i18n="nav.network">关系网络</span>
+                </a>
+                <a class="nav-item" href="#/compare" data-route="compare">
+                    <span class="icon">▣</span> <span data-i18n="nav.compare">指标对比</span>
+                </a>
+                <a class="nav-item" href="#/vectordb" data-route="vectordb">
+                    <span class="icon">◍</span> <span data-i18n="nav.vectordb">向量库</span>
+                </a>
+                <a class="nav-item" href="#/authors" data-route="author">
+                    <span class="icon">☺</span> <span data-i18n="nav.authors">学者画像</span>
+                </a>
+                <a class="nav-item" href="#/institutions" data-route="institution">
+                    <span class="icon">⌂</span> <span data-i18n="nav.institutions">机构合作</span>
+                </a>
+                <a class="nav-item" href="#/workflow" data-route="workflow">
+                    <span class="icon">⚙</span> <span data-i18n="nav.workflow">工作流</span>
+                </a>
+                <a class="nav-item" href="#/quality" data-route="quality">
+                    <span class="icon">◉</span> <span data-i18n="nav.quality">质量监控</span>
+                </a>
+                <a class="nav-item" href="#/settings" data-route="settings">
+                    <span class="icon">🔧</span> <span data-i18n="nav.settings">设置</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <span class="status-dot" id="service-status"></span>
+                <span id="service-text" data-i18n="common.service_checking">服务检查中...</span>
+                <button id="lang-switch" class="lang-switch-btn" onclick="I18n.toggle()" title="Switch language / 切换语言">English</button>
+            </div>
+        </aside>
+        <main class="main">
+            <header class="topbar">
+                <div class="search-mini">
+                    <input type="text" id="global-search-input" data-i18n-placeholder="common.placeholder" placeholder="输入关键词...">
+                    <button class="btn btn-primary" id="global-search-btn" data-i18n="common.search">搜索</button>
+                </div>
+                <div class="actions">
+                    <div class="task-progress-center" id="task-progress-center">
+                        <button class="btn btn-secondary task-progress-btn" id="task-progress-btn" title="任务进度">
+                            <span class="task-icon">◐</span>
+                            <span class="task-badge" id="task-badge" style="display:none;">0</span>
+                        </button>
+                        <div class="task-progress-dropdown" id="task-progress-dropdown">
+                            <div class="task-dropdown-header">
+                                <h4>任务进度</h4>
+                                <button class="btn btn-sm btn-secondary" id="task-refresh-btn">刷新</button>
+                            </div>
+                            <div class="task-dropdown-content" id="task-dropdown-content">
+                                <p class="task-empty">暂无运行中的任务</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" id="btn-settings" data-i18n="common.settings">设置</button>
+                    <button class="btn btn-secondary" id="btn-rebuild" data-i18n="common.rebuild_index">重建索引</button>
+                </div>
+            </header>
+            <div id="global-search-bar" class="global-search-bar" style="display:none;"></div>
+            <section class="content" id="content">
+                <div class="loading-text" data-i18n="common.loading">加载中...</div>
+            </section>
+        </main>
+    </div>
+
+    <div id="modal-overlay" class="hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">-</h3>
+                <button id="modal-close" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="/static/js/utils.js?v=11684b15"></script>
+    <script src="/static/js/api.js?v=05e4ccc1"></script>
+    <script src="/static/js/i18n.js?v=df8e2a01"></script>
+    <script src="/static/js/charts.js?v=9428811c"></script>
+    <script src="/static/js/components.js?v=3e68e8e3"></script>
+    <script src="/static/js/app.js?v=77e66338"></script>
+</body>
+</html>
