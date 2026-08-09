@@ -72,6 +72,11 @@ def _init_sqlite_schema(conn: sqlite3.Connection) -> None:
         if _SCHEMA_PATH.exists():
             schema_sql = _SCHEMA_PATH.read_text(encoding="utf-8")
             conn.executescript(schema_sql)
+            citation_columns = {
+                row[1] for row in conn.execute("PRAGMA table_info(citations_v2)")
+            }
+            if citation_columns and "cited_journal" not in citation_columns:
+                conn.execute("ALTER TABLE citations_v2 ADD COLUMN cited_journal TEXT")
         else:
             logger.warning("未找到 db_schema_sqlite.sql 文件: %s", _SCHEMA_PATH)
         # 为旧数据库补充工作流审计字段与归档表

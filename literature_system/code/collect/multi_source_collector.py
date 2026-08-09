@@ -207,10 +207,18 @@ def upsert_paper(conn, item, source="crossref"):
         return None
 
 
-def find_missing_authors(conn):
-    """查找缺失作者的记录"""
+def find_missing_authors(conn, paper_ids=None):
+    """查找缺失作者的记录，可限制为本次新入库论文。"""
     cur = conn.cursor()
-    cur.execute("SELECT doi, id FROM papers WHERE author IS NULL OR author = '' OR author = '[]'")
+    sql = "SELECT doi, id FROM papers WHERE (author IS NULL OR author = '' OR author = '[]')"
+    params = []
+    if paper_ids is not None:
+        ids = [int(paper_id) for paper_id in paper_ids]
+        if not ids:
+            return []
+        sql += f" AND id IN ({','.join([placeholder()] * len(ids))})"
+        params.extend(ids)
+    cur.execute(sql, tuple(params))
     return cur.fetchall()
 
 
@@ -224,9 +232,9 @@ def update_author(conn, paper_id, authors):
 
 # ============ 作者补全主流程 ============
 
-def fix_authors_with_crossref(conn, limit=None):
+def fix_authors_with_crossref(conn, limit=None, paper_ids=None):
     """使用 Crossref 补全缺失的作者"""
-    records = find_missing_authors(conn)
+    records = find_missing_authors(conn, paper_ids)
     if not records:
         LOGGER.info("没有缺失作者的记录")
         return {"total": 0, "fixed": 0, "failed": 0}
@@ -269,13 +277,13 @@ def fix_authors_with_crossref(conn, limit=None):
     return {"total": total, "fixed": fixed, "failed": failed}
 
 
-def fix_authors_with_semantic_scholar(conn, limit=None, batch_size: int = 100):
+def fix_authors_with_semantic_scholar(conn, limit=None, batch_size: int = 100, paper_ids=None):
     """使用 Semantic Scholar 批量补全缺失的作者。
 
     优先调用 /paper/batch 端点一次性查询多个 DOI，减少网络往返。
     对批量未命中的记录，再通过标题搜索兜底。
     """
-    records = find_missing_authors(conn)
+    records = find_missing_authors(conn, paper_ids)
     if not records:
         LOGGER.info("没有缺失作者的记录")
         return {"total": 0, "fixed": 0, "failed": 0, "skipped": 0}
@@ -314,7 +322,7 @@ def fix_authors_with_semantic_scholar(conn, limit=None, batch_size: int = 100):
             failed += len(doi_to_paper_id)
 
     # 2) 对仍缺失作者的记录，通过标题搜索兜底
-    remaining = find_missing_authors(conn)
+    remaining = find_missing_authors(conn, paper_ids)
     if remaining:
         LOGGER.info("批量查询后仍有 %d 条缺失作者，使用标题搜索兜底", len(remaining))
         for i, (doi, paper_id) in enumerate(remaining):
@@ -346,20 +354,20 @@ def fix_authors_with_semantic_scholar(conn, limit=None, batch_size: int = 100):
     return {"total": total, "fixed": fixed, "failed": failed, "skipped": skipped}
 
 
-def fix_authors_multi_strategy(conn, limit=None):
+def fix_authors_multi_strategy(conn, limit=None, paper_ids=None):
     """多策略补全作者（先 Crossref，再 Semantic Scholar）"""
     LOGGER.info("=== 开始多策略作者补全 ===")
     
     # 步骤 1: Crossref 单 DOI 查询
     LOGGER.info("\n--- 步骤 1: Crossref 单 DOI 查询 ---")
-    result1 = fix_authors_with_crossref(conn, limit)
+    result1 = fix_authors_with_crossref(conn, limit, paper_ids)
     LOGGER.info("Crossref 补全结果: %s", result1)
     
     # 检查剩余缺失
-    remaining = find_missing_authors(conn)
+    remaining = find_missing_authors(conn, paper_ids)
     if remaining:
         LOGGER.info("\n--- 步骤 2: Semantic Scholar 兜底 ---")
-        result2 = fix_authors_with_semantic_scholar(conn)
+        result2 = fix_authors_with_semantic_scholar(conn, paper_ids=paper_ids)
         LOGGER.info("Semantic Scholar 补全结果: %s", result2)
         return {"crossref": result1, "semantic_scholar": result2}
     
@@ -397,7 +405,16 @@ def _filter_new_items(conn, items):
     return new_items, duplicate_count
 
 
-def run_collection(keyword, rows, max_pages, start_date, end_date, db_path, fix_authors_flag=True):
+def run_collection(
+    keyword,
+    rows,
+    max_pages,
+    start_date,
+    end_date,
+    db_path,
+    fix_authors_flag=True,
+    return_details=False,
+):
     """完整采集流程（支持逐页去重与无新增时提前终止）"""
     LOGGER.info("=== 开始采集 ===")
     LOGGER.info("关键词: %s", keyword)
@@ -413,6 +430,7 @@ def run_collection(keyword, rows, max_pages, start_date, end_date, db_path, fix_
 
     all_items = []
     inserted = 0
+    inserted_ids = []
     total_fetched = 0
     empty_page_count = 0
 
@@ -451,6 +469,7 @@ def run_collection(keyword, rows, max_pages, start_date, end_date, db_path, fix_
             paper_id = upsert_paper(conn, normalized, source="crossref")
             if paper_id:
                 inserted += 1
+                inserted_ids.append(paper_id)
 
         LOGGER.info("累计入库 %d 条", inserted)
         time.sleep(sleep_time)
@@ -464,10 +483,10 @@ def run_collection(keyword, rows, max_pages, start_date, end_date, db_path, fix_
     # 步骤 3: 作者补全
     if fix_authors_flag and inserted > 0:
         LOGGER.info("\n--- 步骤 3: 作者补全 ---")
-        result = fix_authors_multi_strategy(conn)
+        result = fix_authors_multi_strategy(conn, paper_ids=inserted_ids)
 
         # 最终统计
-        remaining = find_missing_authors(conn)
+        remaining = find_missing_authors(conn, inserted_ids)
         LOGGER.info("\n=== 最终作者完整率 ===")
         LOGGER.info("入库总数: %d", inserted)
         LOGGER.info("仍缺失作者: %d", len(remaining))
@@ -475,6 +494,8 @@ def run_collection(keyword, rows, max_pages, start_date, end_date, db_path, fix_
 
     session.close()
     conn.close()
+    if return_details:
+        return {"inserted": inserted, "paper_ids": inserted_ids}
     return inserted
 
 

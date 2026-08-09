@@ -38,6 +38,10 @@ class SchemaTest(unittest.TestCase):
                 row[1] for row in connection.execute("PRAGMA table_info(paper_fulltext)")
             }
             self.assertIn("full_markdown", fulltext_columns)
+            citation_columns = {
+                row[1] for row in connection.execute("PRAGMA table_info(citations_v2)")
+            }
+            self.assertIn("cited_journal", citation_columns)
         finally:
             connection.close()
 

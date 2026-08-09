@@ -424,7 +424,8 @@ class SearchEngine:
 
         where_clause 形如 " WHERE cond1 AND cond2" 或空字符串。
         额外条件用 _and() 包装。
-        注意：where_clause 内的 FTS 表名已被替换为别名 fts。
+        注意：SQLite FTS5 的 MATCH 左操作数必须使用虚拟表原名，
+        不能使用 FROM 子句别名。
         """
         agg = {}
         cur = self.conn.cursor()
@@ -533,7 +534,7 @@ class SearchEngine:
         where_parts = []
         params = []
         if match_expr:
-            where_parts.append(f"fts MATCH ?")
+            where_parts.append(f"{self.FTS_TABLE} MATCH ?")
             params.append(match_expr)
         if tier_values:
             placeholders = ",".join("?" for _ in tier_values)

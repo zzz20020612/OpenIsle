@@ -283,6 +283,11 @@ def _get_doi_redirect_url(doi, timeout, headers):
         
         # 如果返回 HTML，尝试构造 PDF URL
         if 'text/html' in final_content_type:
+            # PLOS 文章落地页可稳定转换为官方 printable PDF。
+            if 'journals.plos.org' in final_url.lower() and '/article?id=' in final_url.lower():
+                separator = '&' if '?' in final_url else '?'
+                return final_url.replace('/article?id=', '/article/file?id=') + f'{separator}type=printable'
+
             # ScienceDirect / Elsevier
             if 'sciencedirect.com' in final_url.lower():
                 return final_url + ('/pdfft' if not final_url.endswith('/pdfft') else '')

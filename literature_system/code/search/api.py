@@ -2198,12 +2198,26 @@ def _collect_task(proxy, keyword: str, rows: int, max_pages: int, year_from: str
     from config import SQLITE_PATH
     start_date = year_from.strip() if year_from else None
     end_date = year_to.strip() if year_to else None
-    inserted = run_collection(keyword, rows, max_pages, start_date, end_date, str(SQLITE_PATH), fix_authors_flag=True)
+    collection = run_collection(
+        keyword,
+        rows,
+        max_pages,
+        start_date,
+        end_date,
+        str(SQLITE_PATH),
+        fix_authors_flag=True,
+        return_details=True,
+    )
+    inserted = collection["inserted"]
     proxy.set_progress(100, f"采集完成，入库 {inserted} 条")
-    return {"keyword": keyword, "inserted": inserted}
+    return {
+        "keyword": keyword,
+        "inserted": inserted,
+        "paper_ids": collection["paper_ids"],
+    }
 
 
-def _parse_task(proxy, source: str, limit: int, force: bool) -> Dict[str, Any]:
+def _parse_task(proxy, source: str, limit: int, force: bool, paper_ids=None) -> Dict[str, Any]:
     """PDF 解析任务。"""
     proxy.set_progress(5, "查找待解析论文...")
     wf_settings.apply_to_config()
@@ -2211,7 +2225,11 @@ def _parse_task(proxy, source: str, limit: int, force: bool) -> Dict[str, Any]:
     from pdf.scheduler import process_paper
     from pdf.downloader import download_pdf_with_fallback
 
-    papers = get_new_papers_with_oa(limit=limit, source_prefer=source)
+    papers = get_new_papers_with_oa(
+        limit=limit,
+        source_prefer=source,
+        paper_ids=paper_ids,
+    )
     total = len(papers)
     proxy.set_progress(10, f"找到 {total} 篇待解析论文")
     success = skipped = failed = 0
@@ -2230,6 +2248,8 @@ def _parse_task(proxy, source: str, limit: int, force: bool) -> Dict[str, Any]:
         )
         if not ok:
             LOGGER.warning("PDF download failed for paper_id=%s: %s", p['id'], err)
+            failed += 1
+            continue
         try:
             result = process_paper(p['id'], force=force)
             status = result.get('status', 'unknown')
@@ -2247,7 +2267,7 @@ def _parse_task(proxy, source: str, limit: int, force: bool) -> Dict[str, Any]:
     return {"source": source, "limit": limit, "success": success, "skipped": skipped, "failed": failed}
 
 
-def _extract_task(proxy) -> Dict[str, Any]:
+def _extract_task(proxy, paper_ids=None) -> Dict[str, Any]:
     """LLM 提炼任务：首轮提取后，对仍失败的类型自动重试一次。"""
     proxy.set_progress(5, "查找待提炼论文...")
     wf_settings.apply_to_config()
@@ -2257,7 +2277,11 @@ def _extract_task(proxy) -> Dict[str, Any]:
     from phase3.llm_client import LLMClient
     from phase3.embedder import embed_batch
 
-    paper_ids = get_newly_parsed_papers()
+    pending_ids = get_newly_parsed_papers()
+    if paper_ids is not None:
+        scoped = {int(paper_id) for paper_id in paper_ids}
+        pending_ids = [paper_id for paper_id in pending_ids if paper_id in scoped]
+    paper_ids = pending_ids
     total = len(paper_ids)
     proxy.set_progress(10, f"找到 {total} 篇待提炼论文")
     kc = methods_count = dp_count = errors = 0
@@ -2287,6 +2311,7 @@ def _extract_task(proxy) -> Dict[str, Any]:
 
     # 第二轮：对首轮仍失败的论文执行一次性重试
     retry_ids = get_papers_needing_extraction()
+    retry_ids = [paper_id for paper_id in retry_ids if paper_id in set(paper_ids)]
     retry_total = len(retry_ids)
     if retry_total:
         proxy.set_progress(60, f"首轮完成，{retry_total} 篇需重试")
@@ -2420,12 +2445,19 @@ def _pipeline_task(proxy, keyword: str, rows: int, max_pages: int, year_from: st
 
     # 阶段 2: 解析 (30-60%)
     proxy.set_progress(30, f"【解析】开始: {parse_source}, 上限 {parse_limit} 篇")
-    parse_result = _parse_task(proxy, parse_source, parse_limit, False)
+    paper_ids = collect_result.get("paper_ids", [])
+    parse_result = _parse_task(
+        proxy,
+        parse_source,
+        parse_limit,
+        False,
+        paper_ids=paper_ids,
+    )
     result["parse"] = parse_result
 
     # 阶段 3: 提炼 (60-100%)
     proxy.set_progress(60, "【提炼】开始 LLM 知识提取")
-    extract_result = _extract_task(proxy)
+    extract_result = _extract_task(proxy, paper_ids=paper_ids)
     result["extract"] = extract_result
 
     proxy.set_progress(100, f"全流程完成: 采集={collect_result.get('inserted',0)}, 解析成功={parse_result.get('success',0)}, 知识卡片={extract_result.get('knowledge_cards',0)}")

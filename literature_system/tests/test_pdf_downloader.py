@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "code"))
@@ -43,6 +43,27 @@ class PdfDownloaderFallbackTest(unittest.TestCase):
         self.assertEqual(
             ["https://publisher.example/landing", "https://repository.example/paper.pdf"],
             attempts,
+        )
+
+    def test_plos_landing_page_is_converted_to_printable_pdf(self):
+        response = Mock()
+        response.url = (
+            "https://journals.plos.org/plosmedicine/article"
+            "?id=10.1371/journal.pmed.1001747"
+        )
+        response.headers = {"content-type": "text/html;charset=UTF-8"}
+
+        with patch.object(downloader.requests, "get", return_value=response):
+            result = downloader._get_doi_redirect_url(
+                "10.1371/journal.pmed.1001747",
+                timeout=30,
+                headers={},
+            )
+
+        self.assertEqual(
+            "https://journals.plos.org/plosmedicine/article/file"
+            "?id=10.1371/journal.pmed.1001747&type=printable",
+            result,
         )
 
 

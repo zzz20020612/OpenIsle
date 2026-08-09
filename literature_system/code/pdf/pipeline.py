@@ -47,9 +47,11 @@ def get_pdf_path(paper_id: int, doi: Optional[str] = None) -> Optional[Path]:
         candidate = pdf_dir / f"{safe_doi(doi)}.pdf"
         if candidate.exists():
             return candidate
-    # 兜底：扫描 pdfs/ 下任意以 paper_id 命名的文件
-    for f in pdf_dir.glob(f"*{paper_id}*.pdf"):
-        return f
+    # 无 DOI 的下载任务会直接使用 paper_id 命名。必须精确匹配；模糊
+    # glob 会把 paper_id=2 错配到 DOI 文件 10.1371_...0020124.pdf。
+    id_candidate = pdf_dir / f"{paper_id}.pdf"
+    if id_candidate.exists():
+        return id_candidate
     return None
 
 

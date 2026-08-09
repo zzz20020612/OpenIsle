@@ -174,6 +174,7 @@ CREATE TABLE IF NOT EXISTS citations_v2 (
   cited_title TEXT,
   cited_authors TEXT,
   cited_year INTEGER,
+  cited_journal TEXT,
   raw_reference TEXT,
   match_method TEXT,
   match_confidence REAL
