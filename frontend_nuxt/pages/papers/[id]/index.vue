@@ -299,21 +299,14 @@
           </nav>
           <section class="paper-card paper-evaluation-card">
             <div class="paper-card-heading">
-              <h3 class="paper-section-title">Evaluation</h3>
-              <span class="paper-mini-label">Reader score</span>
+              <h3 class="paper-section-title">Human Evaluation</h3>
+              <span class="paper-mini-label">Scholar衡 integration</span>
             </div>
-            <div class="paper-score-panel">
-              <div class="paper-score-large">{{ formatScore(paper.scoreSnapshot?.compositeScore) }}</div>
-              <div class="paper-score-label">
-                Composite score from {{ ratingCount }} {{ ratingCount === 1 ? 'rating' : 'ratings' }}.
-              </div>
-            </div>
-            <div class="paper-score-breakdown">
-              <div v-for="row in scoreRows" :key="row.label" class="paper-score-row">
-                <span>{{ row.label }}</span>
-                <strong>{{ formatScore(row.value) }}</strong>
-              </div>
-            </div>
+            <p class="paper-section-note">
+              The previous submission-paper rating form is paused. Six-dimensional human evaluation now
+              uses published records from the existing literature corpus.
+            </p>
+            <NuxtLink class="paper-button" to="/literature">Open evaluated literature</NuxtLink>
           </section>
 
           <section class="paper-card">
@@ -350,46 +343,6 @@
             </div>
           </section>
 
-          <section class="paper-card paper-rating-card">
-            <div class="paper-card-heading">
-              <h3 class="paper-section-title">Rate this paper</h3>
-              <span class="paper-mini-label">1-5 scale</span>
-            </div>
-            <div v-if="!authState.loggedIn" class="paper-abstract">
-              Please sign in to rate this paper.
-            </div>
-            <form v-else class="paper-rating-form" @submit.prevent="submitRating">
-              <div class="paper-rating-grid">
-                <label class="paper-rating-field">
-                  <span>Overall</span>
-                  <input v-model.number="rating.overallScore" type="number" min="1" max="5" />
-                </label>
-                <label class="paper-rating-field">
-                  <span>Innovation</span>
-                  <input v-model.number="rating.innovationScore" type="number" min="1" max="5" />
-                </label>
-                <label class="paper-rating-field">
-                  <span>Method</span>
-                  <input v-model.number="rating.methodScore" type="number" min="1" max="5" />
-                </label>
-                <label class="paper-rating-field">
-                  <span>Impact</span>
-                  <input v-model.number="rating.impactScore" type="number" min="1" max="5" />
-                </label>
-              </div>
-              <label class="paper-rating-comment">
-                <span>Short assessment</span>
-                <textarea
-                  v-model="rating.comment"
-                  placeholder="What should other readers know about this paper?"
-                />
-              </label>
-              <button class="paper-button primary" type="submit" :disabled="submitting">
-                {{ submitting ? 'Submitting...' : 'Submit rating' }}
-              </button>
-              <div v-if="ratingMessage" class="paper-abstract">{{ ratingMessage }}</div>
-            </form>
-          </section>
         </aside>
       </section>
     </div>
@@ -438,7 +391,6 @@ const route = useRoute()
 const {
   getPaper,
   createRevisionDraft,
-  ratePaper,
   runAdminPaperAction,
   runAdminPostAction,
   runPostAction,
@@ -482,7 +434,6 @@ const subscribed = ref(false)
 const discussionMessage = ref('')
 const postClosed = computed(() => Boolean(postCore.value?.closed))
 const postAuthorId = computed(() => postCore.value?.author?.id || paper.value.postId || 0)
-const ratingCount = computed(() => paper.value.scoreSnapshot?.ratingCount || 0)
 const discussionCount = computed(() => paperComments.value.length)
 const previewFile = ref(null)
 const previewUrl = ref('')
@@ -527,15 +478,6 @@ const authorAffiliations = computed(() => {
   })
   return Array.from(seen.values())
 })
-const scoreRows = computed(() => {
-  const snapshot = paper.value.scoreSnapshot || {}
-  return [
-    { label: 'Overall', value: snapshot.averageOverallScore },
-    { label: 'Innovation', value: snapshot.averageInnovationScore },
-    { label: 'Method', value: snapshot.averageMethodScore },
-    { label: 'Impact', value: snapshot.averageImpactScore },
-  ]
-})
 const isPostAuthor = computed(() => {
   const author = postCore.value?.author
   if (!author || !authState.loggedIn) return false
@@ -564,15 +506,6 @@ useHead(() => ({
   title: `${paper.value.title || 'Paper'} - Open Research Evaluation`,
 }))
 
-const rating = reactive({
-  overallScore: 5,
-  innovationScore: 5,
-  methodScore: 5,
-  impactScore: 5,
-  comment: '',
-})
-const submitting = ref(false)
-const ratingMessage = ref('')
 const isAdmin = computed(() => authState.role === 'ADMIN')
 const canCreateRevision = computed(() =>
   authState.loggedIn &&
@@ -638,20 +571,6 @@ const screeningDimensions = computed(() => {
     return []
   }
 })
-
-const submitRating = async () => {
-  submitting.value = true
-  ratingMessage.value = ''
-  try {
-    await ratePaper(paperId.value, rating)
-    ratingMessage.value = 'Rating submitted. The score has been updated.'
-    await refresh()
-  } catch (error) {
-    ratingMessage.value = 'Unable to submit rating. Please try again.'
-  } finally {
-    submitting.value = false
-  }
-}
 
 const tokenHeaders = () => {
   const token = getToken()

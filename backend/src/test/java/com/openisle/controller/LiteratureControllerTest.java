@@ -12,6 +12,7 @@ import com.openisle.repository.UserRepository;
 import com.openisle.service.JwtService;
 import com.openisle.service.LiteratureIntegrationService;
 import com.openisle.service.LiteratureIntegrationService.LiteratureProxyResponse;
+import com.openisle.service.LiteratureRatingService;
 import com.openisle.service.UserVisitService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,9 @@ class LiteratureControllerTest {
 
   @MockBean
   private LiteratureIntegrationService literatureService;
+
+  @MockBean
+  private LiteratureRatingService literatureRatingService;
 
   @MockBean
   private JwtService jwtService;

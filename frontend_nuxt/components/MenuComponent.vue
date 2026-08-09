@@ -19,20 +19,27 @@
           </NuxtLink>
         </div>
 
-        <div v-if="accountItems.length" class="menu-section">
-          <div class="section-label">Account</div>
-          <NuxtLink
-            v-for="item in accountItems"
-            :key="item.to"
-            class="menu-item"
-            exact-active-class="selected"
-            :to="item.to"
-            @click="handleItemClick"
-          >
-            <component :is="item.icon" class="menu-item-icon" />
-            <span class="menu-item-text">{{ item.label }}</span>
-          </NuxtLink>
-        </div>
+        <ClientOnly>
+          <div v-if="accountItems.length" class="menu-section">
+            <div class="section-label">Account</div>
+            <NuxtLink
+              v-for="item in accountItems"
+              :key="item.to"
+              class="menu-item"
+              exact-active-class="selected"
+              :to="item.to"
+              @click="handleItemClick"
+            >
+              <component :is="item.icon" class="menu-item-icon" />
+              <span class="menu-item-text">{{ item.label }}</span>
+            </NuxtLink>
+          </div>
+          <template #fallback>
+            <div class="menu-section">
+              <div class="section-label">Account</div>
+            </div>
+          </template>
+        </ClientOnly>
 
         <div class="menu-section">
           <div class="section-label">Coming Next</div>

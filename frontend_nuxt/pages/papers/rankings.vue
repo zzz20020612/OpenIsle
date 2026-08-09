@@ -4,14 +4,14 @@
       <header class="paper-workspace-header">
         <div>
           <div class="paper-page-eyebrow">Rankings</div>
-          <h1 class="paper-page-title">Research signals</h1>
+          <h1 class="paper-page-title">Scholar衡 evaluation rankings</h1>
           <p class="paper-page-description">
-            Ranked views generated from paper score snapshots. Use them as discovery signals, not
-            final academic judgments.
+            Six-dimensional human evaluations of the existing literature corpus. Rankings are discovery
+            signals with visible sample sizes, not final academic judgments.
           </p>
         </div>
         <div class="paper-toolbar">
-          <NuxtLink class="paper-button" to="/papers">Paper feed</NuxtLink>
+          <NuxtLink class="paper-button" to="/literature">Knowledge base</NuxtLink>
         </div>
       </header>
 
@@ -34,14 +34,14 @@
               v-for="item in visibleRows"
               :key="rowKey(item)"
               class="paper-ranking-item"
-              :to="`/papers/${item.paperId}`"
+              :to="`/literature/${item.literaturePaperId}`"
             >
               <span class="paper-rank-number">#{{ item.rank }}</span>
               <span>
                 <span class="paper-rank-title">{{ rowTitle(item) }}</span>
                 <span class="paper-rank-subtitle">{{ rowSubtitle(item) }}</span>
               </span>
-              <span class="paper-rank-score">{{ formatScore(item.averageCompositeScore ?? item.compositeScore) }}</span>
+              <span class="paper-rank-score">{{ formatScore(item.compositeScore) }}</span>
             </NuxtLink>
           </template>
           <template v-else>
@@ -55,7 +55,7 @@
                 <span class="paper-rank-title">{{ rowTitle(item) }}</span>
                 <span class="paper-rank-subtitle">{{ rowSubtitle(item) }}</span>
               </span>
-              <span class="paper-rank-score">{{ formatScore(item.averageCompositeScore ?? item.compositeScore) }}</span>
+              <span class="paper-rank-score">{{ formatScore(item.averageCompositeScore) }}</span>
             </div>
           </template>
         </div>
@@ -69,7 +69,7 @@
 <script setup>
 import '~/assets/paper-platform.css'
 
-const { getTopRatedPapers, getAuthorRankings, getInstitutionRankings } = usePaperApi()
+const { getPaperRankings, getAuthorRankings } = useLiteratureApi()
 
 useHead({
   title: 'Rankings - Open Research Evaluation',
@@ -77,32 +77,26 @@ useHead({
 
 const activeTab = ref('papers')
 const tabs = [
-  { key: 'papers', label: 'Top Papers' },
-  { key: 'authors', label: 'Top Authors' },
-  { key: 'institutions', label: 'Top Institutions' },
+  { key: 'papers', label: 'Evaluated Papers' },
+  { key: 'authors', label: 'Scholar Ranking' },
 ]
 
-const { data: papersData } = await useAsyncData('rankings:papers', () => getTopRatedPapers(50))
-const { data: authorsData } = await useAsyncData('rankings:authors', () => getAuthorRankings(50))
-const { data: institutionsData } = await useAsyncData('rankings:institutions', () =>
-  getInstitutionRankings(50),
-)
+const { data: papersData } = await useAsyncData('rankings:literature-papers', () => getPaperRankings(50))
+const { data: authorsData } = await useAsyncData('rankings:literature-authors', () => getAuthorRankings(50))
 
 const visibleRows = computed(() => {
   if (activeTab.value === 'authors') return Array.isArray(authorsData.value) ? authorsData.value : []
-  if (activeTab.value === 'institutions') {
-    return Array.isArray(institutionsData.value) ? institutionsData.value : []
-  }
   return Array.isArray(papersData.value) ? papersData.value : []
 })
 
-const rowKey = (item) => item.paperId || item.authorName || item.institutionName
-const rowTitle = (item) => item.title || item.authorName || item.institutionName
+const rowKey = (item) => item.literaturePaperId || item.authorName
+const rowTitle = (item) => item.title || item.authorName
 const rowSubtitle = (item) => {
   if (activeTab.value === 'papers') {
-    return `${item.ratingCount || 0} ratings - ${item.subjectArea || 'Research'}`
+    const authors = Array.isArray(item.authors) && item.authors.length ? item.authors.slice(0, 3).join(', ') : 'Authors unavailable'
+    return `${item.ratingCount || 0} ratings · ${authors}${item.journal ? ` · ${item.journal}` : ''}`
   }
-  return `${item.paperCount || 0} papers - ${item.totalRatingCount || 0} ratings`
+  return `${item.paperCount || 0} evaluated papers · ${item.totalRatingCount || 0} ratings`
 }
 const formatScore = (value) => Number(value || 0).toFixed(1)
 </script>

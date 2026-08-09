@@ -912,3 +912,43 @@ MVP 不实现复杂语义搜索、向量检索和知识库问答。这些能力�
 - Admin 可以查看 paper list 和 screening status。
 
 完成以上能力后，平台就具备“论文发布 + 评价打分 + 排名”的最小可演示样品。
+
+## 14. Three-System Local Integration
+
+The current local integration combines three team deliverables without duplicating identity or paper records:
+
+```text
+OpenIsle
+  -> registration, login, navigation, submission, screening, and public paper pages
+
+Literature knowledge service
+  -> online metadata collection, open-PDF acquisition, parsing, and structured knowledge extraction
+
+Scholar衡 evaluation model
+  -> six-dimensional human ratings, score snapshots, evaluated-paper rankings, and scholar rankings
+```
+
+Integration boundary:
+
+- Existing-literature metadata and extracted knowledge remain authoritative in the literature service.
+- OpenIsle proxies public literature reads and stores registered-user rating records in its own MySQL database.
+- Ratings refer to the stable external `literaturePaperId`; PDF/full-text data is not duplicated into OpenIsle.
+- The active ranking page reads `LiteratureScoreSnapshot`, not the legacy submitted-paper score snapshot.
+- Paper and author ranking responses merge rating snapshots with current literature metadata at read time.
+- The original Scholar衡 credit, task matching, appeals, and governance screens remain prototype concepts until
+  their identity, moderation, conflict-of-interest, and audit rules are implemented.
+
+Active APIs:
+
+```text
+POST /api/literature/papers/{paperId}/ratings
+GET  /api/literature/papers/{paperId}/ratings
+GET  /api/literature/papers/{paperId}/ratings/me
+GET  /api/literature/papers/{paperId}/score
+GET  /api/literature/rankings/papers
+GET  /api/literature/rankings/authors
+```
+
+Browser draft and human-rating APIs remain user-interactive authenticated workflows and are not exposed as MCP
+tools. Public finalized literature and ranking reads can be considered for MCP only after a stable cross-system
+resource contract is approved.

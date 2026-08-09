@@ -146,6 +146,26 @@ The persistence boundary is strict:
 
 Saving or autosaving a partial submission must not create `Post` or `PaperProfile` rows.
 
+### 2.9 LiteratureRating and LiteratureScoreSnapshot
+
+`LiteratureRating` is the human evaluation record for papers imported into the existing-literature
+knowledge corpus. It is deliberately separate from `PaperRating`, which belongs to papers submitted
+through OpenIsle.
+
+Current integrated-product rule:
+
+- The public can browse imported literature metadata, extracted knowledge, aggregated scores, and rankings.
+- Only registered OpenIsle users can create or update a literature rating.
+- One user has one active rating per imported literature paper.
+- A literature rating requires six 1-5 scores: originality, methodological rigor, evidence sufficiency,
+  scholarly significance, reproducibility, and clarity.
+- The rater must confirm that they read the paper and provide a 20-500 character assessment.
+- `LiteratureScoreSnapshot` is recalculated synchronously after each create or update.
+- The old four-dimensional submitted-paper rating UI is paused while the Scholar衡 evaluation model is
+  validated on the existing literature corpus.
+- Imported author names are not yet reliably linked to OpenIsle accounts. Author self-rating prevention for
+  imported literature requires a future verified author-identity link and must not be inferred from names alone.
+
 ## 3. User Roles
 
 ### 3.1 Guest
@@ -419,6 +439,9 @@ A paper can enter rankings only when:
 Withdrawn and retracted papers must not appear in active rankings.
 
 ## 7. Rating Rules
+
+This section governs `PaperRating` for finalized OpenIsle submissions. The active integrated Scholar衡 pilot
+uses the separate existing-literature rules in section 2.9; the submitted-paper rating UI is currently paused.
 
 ### 7.1 Who Can Rate
 
