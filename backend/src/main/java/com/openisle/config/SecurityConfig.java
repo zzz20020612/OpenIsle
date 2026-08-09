@@ -237,6 +237,7 @@ public class SecurityConfig {
           "GET".equalsIgnoreCase(request.getMethod()) &&
           (uri.startsWith("/api/posts") ||
             uri.startsWith("/api/papers") ||
+            uri.startsWith("/api/literature") ||
             uri.startsWith("/api/experts") ||
             uri.startsWith("/api/comments") ||
             uri.startsWith("/api/categories") ||
