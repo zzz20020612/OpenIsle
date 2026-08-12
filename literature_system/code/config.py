@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 ROOT_DIR = Path(__file__).resolve().parents[1]
 CONFIG_DIR = ROOT_DIR / "config"
 load_dotenv(CONFIG_DIR / ".env")
+# In the integrated OpenIsle workspace, reuse the same private environment file
+# as the AI screening service. A literature-specific config file still wins.
+load_dotenv(ROOT_DIR.parent / ".env")
 
 # 前端与 API 服务配置
 # 留空或未设置时回退到 ROOT_DIR/frontend，避免不同 cwd 下相对路径解析失败

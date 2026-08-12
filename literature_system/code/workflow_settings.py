@@ -163,7 +163,9 @@ def apply_to_config() -> None:
     settings = get_settings()
     config.SEMANTIC_SCHOLAR_API_KEY = settings.get("semantic_scholar_api_key", "")
     config.MINERU_API_KEY = settings.get("mineru_api_key", "")
-    config.LLM_API_KEY = settings.get("llm_api_key", "")
+    # An empty historical database value must not hide the shared OpenIsle
+    # screening credential loaded from the environment.
+    config.LLM_API_KEY = settings.get("llm_api_key") or config.LLM_API_KEY
     config.EMBEDDING_API_KEY = settings.get("embedding_api_key", "")
     config.WOS_API_KEY = settings.get("wos_api_key", "")
     config.SCOPUS_API_KEYS = [k.strip() for k in settings.get("scopus_api_keys", "").split(",") if k.strip()]
@@ -182,8 +184,8 @@ def apply_to_config() -> None:
         "marker_cpu": int(settings.get("pdf_parser_marker_cpu", 4)),
     }
 
-    config.LLM_BASE_URL = settings.get("llm_base_url", config.LLM_BASE_URL)
-    config.LLM_MODEL = settings.get("llm_model", config.LLM_MODEL)
+    config.LLM_BASE_URL = settings.get("llm_base_url") or config.LLM_BASE_URL
+    config.LLM_MODEL = settings.get("llm_model") or config.LLM_MODEL
     config.LLM_MAX_TOKENS = int(settings.get("llm_max_tokens", config.LLM_MAX_TOKENS))
     config.LLM_TEMPERATURE = float(settings.get("llm_temperature", config.LLM_TEMPERATURE))
     config.LLM_REQUEST_TIMEOUT = int(settings.get("llm_request_timeout", config.LLM_REQUEST_TIMEOUT))
