@@ -114,7 +114,7 @@ public class PaperFilePolicy {
 
   private Set<String> allowedExtensions(PaperFileRole role) {
     return switch (role) {
-      case MANUSCRIPT -> Set.of("docx");
+      case MANUSCRIPT -> Set.of("docx", "pdf");
       case COVER_LETTER -> DOCUMENTS;
       case TOC_GRAPHIC, FIGURE -> IMAGES;
       case PDF_VERSION -> Set.of("pdf");

@@ -33,6 +33,7 @@
     "nanoid": "^5.1.5",
     "nprogress": "^0.2.0",
     "nuxt": "latest",
+    "pdfjs-dist": "^5.7.284",
     "sanitize-html": "^2.17.0",
     "sockjs-client": "^1.6.1",
     "vditor": "^3.11.1",

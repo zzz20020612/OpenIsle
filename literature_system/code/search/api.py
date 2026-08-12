@@ -88,6 +88,20 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
     # 类级别共享 SearchEngine 实例
     engine: SearchEngine = None
 
+    def _internal_authorized(self) -> bool:
+        expected = os.getenv("OPENISLE_INTERNAL_TOKEN", "").strip()
+        supplied = self.headers.get("X-OpenIsle-Internal-Token", "").strip()
+        return bool(expected) and supplied == expected
+
+    def _require_internal(self) -> bool:
+        if self._internal_authorized():
+            return True
+        self._send_json(403, {
+            "code": "OPENISLE_ADMIN_REQUIRED",
+            "message": "Use the authenticated OpenIsle administration API.",
+        })
+        return False
+
     def _send_json(self, status: int, data: Any):
         body = json.dumps(data, ensure_ascii=False, default=str).encode("utf-8")
         self.send_response(status)
@@ -95,7 +109,7 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-OpenIsle-Internal-Token")
         self.end_headers()
         self.wfile.write(body)
 
@@ -162,6 +176,14 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
 
             if path == "/health":
                 self._send_json(200, {"status": "ok", "service": "search_api"})
+                return
+
+            protected_gets = {
+                "/stats", "/jobs", "/jobs/stats", "/workflow/settings",
+                "/quality/stats", "/quality/low_quality", "/quality/prompt_compare",
+                "/graph/diagnostics",
+            }
+            if (path in protected_gets or path.startswith("/progress/")) and not self._require_internal():
                 return
 
             if path == "/stats":
@@ -239,6 +261,10 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                 return
 
             if path.startswith("/paper/"):
+                pdf_match = re.fullmatch(r"/paper/([1-9][0-9]*)/pdf", path)
+                if pdf_match:
+                    self._serve_paper_pdf(int(pdf_match.group(1)))
+                    return
                 result = self._handle_paper_path(path, qs)
                 if result is not None:
                     self._send_json(result["status"], result["data"])
@@ -266,7 +292,13 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                 return
 
             if path == "/workflow/settings":
-                self._send_json(200, wf_settings.get_settings(mask_sensitive=True))
+                settings = wf_settings.get_settings(mask_sensitive=True)
+                for key in wf_settings.SENSITIVE_KEYS:
+                    settings.pop(key, None)
+                settings["embedding_api_key_configured"] = bool(config.EMBEDDING_API_KEY)
+                settings["llm_api_key_configured"] = bool(config.LLM_API_KEY)
+                settings["mineru_api_key_configured"] = bool(config.MINERU_API_KEY)
+                self._send_json(200, settings)
                 return
 
             if path == "/quality/stats":
@@ -297,9 +329,38 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
             LOGGER.exception("处理请求失败")
             self._send_error(500, f"内部错误: {e}")
 
+    def _serve_paper_pdf(self, paper_id: int):
+        from pdf.pipeline import get_pdf_path
+        cur = self.engine.conn.cursor()
+        cur.execute("SELECT doi FROM papers WHERE id = ?", (paper_id,))
+        row = cur.fetchone()
+        if not row:
+            self._send_error(404, "Paper not found")
+            return
+        target = get_pdf_path(paper_id, row["doi"])
+        if not target or not target.exists():
+            self._send_error(404, "An open PDF is not available for this paper")
+            return
+        root = Path(config.PDF_DOWNLOAD_DIR).resolve()
+        resolved = target.resolve()
+        if root != resolved and root not in resolved.parents:
+            self._send_error(403, "Invalid PDF path")
+            return
+        data = resolved.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/pdf")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Disposition", f'inline; filename="literature-{paper_id}.pdf"')
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_POST(self):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
+
+        if not self._require_internal():
+            return
 
         try:
             if path == "/rebuild":
@@ -405,6 +466,8 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                     return
                 updated = wf_settings.set_settings(data)
                 wf_settings.apply_to_config()
+                for key in wf_settings.SENSITIVE_KEYS:
+                    updated.pop(key, None)
                 self._send_json(200, {"status": "ok", "settings": updated})
                 return
 
@@ -850,6 +913,13 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
         return self.engine.aggregate(q, mode=mode)
 
     def _handle_vector_search(self, qs: Dict) -> Dict:
+        if not config.EMBEDDING_API_KEY:
+            return {
+                "available": False,
+                "code": "EMBEDDING_KEY_REQUIRED",
+                "message": "Semantic search is ready but EMBEDDING_API_KEY has not been configured.",
+                "results": [],
+            }
         q = (qs.get("q", [""])[0] or "").strip()
         if not q:
             return {"error": "缺少 q 参数"}
@@ -924,6 +994,13 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
         }
 
     def _handle_hybrid_search(self, qs: Dict) -> Dict:
+        if not config.EMBEDDING_API_KEY:
+            return {
+                "available": False,
+                "code": "EMBEDDING_KEY_REQUIRED",
+                "message": "Hybrid search is ready but EMBEDDING_API_KEY has not been configured. Use keyword search for now.",
+                "results": [],
+            }
         q = (qs.get("q", [""])[0] or "").strip()
         if not q:
             return {"error": "缺少 q 参数"}
@@ -2222,7 +2299,7 @@ def _parse_task(proxy, source: str, limit: int, force: bool, paper_ids=None) -> 
     proxy.set_progress(5, "查找待解析论文...")
     wf_settings.apply_to_config()
     from parse_new_papers import get_new_papers_with_oa
-    from pdf.scheduler import process_paper
+    from pdf.scheduler import create_job, process_paper, update_job
     from pdf.downloader import download_pdf_with_fallback
 
     papers = get_new_papers_with_oa(
@@ -2248,6 +2325,13 @@ def _parse_task(proxy, source: str, limit: int, force: bool, paper_ids=None) -> 
         )
         if not ok:
             LOGGER.warning("PDF download failed for paper_id=%s: %s", p['id'], err)
+            job_id = create_job(p['id'], stage="parse")
+            update_job(
+                job_id,
+                status="permanent_failed",
+                error_class="pdf_download_failed",
+                error_msg=str(err or "Unable to download an open PDF")[:500],
+            )
             failed += 1
             continue
         try:

@@ -617,7 +617,7 @@ Required fields before final submission:
 - Keywords.
 - Subject area.
 - Paper type.
-- Exactly one DOCX manuscript.
+- Exactly one manuscript in DOCX or PDF format. Text-based PDFs can be imported into the author editor; scanned/image-only PDFs require manual content entry or a replacement file.
 - Exactly one cover letter.
 - Exactly one TOC graphic.
 - At least one author.

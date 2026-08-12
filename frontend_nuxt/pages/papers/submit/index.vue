@@ -281,7 +281,7 @@
                 <div class="article-content-launch">
                   <div>
                     <strong>{{ articleStatus === 'READY' ? 'Online article ready' : 'Prepare the online article' }}</strong>
-                    <span>{{ articleStatus === 'READY' ? 'The article preview is ready for final submission review.' : 'The DOCX remains archived, while this structured version becomes the reader-facing article.' }}</span>
+                    <span>{{ articleStatus === 'READY' ? 'The article preview is ready for final submission review.' : 'The source manuscript remains archived, while this structured version becomes the reader-facing article.' }}</span>
                   </div>
                   <button class="submission-secondary-button" type="button" @click="openArticleEditor">
                     {{ articleStatus === 'READY' ? 'Edit Article' : 'Open Article Editor' }}
@@ -561,6 +561,7 @@ const pendingExitPath = ref('')
 const exitChoiceAction = ref('')
 const exitChoiceError = ref('')
 let allowNavigation = false
+let draftQuerySync = Promise.resolve()
 
 const {
   draft,
@@ -745,7 +746,7 @@ watch(
   () => draft.value?.id,
   (draftId) => {
     if (!draftId || String(route.query.draft || '') === String(draftId)) return
-    void router.replace({ query: { draft: draftId } })
+    draftQuerySync = router.replace({ query: { draft: draftId } }).catch(() => {})
   },
 )
 
@@ -946,6 +947,8 @@ const openArticleEditor = async () => {
   try {
     await ensureDraft()
     await flush()
+    await nextTick()
+    await draftQuerySync
     await router.push(`/papers/submit/${draft.value.id}/content`)
   } catch (error) {
     lastError.value = error?.data?.error || error?.message || 'Unable to open the article editor.'

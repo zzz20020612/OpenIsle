@@ -12,6 +12,7 @@
         </div>
         <div class="literature-header-actions">
           <NuxtLink class="paper-button" to="/papers">Submission papers</NuxtLink>
+          <NuxtLink class="paper-button" to="/literature/explore">Advanced exploration</NuxtLink>
           <NuxtLink class="paper-button primary" to="/literature/workflow">Knowledge workflow</NuxtLink>
         </div>
       </header>

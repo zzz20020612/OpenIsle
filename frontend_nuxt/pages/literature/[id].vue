@@ -29,6 +29,8 @@
             <a v-if="paper.doi" class="paper-pill literature-doi" :href="doiUrl" target="_blank" rel="noopener">
               DOI {{ paper.doi }}
             </a>
+            <a class="paper-pill literature-doi" :href="pdfViewUrl" target="_blank" rel="noopener">View open PDF</a>
+            <button v-if="authState.loggedIn" class="paper-pill literature-doi" type="button" @click="downloadPdf">Download PDF</button>
           </div>
         </header>
 
@@ -202,9 +204,10 @@
 
 <script setup>
 import '~/assets/paper-platform.css'
-import { authState } from '~/utils/auth'
+import { authState, getToken } from '~/utils/auth'
 
 const route = useRoute()
+const runtimeConfig = useRuntimeConfig()
 const {
   getLiterature,
   getKnowledge,
@@ -272,6 +275,15 @@ const publicationYear = computed(() => {
   return date ? String(date).slice(0, 4) : ''
 })
 const doiUrl = computed(() => `https://doi.org/${paper.value?.doi || ''}`)
+const pdfViewUrl = computed(() => `${runtimeConfig.public.apiBaseUrl}/api/literature/papers/${paperId.value}/pdf`)
+const downloadPdf = async () => {
+  const response = await fetch(`${runtimeConfig.public.apiBaseUrl}/api/literature/papers/${paperId.value}/pdf/download`, { headers: { Authorization: `Bearer ${getToken()}` } })
+  if (!response.ok) return window.alert('The PDF is not available for download.')
+  const url = URL.createObjectURL(await response.blob())
+  const link = document.createElement('a')
+  link.href = url; link.download = `literature-${paperId.value}.pdf`; link.click()
+  URL.revokeObjectURL(url)
+}
 const qualityLabel = computed(() => {
   const score = Number(knowledge.value?.quality_score)
   if (!Number.isFinite(score)) return 'Not assessed'

@@ -47,6 +47,9 @@ public class SecurityConfig {
   @Value("${app.website-url}")
   private String websiteUrl;
 
+  @Value("${app.visits.enabled:true}")
+  private boolean visitsEnabled;
+
   private final RedisTemplate redisTemplate;
 
   @Bean
@@ -143,6 +146,10 @@ public class SecurityConfig {
           .permitAll()
           .requestMatchers(HttpMethod.GET, "/api/papers/**")
           .permitAll()
+          .requestMatchers(HttpMethod.GET, "/api/literature/papers/*/pdf/download")
+          .authenticated()
+          .requestMatchers("/api/literature/admin/**")
+          .hasAuthority("ADMIN")
           .requestMatchers(HttpMethod.GET, "/api/literature/**")
           .permitAll()
           .requestMatchers(HttpMethod.GET, "/api/experts/**")
@@ -306,13 +313,18 @@ public class SecurityConfig {
         var auth =
           org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         if (
+          visitsEnabled &&
           auth != null &&
           auth.isAuthenticated() &&
           !(auth instanceof
               org.springframework.security.authentication.AnonymousAuthenticationToken)
         ) {
           String key = CachingConfig.VISIT_CACHE_NAME + ":" + LocalDate.now();
-          redisTemplate.opsForSet().add(key, auth.getName());
+          try {
+            redisTemplate.opsForSet().add(key, auth.getName());
+          } catch (RuntimeException ignored) {
+            // Analytics must not make authenticated workflows unavailable.
+          }
         }
         filterChain.doFilter(request, response);
       }

@@ -20,9 +20,9 @@
         <div class="article-workspace-heading">
           <div><strong>Structured manuscript</strong><span>Changes are saved to your private submission draft.</span></div>
           <div class="article-import-actions">
-            <label class="article-command-button" :class="{ disabled: importingDocx }">
-              <UploadOne :size="16" /> {{ importingDocx ? 'Importing...' : 'Import DOCX' }}
-              <input type="file" accept=".docx" :disabled="importingDocx" @change="handleDocxImport" />
+            <label class="article-command-button" :class="{ disabled: importingManuscript }">
+              <UploadOne :size="16" /> {{ importingManuscript ? 'Importing...' : 'Import DOCX or PDF' }}
+              <input type="file" accept=".docx,.pdf" :disabled="importingManuscript" @change="handleManuscriptImport" />
             </label>
             <label class="article-command-button secondary">
               <UploadOne :size="16" /> Upload figure
@@ -30,7 +30,7 @@
             </label>
           </div>
         </div>
-        <p v-if="docxProgress" class="docx-import-status">{{ docxProgress }}</p>
+        <p v-if="importProgress" class="docx-import-status">{{ importProgress }}</p>
         <ArticleBlockEditor
           :section="selectedSection"
           :figure-files="figureFiles"
@@ -72,6 +72,7 @@ const {
 } = usePaperArticleDraft(draftId)
 const submission = usePaperSubmissionDraft()
 const docxImport = useDocxArticleImport()
+const pdfImport = usePdfArticleImport()
 const form = submission.form
 const selectedKey = ref('')
 
@@ -79,6 +80,8 @@ const selectedSection = computed(() => article.value.sections.find((section) => 
 const figureFiles = computed(() => submission.files.value.filter((file) => file.role === 'FIGURE' && file.uploadStatus === 'UPLOADED'))
 const importingDocx = docxImport.importing
 const docxProgress = docxImport.progress
+const importingManuscript = computed(() => importingDocx.value || pdfImport.importing.value)
+const importProgress = computed(() => pdfImport.progress.value || docxProgress.value)
 let importedFigureIds = []
 
 onMounted(async () => {
@@ -153,15 +156,19 @@ const uploadImportedFigure = async (file) => {
     throw cause
   }
 }
-const handleDocxImport = async (event) => {
+const handleManuscriptImport = async (event) => {
   const file = event.target.files?.[0]
   event.target.value = ''
   if (!file) return
-  if (article.value.sections.length && !window.confirm('Importing the DOCX will replace the current online article. Continue?')) return
+  if (article.value.sections.length && !window.confirm('Importing the manuscript will replace the current online article. Continue?')) return
   error.value = ''
   importedFigureIds = []
   try {
-    const imported = await docxImport.importDocx(file, uploadImportedFigure)
+    pdfImport.progress.value = ''
+    docxImport.progress.value = ''
+    const imported = file.name.toLowerCase().endsWith('.pdf')
+      ? await pdfImport.importPdf(file)
+      : await docxImport.importDocx(file, uploadImportedFigure)
     article.value.sections = imported.sections
     selectedKey.value = imported.sections[0]?.key || ''
     scheduleSave()
@@ -170,7 +177,7 @@ const handleDocxImport = async (event) => {
   } catch (cause) {
     const failedCleanupIds = await cleanupImportedDraftFiles(importedFigureIds, submission.removeFile)
     importedFigureIds = []
-    const message = cause?.data?.error || cause?.message || 'Unable to import the DOCX manuscript.'
+    const message = cause?.data?.error || cause?.message || 'Unable to import the manuscript.'
     error.value = failedCleanupIds.length
       ? `${message} Some imported figure files could not be removed; review the Files section before submitting.`
       : `${message} The existing article was kept unchanged.`

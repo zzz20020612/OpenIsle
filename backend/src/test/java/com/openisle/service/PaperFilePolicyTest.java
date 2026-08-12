@@ -16,6 +16,7 @@ class PaperFilePolicyTest {
   @Test
   void acceptsRequiredSubmissionFileTypes() {
     assertDoesNotThrow(() -> policy.validate(request("paper.docx", 1024, PaperFileRole.MANUSCRIPT)));
+    assertDoesNotThrow(() -> policy.validate(request("paper.pdf", 1024, PaperFileRole.MANUSCRIPT)));
     assertDoesNotThrow(() -> policy.validate(request("letter.pdf", 1024, PaperFileRole.COVER_LETTER)));
     assertDoesNotThrow(() -> policy.validate(request("toc.png", 1024, PaperFileRole.TOC_GRAPHIC)));
   }
@@ -24,7 +25,7 @@ class PaperFilePolicyTest {
   void rejectsInvalidManuscriptAndOversizedTocGraphic() {
     assertThrows(
       IllegalArgumentException.class,
-      () -> policy.validate(request("paper.pdf", 1024, PaperFileRole.MANUSCRIPT))
+      () -> policy.validate(request("paper.odt", 1024, PaperFileRole.MANUSCRIPT))
     );
     assertThrows(
       IllegalArgumentException.class,

@@ -149,6 +149,7 @@ services:
       JAVA_OPTS: "-Duser.timezone=Asia/Shanghai"
       AI_SCREENING_SERVICE_URL: http://ai-screening:${AI_SCREENING_PORT:-8090}
       LITERATURE_API_BASE_URL: http://literature-system:8088
+      LITERATURE_INTERNAL_TOKEN: ${LITERATURE_INTERNAL_TOKEN:-local-openisle-literature-bridge}
     ports:
       - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
     volumes:
@@ -196,6 +197,11 @@ services:
       MINERU_API_KEY: ${MINERU_API_KEY:-}
       CROSSREF_ARTICLE_TYPES_FILTER: ${CROSSREF_ARTICLE_TYPES_FILTER:-journal-article}
       UNPAYWALL_EMAIL: ${UNPAYWALL_EMAIL:-adminmail@openisle.com}
+      OPENISLE_INTERNAL_TOKEN: ${LITERATURE_INTERNAL_TOKEN:-local-openisle-literature-bridge}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-https://api.siliconflow.cn/v1}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-Qwen/Qwen3-Embedding-4B}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-2560}
     ports:
       - "${LITERATURE_PORT:-8088}:8088"
     volumes:

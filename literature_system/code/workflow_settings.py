@@ -155,7 +155,7 @@ def set_settings(updates: Dict[str, Any], conn=None) -> Dict[str, Any]:
     conn.commit()
     if close_conn:
         conn.close()
-    return get_settings()
+    return get_settings(mask_sensitive=True)
 
 
 def apply_to_config() -> None:

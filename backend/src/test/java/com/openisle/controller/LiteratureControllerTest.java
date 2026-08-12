@@ -11,6 +11,7 @@ import com.openisle.config.SecurityConfig;
 import com.openisle.repository.UserRepository;
 import com.openisle.service.JwtService;
 import com.openisle.service.LiteratureIntegrationService;
+import com.openisle.service.LiteratureAdminAuditService;
 import com.openisle.service.LiteratureIntegrationService.LiteratureProxyResponse;
 import com.openisle.service.LiteratureRatingService;
 import com.openisle.service.UserVisitService;
@@ -37,6 +38,9 @@ class LiteratureControllerTest {
 
   @MockBean
   private LiteratureRatingService literatureRatingService;
+
+  @MockBean
+  private LiteratureAdminAuditService literatureAdminAuditService;
 
   @MockBean
   private JwtService jwtService;

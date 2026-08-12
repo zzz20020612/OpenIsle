@@ -26,8 +26,8 @@ export const REQUIRED_FILE_ROWS = [
     role: 'MANUSCRIPT',
     required: true,
     label: 'Manuscript File',
-    description: 'The editable manuscript source. DOCX is required for this release.',
-    accept: '.docx',
+    description: 'The manuscript source. Upload one DOCX or text-based PDF; extracted content remains editable before submission.',
+    accept: '.docx,.pdf',
     visibility: 'PUBLIC',
   },
   {

@@ -553,7 +553,7 @@ OpenIsle 已经包含 SpringDoc/OpenAPI 相关依赖。MVP 开发阶段需要把
 - Keywords
 - Subject Area
 - Paper Type
-- Exactly one DOCX Manuscript
+- Exactly one DOCX or PDF Manuscript
 - Exactly one Cover Letter
 - Exactly one TOC Graphic
 - Authors with Email, Given Name, Family Name, and Author Role
@@ -572,7 +572,7 @@ Final review 必须写入 `correspondingAuthorContactConfirmed = true`。Finaliz
 内容：
 
 - Paper metadata
-- Structured public metadata and downloadable DOCX manuscript
+- Structured public metadata and downloadable DOCX/PDF manuscript
 - Score panel
 - Rating distribution
 - Reader reviews
@@ -629,7 +629,7 @@ public interface AiScreeningClient {
 - Abstract
 - Keywords
 - Subject Area
-- DOCX manuscript file reference or extracted text when available
+- DOCX/PDF manuscript file reference or extracted text when available
 - Authors
 - Institutions
 
@@ -693,7 +693,7 @@ PaperProfile becomes NEEDS_REVISION or REJECTED
 创建规则：
 
 - `Post.title` 同步论文标题。
-- `Post.content` 存储由正式元数据生成的公开可读正文或结构化摘要；当前阶段不解析 DOCX 全文。
+- `Post.content` 存储由正式元数据生成的公开可读正文或结构化摘要；作者可将 DOCX 或文本型 PDF 自动解析到结构化编辑器中，并在提交前校对。
 - `PaperProfile` 存储摘要、关键词、主题、类型、发布状态和初筛状态。
 - `PaperAuthor` 与 `PaperAuthorAffiliation` 存储作者顺序、多机构关系和 primary affiliation。
 - Normalized `PaperFile` rows 是 final file metadata、role、visibility 和 access control 的权威来源；legacy `PaperProfile` file summaries 仅用于兼容。

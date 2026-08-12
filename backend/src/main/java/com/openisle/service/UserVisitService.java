@@ -57,27 +57,30 @@ public class UserVisitService {
 
   public long countVisits(User user) {
     String username = user.getUsername();
-    // 如果缓存存在就返回
-    String key1 = CachingConfig.VISIT_CACHE_NAME + ":" + LocalDate.now() + ":count:" + username;
-    Integer cached = (Integer) redisTemplate.opsForValue().get(key1);
-    if (cached != null) {
-      return cached.longValue();
+    String countKey = CachingConfig.VISIT_CACHE_NAME + ":" + LocalDate.now() + ":count:" + username;
+    try {
+      Integer cached = (Integer) redisTemplate.opsForValue().get(countKey);
+      if (cached != null) {
+        return cached.longValue();
+      }
+
+      // Redis Set 检查今天是否访问
+      String todayKey = CachingConfig.VISIT_CACHE_NAME + ":" + LocalDate.now();
+      boolean todayVisited = Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(todayKey, username));
+
+      long visitCount = userVisitRepository.countByUser(user);
+      if (todayVisited) visitCount += 1;
+
+      LocalDateTime now = LocalDateTime.now();
+      LocalDateTime endOfDay = now.toLocalDate().atTime(23, 59, 59);
+      long secondsUntilEndOfDay = Duration.between(now, endOfDay).getSeconds();
+
+      // 写入缓存，设置 TTL，当天剩余时间
+      redisTemplate.opsForValue().set(countKey, visitCount, Duration.ofSeconds(secondsUntilEndOfDay));
+      return visitCount;
+    } catch (RuntimeException ignored) {
+      return userVisitRepository.countByUser(user);
     }
-
-    // Redis Set 检查今天是否访问
-    String todayKey = CachingConfig.VISIT_CACHE_NAME + ":" + LocalDate.now();
-    boolean todayVisited = redisTemplate.opsForSet().isMember(todayKey, username);
-
-    Long visitCount = userVisitRepository.countByUser(user);
-    if (todayVisited) visitCount += 1;
-
-    LocalDateTime now = LocalDateTime.now();
-    LocalDateTime endOfDay = now.toLocalDate().atTime(23, 59, 59);
-    long secondsUntilEndOfDay = Duration.between(now, endOfDay).getSeconds();
-
-    // 写入缓存，设置 TTL，当天剩余时间
-    redisTemplate.opsForValue().set(key1, visitCount, Duration.ofSeconds(secondsUntilEndOfDay));
-    return visitCount;
   }
 
   public long countDau(LocalDate date) {

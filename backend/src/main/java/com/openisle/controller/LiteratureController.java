@@ -7,20 +7,26 @@ import com.openisle.dto.LiteratureRatingRequest;
 import com.openisle.dto.LiteratureRatingResponse;
 import com.openisle.dto.LiteratureScoreSnapshotDto;
 import com.openisle.service.LiteratureIntegrationService;
+import com.openisle.service.LiteratureAdminAuditService;
 import com.openisle.service.LiteratureIntegrationService.LiteratureProxyResponse;
+import com.openisle.service.LiteratureIntegrationService.LiteratureFileResponse;
 import com.openisle.service.LiteratureRatingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,6 +38,7 @@ public class LiteratureController {
 
   private final LiteratureIntegrationService literatureService;
   private final LiteratureRatingService literatureRatingService;
+  private final LiteratureAdminAuditService literatureAdminAuditService;
 
   @GetMapping("/health")
   @Operation(summary = "Check literature service availability")
@@ -72,6 +79,42 @@ public class LiteratureController {
   @Operation(summary = "Get extracted data points")
   public ResponseEntity<JsonNode> getDataPoints(@PathVariable long paperId) {
     return response(literatureService.getDataPoints(paperId));
+  }
+
+  @GetMapping("/papers/{paperId}/pdf")
+  @Operation(summary = "View an available open literature PDF")
+  public ResponseEntity<byte[]> viewPdf(@PathVariable long paperId) {
+    return pdfResponse(literatureService.getPdf(paperId), paperId, false);
+  }
+
+  @GetMapping("/papers/{paperId}/pdf/download")
+  @SecurityRequirement(name = "JWT")
+  @Operation(summary = "Download an available literature PDF", description = "Registration is required.")
+  public ResponseEntity<byte[]> downloadPdf(@PathVariable long paperId) {
+    return pdfResponse(literatureService.getPdf(paperId), paperId, true);
+  }
+
+  @RequestMapping(value = "/explore/**", method = RequestMethod.GET)
+  @Operation(summary = "Use the complete public literature discovery API")
+  public ResponseEntity<JsonNode> explore(HttpServletRequest request) {
+    String path = suffix(request.getRequestURI(), "/api/literature/explore");
+    return response(literatureService.publicGet(path, request.getQueryString()));
+  }
+
+  @RequestMapping(value = "/admin/**", method = { RequestMethod.GET, RequestMethod.POST })
+  @SecurityRequirement(name = "JWT")
+  @Operation(summary = "Run an audited literature processing operation", description = "Administrator only.")
+  public ResponseEntity<JsonNode> administer(
+    @RequestBody(required = false) JsonNode body,
+    Authentication authentication,
+    HttpServletRequest request
+  ) {
+    String path = suffix(request.getRequestURI(), "/api/literature/admin");
+    LiteratureProxyResponse result = literatureService.admin(request.getMethod(), path, request.getQueryString(), body);
+    literatureAdminAuditService.record(
+      authentication.getName(), request.getMethod(), path, body, result.status().value(), request.getRemoteAddr()
+    );
+    return response(result);
   }
 
   @PostMapping("/papers/{paperId}/ratings")
@@ -121,5 +164,20 @@ public class LiteratureController {
 
   private ResponseEntity<JsonNode> response(LiteratureProxyResponse response) {
     return ResponseEntity.status(response.status()).body(response.body());
+  }
+
+  private String suffix(String uri, String marker) {
+    int index = uri.indexOf(marker);
+    return index < 0 ? "/" : uri.substring(index + marker.length());
+  }
+
+  private ResponseEntity<byte[]> pdfResponse(LiteratureFileResponse result, long paperId, boolean download) {
+    MediaType type = result.contentType() == null ? MediaType.APPLICATION_PDF : result.contentType();
+    ResponseEntity.BodyBuilder response = ResponseEntity.status(result.status()).contentType(type);
+    if (result.status().is2xxSuccessful()) {
+      response.header(HttpHeaders.CONTENT_DISPOSITION, (download ? "attachment" : "inline") + "; filename=\"literature-" + paperId + ".pdf\"");
+      response.header("X-Content-Type-Options", "nosniff");
+    }
+    return response.body(result.body());
   }
 }

@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -86,14 +87,14 @@ public class PaperSubmissionValidator {
     uploadedFiles
       .stream()
       .filter(file -> file.getRole() == PaperFileRole.MANUSCRIPT)
-      .filter(file -> !extension(file.getOriginalFileName()).equals("docx"))
+      .filter(file -> !Set.of("docx", "pdf").contains(extension(file.getOriginalFileName())))
       .forEach(file ->
         add(
           issues,
           "file-upload",
           "files." + file.getId(),
-          "MANUSCRIPT_MUST_BE_DOCX",
-          "The manuscript file must be a DOCX document."
+          "MANUSCRIPT_FORMAT_UNSUPPORTED",
+          "The manuscript file must be a DOCX or PDF document."
         )
       );
 

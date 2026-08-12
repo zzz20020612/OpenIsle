@@ -5,12 +5,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -31,11 +36,26 @@ public class LiteratureIntegrationService {
   private final String baseUrl;
   private final RestTemplate restTemplate;
   private final ObjectMapper objectMapper;
+  private final String internalToken;
+
+  private static final Set<String> PUBLIC_PATHS = Set.of(
+    "/search", "/aggregate", "/vector/search", "/vector/stats", "/hybrid/search",
+    "/graph", "/papers/list", "/data_points/list", "/knowledge/list", "/methods/list",
+    "/timeline", "/compare/metric", "/authors/list", "/institution/network"
+  );
+
+  private static final Set<String> ADMIN_PATHS = Set.of(
+    "/stats", "/graph/diagnostics", "/jobs", "/jobs/stats", "/workflow/settings",
+    "/quality/stats", "/quality/low_quality", "/quality/prompt_compare", "/rebuild",
+    "/sync", "/collect", "/parse", "/extract", "/jobs/archive", "/retry",
+    "/quality/re_extract", "/authors/merge", "/test/connection", "/pipeline/run"
+  );
 
   @Autowired
   public LiteratureIntegrationService(
     @Value("${literature.api-base-url:http://localhost:8088}") String baseUrl,
     @Value("${literature.timeout-seconds:10}") int timeoutSeconds,
+    @Value("${literature.internal-token:}") String internalToken,
     RestTemplateBuilder restTemplateBuilder,
     ObjectMapper objectMapper
   ) {
@@ -45,14 +65,20 @@ public class LiteratureIntegrationService {
         .setConnectTimeout(Duration.ofSeconds(Math.max(1, timeoutSeconds)))
         .setReadTimeout(Duration.ofSeconds(Math.max(1, timeoutSeconds)))
         .build(),
-      objectMapper
+      objectMapper,
+      internalToken
     );
   }
 
   LiteratureIntegrationService(String baseUrl, RestTemplate restTemplate, ObjectMapper objectMapper) {
+    this(baseUrl, restTemplate, objectMapper, "");
+  }
+
+  LiteratureIntegrationService(String baseUrl, RestTemplate restTemplate, ObjectMapper objectMapper, String internalToken) {
     this.baseUrl = baseUrl.replaceAll("/+$", "");
     this.restTemplate = restTemplate;
     this.objectMapper = objectMapper;
+    this.internalToken = internalToken == null ? "" : internalToken.strip();
   }
 
   public LiteratureProxyResponse health() {
@@ -95,6 +121,58 @@ public class LiteratureIntegrationService {
     return get(paperPath(paperId, "/data_points"));
   }
 
+  public LiteratureFileResponse getPdf(long paperId) {
+    if (paperId <= 0) throw new IllegalArgumentException("paperId must be positive");
+    try {
+      ResponseEntity<byte[]> response = restTemplate.getForEntity(URI.create(baseUrl + "/paper/" + paperId + "/pdf"), byte[].class);
+      return new LiteratureFileResponse(response.getStatusCode(), response.getBody(), response.getHeaders().getContentType());
+    } catch (HttpStatusCodeException ex) {
+      return new LiteratureFileResponse(ex.getStatusCode(), ex.getResponseBodyAsByteArray(), MediaType.APPLICATION_JSON);
+    } catch (ResourceAccessException ex) {
+      return new LiteratureFileResponse(HttpStatus.SERVICE_UNAVAILABLE, new byte[0], MediaType.APPLICATION_JSON);
+    }
+  }
+
+  public LiteratureProxyResponse publicGet(String path, String rawQuery) {
+    String safePath = normalizePath(path);
+    boolean paperPath = safePath.matches("/paper/[1-9][0-9]*(?:/(?:similar|knowledge|methods|data_points|citations|authors))?");
+    boolean authorPath = safePath.matches("/author/[1-9][0-9]*(?:/(?:papers|network))?");
+    if (!PUBLIC_PATHS.contains(safePath) && !paperPath && !authorPath) {
+      return error(HttpStatus.NOT_FOUND, "LITERATURE_ROUTE_NOT_FOUND", "This literature function is not available on the public API.");
+    }
+    return getAbsolute(withQuery(baseUrl + safePath, rawQuery));
+  }
+
+  public LiteratureProxyResponse admin(String method, String path, String rawQuery, JsonNode body) {
+    String safePath = normalizePath(path);
+    boolean progressPath = safePath.matches("/progress/[A-Za-z0-9_-]+");
+    if (!ADMIN_PATHS.contains(safePath) && !progressPath) {
+      return error(HttpStatus.NOT_FOUND, "LITERATURE_ADMIN_ROUTE_NOT_FOUND", "Unknown literature administration operation.");
+    }
+    if (internalToken.isBlank()) {
+      return error(HttpStatus.SERVICE_UNAVAILABLE, "LITERATURE_ADMIN_NOT_CONFIGURED", "The literature administration bridge is not configured.");
+    }
+    HttpMethod httpMethod = "POST".equalsIgnoreCase(method) ? HttpMethod.POST : HttpMethod.GET;
+    HttpHeaders headers = new HttpHeaders();
+    headers.set("X-OpenIsle-Internal-Token", internalToken);
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    return exchange(withQuery(baseUrl + safePath, rawQuery), httpMethod, new HttpEntity<>(body, headers));
+  }
+
+  private String normalizePath(String path) {
+    String result = "/" + (path == null ? "" : path).replace('\\', '/').replaceAll("^/+|/+$", "");
+    if (result.contains("..") || !result.matches("/[A-Za-z0-9_/-]*")) throw new IllegalArgumentException("Invalid literature path");
+    return result;
+  }
+
+  private String withQuery(String url, String rawQuery) {
+    if (rawQuery == null || rawQuery.isBlank()) return url;
+    if (rawQuery.length() > 4000 || rawQuery.contains("#") || rawQuery.contains("\\r") || rawQuery.contains("\\n")) {
+      throw new IllegalArgumentException("Invalid literature query");
+    }
+    return url + "?" + rawQuery;
+  }
+
   private String paperPath(long paperId, String suffix) {
     if (paperId <= 0) {
       throw new IllegalArgumentException("paperId must be positive");
@@ -107,19 +185,18 @@ public class LiteratureIntegrationService {
   }
 
   private LiteratureProxyResponse getAbsolute(String url) {
+    return exchange(url, HttpMethod.GET, HttpEntity.EMPTY);
+  }
+
+  private LiteratureProxyResponse exchange(String url, HttpMethod method, HttpEntity<?> entity) {
     try {
-      ResponseEntity<JsonNode> response = restTemplate.getForEntity(URI.create(url), JsonNode.class);
+      ResponseEntity<JsonNode> response = restTemplate.exchange(URI.create(url), method, entity, JsonNode.class);
       JsonNode body = response.getBody() == null ? objectMapper.createObjectNode() : response.getBody();
       return new LiteratureProxyResponse(response.getStatusCode(), body);
     } catch (HttpStatusCodeException ex) {
-      if (ex.getStatusCode().value() == HttpStatus.NOT_FOUND.value()) {
-        return new LiteratureProxyResponse(HttpStatus.NOT_FOUND, parseErrorBody(ex));
-      }
-      return error(
-        HttpStatus.BAD_GATEWAY,
-        "LITERATURE_UPSTREAM_ERROR",
-        "The literature service returned an unexpected response."
-      );
+      HttpStatusCode status = ex.getStatusCode();
+      if (status.is4xxClientError()) return new LiteratureProxyResponse(status, parseErrorBody(ex));
+      return error(HttpStatus.BAD_GATEWAY, "LITERATURE_UPSTREAM_ERROR", "The literature service returned an unexpected response.");
     } catch (ResourceAccessException ex) {
       return error(
         HttpStatus.SERVICE_UNAVAILABLE,
@@ -158,4 +235,5 @@ public class LiteratureIntegrationService {
   }
 
   public record LiteratureProxyResponse(HttpStatusCode status, JsonNode body) {}
+  public record LiteratureFileResponse(HttpStatusCode status, byte[] body, MediaType contentType) {}
 }
