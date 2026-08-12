@@ -63,6 +63,32 @@ def record_extraction_status(
     """
     conn = get_connection(init_schema=False, row_factory=False)
     try:
+        if status != "running":
+            cur = conn.execute(
+                """UPDATE parse_jobs
+                   SET status = ?, retry_count = ?, error_class = ?, error_msg = ?,
+                       finished_at = ?, updated_at = ?
+                   WHERE id = (
+                     SELECT id FROM parse_jobs
+                     WHERE paper_id = ? AND stage = 'extract'
+                       AND parser_used = ? AND status = 'running'
+                     ORDER BY id DESC LIMIT 1
+                   )""",
+                (
+                    status,
+                    retry_count,
+                    error_class,
+                    error_msg,
+                    _iso_now(),
+                    _iso_now(),
+                    paper_id,
+                    extract_type,
+                ),
+            )
+            if cur.rowcount:
+                conn.commit()
+                return
+
         if status == "running" and parent_job_id is not None:
             conn.execute(
                 """INSERT INTO parse_jobs
@@ -165,6 +191,25 @@ def reset_stale_running_jobs(stale_seconds: float = 300) -> int:
     conn = get_connection(init_schema=False, row_factory=False)
     try:
         cur = conn.cursor()
+        # Older releases inserted a new terminal row instead of closing the
+        # running row. Reconcile those rows before applying the timeout rule.
+        cur.execute(
+            """UPDATE parse_jobs AS running
+               SET status = 'superseded', error_class = 'SupersededJob',
+                   error_msg = 'A newer terminal extraction record exists',
+                   finished_at = ?
+               WHERE running.stage = 'extract' AND running.status = 'running'
+                 AND EXISTS (
+                   SELECT 1 FROM parse_jobs AS terminal
+                   WHERE terminal.paper_id = running.paper_id
+                     AND terminal.stage = running.stage
+                     AND terminal.parser_used = running.parser_used
+                     AND terminal.id > running.id
+                     AND terminal.status IN ('done', 'failed', 'skipped')
+                 )""",
+            (_iso_now(),),
+        )
+        reconciled = cur.rowcount
         cur.execute(
             """UPDATE parse_jobs
                SET status = 'failed', error_class = 'StaleJob',
@@ -174,7 +219,7 @@ def reset_stale_running_jobs(stale_seconds: float = 300) -> int:
             (_iso_now(), cutoff),
         )
         conn.commit()
-        return cur.rowcount
+        return reconciled + cur.rowcount
     finally:
         conn.close()
 

@@ -7,6 +7,7 @@ from phase3.extractor import extract_all_in_one
 from phase3.embedder import embed_batch
 from phase3.job_tracker import get_papers_needing_extraction
 from phase3.llm_client import LLMClient
+import config
 from logger import get_logger
 
 logger = get_logger("extract_new_papers")
@@ -78,12 +79,15 @@ def main(force: bool = False):
     # 3.4 向量化：覆盖首轮论文 + 重试成功的论文
     all_pids = list(set(paper_ids) | set(retry_ids))
     print("\n--- 向量化 ---")
-    try:
-        embed_batch(all_pids)
-        print("  向量化: OK")
-    except Exception as e:
-        print(f"  向量化: FAIL - {e}")
-        errors.append(f"embed: {e}")
+    if not config.EMBEDDING_API_KEY:
+        print("  向量化: SKIPPED - EMBEDDING_API_KEY 未配置")
+    else:
+        try:
+            embed_batch(all_pids)
+            print("  向量化: OK")
+        except Exception as e:
+            print(f"  向量化: FAIL - {e}")
+            errors.append(f"embed: {e}")
 
     # 汇总
     print("\n" + "=" * 60)
