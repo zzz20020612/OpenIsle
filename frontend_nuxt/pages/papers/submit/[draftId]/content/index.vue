@@ -31,6 +31,11 @@
           </div>
         </div>
         <p v-if="importProgress" class="docx-import-status">{{ importProgress }}</p>
+        <div v-if="showImportReview" class="article-import-review" role="status">
+          <strong>Author review required</strong>
+          <span>Automatic import is a starting point. Check equations, complex tables, section headings, figures, and two-column reading order in the live preview before submission.</span>
+          <button type="button" @click="showImportReview = false">Dismiss</button>
+        </div>
         <ArticleBlockEditor
           :section="selectedSection"
           :figure-files="figureFiles"
@@ -75,6 +80,7 @@ const docxImport = useDocxArticleImport()
 const pdfImport = usePdfArticleImport()
 const form = submission.form
 const selectedKey = ref('')
+const showImportReview = ref(false)
 
 const selectedSection = computed(() => article.value.sections.find((section) => section.key === selectedKey.value) || article.value.sections[0] || null)
 const figureFiles = computed(() => submission.files.value.filter((file) => file.role === 'FIGURE' && file.uploadStatus === 'UPLOADED'))
@@ -170,6 +176,7 @@ const handleManuscriptImport = async (event) => {
       ? await pdfImport.importPdf(file)
       : await docxImport.importDocx(file, uploadImportedFigure)
     article.value.sections = imported.sections
+    showImportReview.value = true
     selectedKey.value = imported.sections[0]?.key || ''
     scheduleSave()
     await flush()
@@ -212,6 +219,9 @@ h1 { margin: 8px 0 5px; font-family: Georgia, serif; font-size: clamp(28px, 3vw,
 .article-command-button.disabled { opacity: .58; cursor: wait; }
 .article-command-button input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .docx-import-status { margin: -7px 0 16px; color: #47616d; font-size: 12px; }
+.article-import-review { position: relative; display: grid; gap: 4px; margin: -4px 0 18px; padding: 12px 108px 12px 14px; border-left: 3px solid #a56a16; background: #fff8e8; color: #594318; font-size: 12px; line-height: 1.5; }
+.article-import-review strong { font-size: 13px; }
+.article-import-review button { position: absolute; top: 12px; right: 12px; border: 1px solid #bcae8c; background: #fff; color: #594318; padding: 5px 9px; font-size: 11px; font-weight: 700; cursor: pointer; }
 .article-live-preview { min-width: 0; border-left: 1px solid #d5dde1; background: #fbfcfb; }
 .preview-heading { display: flex; justify-content: space-between; gap: 12px; padding: 16px; border-bottom: 1px solid #d5dde1; }
 .preview-scroll { max-height: 640px; overflow: auto; padding: 20px; }

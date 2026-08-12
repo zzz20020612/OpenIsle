@@ -36,6 +36,7 @@
     "pdfjs-dist": "^5.7.284",
     "sanitize-html": "^2.17.0",
     "sockjs-client": "^1.6.1",
+    "tesseract.js": "^6.0.1",
     "vditor": "^3.11.1",
     "vue-easy-lightbox": "^1.19.0",
     "vue-echarts": "^7.0.3",

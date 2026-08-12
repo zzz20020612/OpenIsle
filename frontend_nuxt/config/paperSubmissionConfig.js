@@ -26,7 +26,7 @@ export const REQUIRED_FILE_ROWS = [
     role: 'MANUSCRIPT',
     required: true,
     label: 'Manuscript File',
-    description: 'The manuscript source. Upload one DOCX or text-based PDF; extracted content remains editable before submission.',
+    description: 'The manuscript source. Upload one DOCX or PDF; text PDFs parse directly and scanned PDFs use OCR. Extracted content remains editable before submission.',
     accept: '.docx,.pdf',
     visibility: 'PUBLIC',
   },

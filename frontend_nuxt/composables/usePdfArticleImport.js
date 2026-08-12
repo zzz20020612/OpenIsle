@@ -19,6 +19,7 @@ export const usePdfArticleImport = () => {
       const pdf = await pdfjs.getDocument({ data: bytes }).promise
       const lines = []
       let itemCount = 0
+      let usedOcr = false
 
       for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
         progress.value = `Reading page ${pageNumber} of ${pdf.numPages}...`
@@ -46,12 +47,48 @@ export const usePdfArticleImport = () => {
       }
 
       const readable = lines.filter((line) => line.text.length > 1)
-      const characterCount = readable.reduce((total, line) => total + line.text.length, 0)
+      let characterCount = readable.reduce((total, line) => total + line.text.length, 0)
       if (itemCount === 0 || characterCount < Math.max(120, pdf.numPages * 40)) {
-        throw new Error('This PDF appears to be scanned or image-only. Upload a text-based PDF or DOCX, or enter the article content manually.')
+        usedOcr = true
+        lines.length = 0
+        const { createWorker } = await import('tesseract.js')
+        progress.value = 'Preparing OCR for this scanned PDF...'
+        const worker = await createWorker('eng', 1, {
+          logger: (message) => {
+            if (message.status === 'recognizing text') {
+              progress.value = `Running OCR... ${Math.round((message.progress || 0) * 100)}%`
+            }
+          },
+        })
+        try {
+          for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+            progress.value = `Running OCR on page ${pageNumber} of ${pdf.numPages}...`
+            const page = await pdf.getPage(pageNumber)
+            const viewport = page.getViewport({ scale: 2 })
+            const canvas = document.createElement('canvas')
+            canvas.width = Math.ceil(viewport.width)
+            canvas.height = Math.ceil(viewport.height)
+            const context = canvas.getContext('2d', { alpha: false })
+            await page.render({ canvasContext: context, viewport }).promise
+            const result = await worker.recognize(canvas)
+            String(result.data.text || '').split(/\r?\n/).forEach((value) => {
+              const text = cleanText(value)
+              if (text.length > 1) lines.push({ text, y: 0, size: 10, page: pageNumber })
+            })
+            canvas.width = 1
+            canvas.height = 1
+          }
+        } finally {
+          await worker.terminate()
+        }
+        characterCount = lines.reduce((total, line) => total + line.text.length, 0)
+        if (characterCount < Math.max(40, pdf.numPages * 15)) {
+          throw new Error('OCR could not find enough readable manuscript text in this PDF. Try a clearer scan or enter the article content manually.')
+        }
       }
 
-      const bodySizes = readable.map((line) => line.size).filter(Boolean).sort((a, b) => a - b)
+      const extractedLines = lines.filter((line) => line.text.length > 1)
+      const bodySizes = extractedLines.map((line) => line.size).filter(Boolean).sort((a, b) => a - b)
       const bodySize = bodySizes[Math.floor(bodySizes.length / 2)] || 10
       const sections = []
       let section = null
@@ -74,7 +111,7 @@ export const usePdfArticleImport = () => {
         section.blocks.push(block)
       }
 
-      for (const line of readable) {
+      for (const line of extractedLines) {
         const likelyHeading = headingPattern.test(line.text) || (line.size >= bodySize * 1.25 && line.text.length <= 100)
         if (likelyHeading) addSection(line.text)
         else addParagraph(line.text)
@@ -85,8 +122,8 @@ export const usePdfArticleImport = () => {
         item.displayOrder = sectionOrder
         item.blocks.forEach((block, blockOrder) => { block.displayOrder = blockOrder })
       })
-      progress.value = `Imported ${populated.length} sections from ${pdf.numPages} PDF pages. Review headings, equations, tables, and reading order before submission.`
-      return { sections: populated, pageCount: pdf.numPages, characterCount }
+      progress.value = `${usedOcr ? 'OCR imported' : 'Imported'} ${populated.length} sections from ${pdf.numPages} PDF pages. Review headings, equations, complex tables, and two-column reading order before submission.`
+      return { sections: populated, pageCount: pdf.numPages, characterCount, usedOcr }
     } catch (error) {
       progress.value = 'Import failed. Your existing article was kept unchanged.'
       throw error

@@ -100,7 +100,7 @@
             type="button"
             @click="unsubscribeDiscussion"
           >Following</button>
-          <NuxtLink v-else-if="!authState.loggedIn" class="journal-action" to="/login">
+          <NuxtLink v-else-if="clientReady && !authState.loggedIn" class="journal-action" to="/login">
             Sign in to follow
           </NuxtLink>
           <DropdownMenu v-if="paperActionMenuItems.length > 0" :items="paperActionMenuItems">
@@ -261,8 +261,8 @@
                 v-if="paper.postId"
                 @submit="postComment"
                 :loading="isPostingComment"
-                :disabled="!authState.loggedIn || postClosed"
-                :show-login-overlay="!authState.loggedIn"
+                :disabled="!clientReady || !authState.loggedIn || postClosed"
+                :show-login-overlay="clientReady && !authState.loggedIn"
               />
             </div>
 
@@ -402,6 +402,7 @@ const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
 
 const paperId = computed(() => route.params.id)
+const clientReady = ref(false)
 
 const { data: paperData, error: paperError, refresh } = await useAsyncData(
   `paper:${paperId.value}`,
@@ -410,6 +411,7 @@ const { data: paperData, error: paperError, refresh } = await useAsyncData(
 )
 
 onMounted(async () => {
+  clientReady.value = true
   await Promise.all([
     paperData.value ? Promise.resolve() : refresh(),
     refreshArticle(),
@@ -480,12 +482,12 @@ const authorAffiliations = computed(() => {
 })
 const isPostAuthor = computed(() => {
   const author = postCore.value?.author
-  if (!author || !authState.loggedIn) return false
+  if (!clientReady.value || !author || !authState.loggedIn) return false
   return author.username === authState.username
 })
 const canSubscribeToDiscussion = computed(
   () =>
-    authState.loggedIn &&
+    clientReady.value && authState.loggedIn &&
     paper.value.postId &&
     !postClosed.value &&
     !isPostAuthor.value &&
@@ -494,7 +496,7 @@ const canSubscribeToDiscussion = computed(
 )
 const canUnsubscribeFromDiscussion = computed(
   () =>
-    authState.loggedIn &&
+    clientReady.value && authState.loggedIn &&
     paper.value.postId &&
     !postClosed.value &&
     !isPostAuthor.value &&
@@ -506,9 +508,9 @@ useHead(() => ({
   title: `${paper.value.title || 'Paper'} - Open Research Evaluation`,
 }))
 
-const isAdmin = computed(() => authState.role === 'ADMIN')
+const isAdmin = computed(() => clientReady.value && authState.role === 'ADMIN')
 const canCreateRevision = computed(() =>
-  authState.loggedIn &&
+  clientReady.value && authState.loggedIn &&
   isPostAuthor.value &&
   paper.value.publicationStatus === 'NEEDS_REVISION' &&
   !paper.value.latestRevisionPaperId

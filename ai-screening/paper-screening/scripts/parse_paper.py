@@ -139,17 +139,71 @@ def _parse_txt(path: Path) -> dict[str, Any]:
 def _parse_pdf(path: Path) -> dict[str, Any]:
     try:
         import pdfplumber  # type: ignore[import-untyped]
-        return _parse_pdf_pdfplumber(path)
+        parsed = _parse_pdf_pdfplumber(path)
+        return parsed if parsed["segments"] else _parse_pdf_ocr(path, parsed)
     except ImportError:
         pass
 
     try:
         from pypdf import PdfReader  # type: ignore[import-untyped]
-        return _parse_pdf_pypdf(path)
+        parsed = _parse_pdf_pypdf(path)
+        return parsed if parsed["segments"] else _parse_pdf_ocr(path, parsed)
     except ImportError:
         pass
 
     raise ImportError("Install pdfplumber or pypdf: pip install pdfplumber pypdf")
+
+
+def _parse_pdf_ocr(path: Path, parsed: dict[str, Any]) -> dict[str, Any]:
+    """Use local OCR when a PDF contains no usable text layer."""
+    try:
+        import pymupdf  # type: ignore[import-untyped]
+        import pytesseract  # type: ignore[import-untyped]
+        from PIL import Image  # type: ignore[import-untyped]
+    except ImportError as exc:
+        raise RuntimeError(
+            "Scanned PDF requires PyMuPDF, Pillow, pytesseract, and Tesseract OCR"
+        ) from exc
+
+    segments: list[dict[str, Any]] = []
+    full_text_parts: list[str] = []
+    current_type = "body"
+    document = pymupdf.open(path)
+    try:
+        for page_num, page in enumerate(document, 1):
+            pixmap = page.get_pixmap(matrix=pymupdf.Matrix(2, 2), alpha=False)
+            image = Image.frombytes("RGB", (pixmap.width, pixmap.height), pixmap.samples)
+            text = pytesseract.image_to_string(image, lang="eng").strip()
+            if not text:
+                continue
+            full_text_parts.append(text)
+            for paragraph in re.split(r"\n\s*\n|\n(?=[A-Z][A-Za-z ]{2,40}$)", text):
+                paragraph = re.sub(r"\s+", " ", paragraph).strip()
+                if not paragraph:
+                    continue
+                detected = _detect_section(paragraph)
+                if detected is not None:
+                    current_type = detected
+                segments.append({
+                    "type": current_type,
+                    "text": paragraph[:5000],
+                    "page_start": page_num,
+                    "page_end": page_num,
+                    "confidence": 0.55,
+                })
+    finally:
+        document.close()
+
+    full_text = "\n".join(full_text_parts)
+    metadata = dict(parsed.get("metadata") or {})
+    metadata.update({
+        "ocr_used": True,
+        "ocr_engine": "tesseract-eng",
+        "has_abstract": bool(re.search(r"(?i)abstract", full_text)),
+    })
+    if not metadata.get("title"):
+        metadata["title"] = _extract_title_from_text(full_text)
+    return {**parsed, "metadata": metadata, "segments": segments}
 
 
 def _parse_pdf_pdfplumber(path: Path) -> dict[str, Any]:

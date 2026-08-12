@@ -30,7 +30,7 @@
               DOI {{ paper.doi }}
             </a>
             <a class="paper-pill literature-doi" :href="pdfViewUrl" target="_blank" rel="noopener">View open PDF</a>
-            <button v-if="authState.loggedIn" class="paper-pill literature-doi" type="button" @click="downloadPdf">Download PDF</button>
+            <button v-if="clientReady && authState.loggedIn" class="paper-pill literature-doi" type="button" @click="downloadPdf">Download PDF</button>
           </div>
         </header>
 
@@ -119,7 +119,7 @@
               </div>
 
               <ClientOnly>
-                <template v-if="authState.loggedIn">
+                <template v-if="clientReady && authState.loggedIn">
                   <h2 class="paper-section-title">{{ myRating ? 'Update your evaluation' : 'Six-dimensional evaluation' }}</h2>
                   <p class="paper-section-note">Scores stay hidden from your form until submission. Each user keeps one active evaluation.</p>
                   <div class="literature-dimensions">
@@ -191,8 +191,8 @@
             <section class="paper-card">
               <h2 class="paper-section-title">PDF access</h2>
               <p class="paper-section-note">
-                Metadata and extracted knowledge are connected. PDF viewing and registered-user downloads
-                will be enabled after the source system provides a stable file access contract.
+                Open PDFs can be viewed in the browser. Registered users can also download the source file
+                through OpenIsle's authenticated access endpoint.
               </p>
             </section>
           </aside>
@@ -219,6 +219,7 @@ const {
   rateLiterature,
 } = useLiteratureApi()
 const paperId = computed(() => String(route.params.id))
+const clientReady = ref(false)
 
 const dimensions = [
   { key: 'originalityScore', label: 'Originality', short: 'Originality', hint: 'What is genuinely new?' },
@@ -293,6 +294,7 @@ const qualityLabel = computed(() => {
 useHead(() => ({ title: paper.value?.title ? `${paper.value.title} - Knowledge Base` : 'Literature - OpenIsle' }))
 
 onMounted(async () => {
+  clientReady.value = true
   if (!authState.loggedIn) return
   try {
     myRating.value = await getMyRating(paperId.value)
