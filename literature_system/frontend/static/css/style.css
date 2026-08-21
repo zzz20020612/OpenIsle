@@ -305,9 +305,24 @@ html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, Bl
 .result-card:hover { box-shadow: var(--shadow-lg); border-color: #cbd5e1; transform: translateY(-1px); }
 .result-title { font-size: 16px; font-weight: 600; color: var(--primary); margin: 0 0 6px; }
 .result-title em { background: #fef08a; font-style: normal; padding: 0 2px; border-radius: 2px; }
-.result-meta { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+.result-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
 .result-snippet { font-size: 14px; color: var(--text); line-height: 1.5; }
 .result-snippet em { background: #fef08a; font-style: normal; }
+.result-snippet-empty { color: #7b8492; font-style: italic; }
+.content-status {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #d9dee5;
+    border-radius: 999px;
+    padding: 2px 8px;
+    color: #53606f;
+    background: #f7f8fa;
+    font-weight: 600;
+}
+.content-status-knowledge { color: #24563f; border-color: #bdd8ca; background: #eef7f1; }
+.content-status-fulltext { color: #28577a; border-color: #c2d7e6; background: #f0f7fb; }
+.content-status-abstract { color: #67532a; border-color: #dfd2b8; background: #faf6ec; }
+.content-status-metadata { color: #7b4b39; border-color: #e0c8be; background: #fbf4f1; }
 
 /* Paper detail */
 .paper-detail { display: flex; gap: 20px; }

@@ -405,6 +405,24 @@ def _filter_new_items(conn, items):
     return new_items, duplicate_count
 
 
+def _paper_ids_for_items(conn, items):
+    """Return stable database IDs for every fetched DOI already present in the corpus."""
+    dois = {
+        str(item.get("DOI") or item.get("doi")).lower().strip()
+        for item in items
+        if item.get("DOI") or item.get("doi")
+    }
+    if not dois:
+        return []
+    cur = conn.cursor()
+    placeholders = ",".join([placeholder()] * len(dois))
+    cur.execute(
+        f"SELECT id FROM papers WHERE LOWER(doi) IN ({placeholders})",
+        tuple(dois),
+    )
+    return [int(row[0]) for row in cur.fetchall()]
+
+
 def run_collection(
     keyword,
     rows,
@@ -431,6 +449,7 @@ def run_collection(
     all_items = []
     inserted = 0
     inserted_ids = []
+    matched_ids = []
     total_fetched = 0
     empty_page_count = 0
 
@@ -471,6 +490,11 @@ def run_collection(
                 inserted += 1
                 inserted_ids.append(paper_id)
 
+        # Keep the complete query scope, including records inserted by an earlier
+        # run.  The one-click pipeline can then resume PDF parsing or extraction
+        # instead of stopping merely because metadata was already present.
+        matched_ids.extend(_paper_ids_for_items(conn, items))
+
         LOGGER.info("累计入库 %d 条", inserted)
         time.sleep(sleep_time)
 
@@ -495,7 +519,11 @@ def run_collection(
     session.close()
     conn.close()
     if return_details:
-        return {"inserted": inserted, "paper_ids": inserted_ids}
+        return {
+            "inserted": inserted,
+            "inserted_ids": list(dict.fromkeys(inserted_ids)),
+            "paper_ids": list(dict.fromkeys(matched_ids)),
+        }
     return inserted
 
 

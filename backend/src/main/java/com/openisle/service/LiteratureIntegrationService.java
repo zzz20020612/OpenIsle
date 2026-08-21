@@ -35,6 +35,7 @@ public class LiteratureIntegrationService {
 
   private final String baseUrl;
   private final RestTemplate restTemplate;
+  private final RestTemplate pdfRestTemplate;
   private final ObjectMapper objectMapper;
   private final String internalToken;
 
@@ -55,6 +56,7 @@ public class LiteratureIntegrationService {
   public LiteratureIntegrationService(
     @Value("${literature.api-base-url:http://localhost:8088}") String baseUrl,
     @Value("${literature.timeout-seconds:10}") int timeoutSeconds,
+    @Value("${literature.pdf-parse-timeout-seconds:600}") int pdfParseTimeoutSeconds,
     @Value("${literature.internal-token:}") String internalToken,
     RestTemplateBuilder restTemplateBuilder,
     ObjectMapper objectMapper
@@ -65,18 +67,33 @@ public class LiteratureIntegrationService {
         .setConnectTimeout(Duration.ofSeconds(Math.max(1, timeoutSeconds)))
         .setReadTimeout(Duration.ofSeconds(Math.max(1, timeoutSeconds)))
         .build(),
+      restTemplateBuilder
+        .setConnectTimeout(Duration.ofSeconds(Math.max(1, timeoutSeconds)))
+        .setReadTimeout(Duration.ofSeconds(Math.max(1, pdfParseTimeoutSeconds)))
+        .build(),
       objectMapper,
       internalToken
     );
   }
 
   LiteratureIntegrationService(String baseUrl, RestTemplate restTemplate, ObjectMapper objectMapper) {
-    this(baseUrl, restTemplate, objectMapper, "");
+    this(baseUrl, restTemplate, restTemplate, objectMapper, "");
   }
 
   LiteratureIntegrationService(String baseUrl, RestTemplate restTemplate, ObjectMapper objectMapper, String internalToken) {
+    this(baseUrl, restTemplate, restTemplate, objectMapper, internalToken);
+  }
+
+  LiteratureIntegrationService(
+    String baseUrl,
+    RestTemplate restTemplate,
+    RestTemplate pdfRestTemplate,
+    ObjectMapper objectMapper,
+    String internalToken
+  ) {
     this.baseUrl = baseUrl.replaceAll("/+$", "");
     this.restTemplate = restTemplate;
+    this.pdfRestTemplate = pdfRestTemplate;
     this.objectMapper = objectMapper;
     this.internalToken = internalToken == null ? "" : internalToken.strip();
   }
@@ -130,6 +147,36 @@ public class LiteratureIntegrationService {
       return new LiteratureFileResponse(ex.getStatusCode(), ex.getResponseBodyAsByteArray(), MediaType.APPLICATION_JSON);
     } catch (ResourceAccessException ex) {
       return new LiteratureFileResponse(HttpStatus.SERVICE_UNAVAILABLE, new byte[0], MediaType.APPLICATION_JSON);
+    }
+  }
+
+  public LiteratureProxyResponse parseSubmissionPdf(byte[] pdfBytes) {
+    if (pdfBytes == null || pdfBytes.length < 5) {
+      throw new IllegalArgumentException("PDF file is empty");
+    }
+    if (internalToken.isBlank()) {
+      return error(HttpStatus.SERVICE_UNAVAILABLE, "PDF_PARSER_NOT_CONFIGURED", "The PDF parsing service is not configured.");
+    }
+    HttpHeaders headers = new HttpHeaders();
+    headers.set("X-OpenIsle-Internal-Token", internalToken);
+    headers.setContentType(MediaType.APPLICATION_PDF);
+    try {
+      ResponseEntity<JsonNode> response = pdfRestTemplate.exchange(
+        URI.create(baseUrl + "/submission/parse-pdf"),
+        HttpMethod.POST,
+        new HttpEntity<>(pdfBytes, headers),
+        JsonNode.class
+      );
+      return new LiteratureProxyResponse(
+        response.getStatusCode(),
+        response.getBody() == null ? objectMapper.createObjectNode() : response.getBody()
+      );
+    } catch (HttpStatusCodeException ex) {
+      return new LiteratureProxyResponse(ex.getStatusCode(), parseErrorBody(ex));
+    } catch (ResourceAccessException ex) {
+      return error(HttpStatus.SERVICE_UNAVAILABLE, "PDF_PARSER_UNAVAILABLE", "The PDF parsing service is not available right now.");
+    } catch (RuntimeException ex) {
+      return error(HttpStatus.BAD_GATEWAY, "PDF_PARSER_INVALID_RESPONSE", "The PDF parsing service returned an invalid response.");
     }
   }
 

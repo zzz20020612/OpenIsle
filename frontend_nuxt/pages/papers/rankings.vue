@@ -6,8 +6,8 @@
           <div class="paper-page-eyebrow">Rankings</div>
           <h1 class="paper-page-title">Scholar衡 evaluation rankings</h1>
           <p class="paper-page-description">
-            Six-dimensional human evaluations of the existing literature corpus. Rankings are discovery
-            signals with visible sample sizes, not final academic judgments.
+            Formal Scholar衡 rankings use weighted six-dimensional evaluations. Papers remain outside
+            this table until the minimum reviewer, effective-sample, and institution-diversity thresholds are met.
           </p>
         </div>
         <div class="paper-toolbar">
@@ -60,7 +60,7 @@
           </template>
         </div>
 
-        <div v-if="visibleRows.length === 0" class="paper-empty">No ranking data yet.</div>
+        <div v-if="visibleRows.length === 0" class="paper-empty">No papers have reached formal-ranking status yet. Initial and provisional summaries remain visible on each literature detail page.</div>
       </section>
     </div>
   </main>
@@ -98,6 +98,6 @@ const rowSubtitle = (item) => {
   }
   return `${item.paperCount || 0} evaluated papers · ${item.totalRatingCount || 0} ratings`
 }
-const formatScore = (value) => Number(value || 0).toFixed(1)
+const formatScore = (value) => value == null ? '—' : Number(value).toFixed(2)
 </script>
 

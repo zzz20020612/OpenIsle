@@ -19,7 +19,15 @@ class ArxivAdapter(SourceAdapter):
             "start": page * page_size,
             "max_results": page_size,
         }
-        resp = self.request_with_retry("http://export.arxiv.org/api/query", params=params, timeout=30)
+        # HTTPS is materially more reliable from the Docker network.  The HTTP
+        # endpoint can leave a workflow worker waiting through every retry even
+        # though the same query succeeds immediately over TLS.
+        resp = self.request_with_retry(
+            "https://export.arxiv.org/api/query",
+            params=params,
+            timeout=15,
+            max_retries=2,
+        )
         root = ET.fromstring(resp.text)
         ns = {
             "atom": "http://www.w3.org/2005/Atom",

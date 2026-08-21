@@ -48,14 +48,25 @@ const Components = {
         const authors = Utils.joinAuthors(hit.authors);
         const pid = hit.paper_id || hit.id;
         const attrs = pid ? `data-paper-id="${pid}"` : '';
+        const statusLabels = {
+            knowledge: 'Knowledge extracted',
+            fulltext: 'Full text parsed',
+            abstract: 'Abstract available',
+            metadata: 'Metadata only'
+        };
+        const contentStatus = hit.content_status || (snippet ? 'abstract' : 'metadata');
+        const statusLabel = statusLabels[contentStatus] || statusLabels.metadata;
         return `<div class="result-card" ${attrs}>
             <div class="result-title">${title}</div>
             <div class="result-meta">
                 <span>${hit.published_year || I18n.t('common.unknown_year')}</span>
                 <span>${hit.journal || ''}</span>
                 <span>${authors ? Utils.truncate(authors, 80) : ''}</span>
+                <span class="content-status content-status-${contentStatus}">${statusLabel}</span>
             </div>
-            <div class="result-snippet">${snippet}</div>
+            ${snippet
+                ? `<div class="result-snippet">${snippet}</div>`
+                : '<div class="result-snippet result-snippet-empty">No abstract or parsed full text is available.</div>'}
         </div>`;
     },
 
@@ -420,21 +431,41 @@ const Components = {
 
     renderMethods(methods) {
         if (!methods) return '<div class="empty-state">' + I18n.t('methods.no_data') + '</div>';
+        const renderValue = (value) => {
+            if (value === null || value === undefined || value === '') return '<span>—</span>';
+            if (typeof value !== 'object') return `<span>${Utils.escapeHtml(String(value))}</span>`;
+            if (Array.isArray(value)) {
+                return `<ol style="margin:8px 0 0;padding-left:22px;display:grid;gap:10px;">${value.map(item => {
+                    if (item && typeof item === 'object') {
+                        const title = item.description || item.name || item.metric || '';
+                        const details = Object.entries(item)
+                            .filter(([key, entry]) => !['description', 'name', 'metric'].includes(key) && entry !== null && entry !== '')
+                            .map(([key, entry]) => `<div><strong>${Utils.escapeHtml(key.replaceAll('_', ' '))}:</strong> ${renderValue(entry)}</div>`)
+                            .join('');
+                        return `<li>${title ? `<div>${Utils.escapeHtml(String(title))}</div>` : ''}${details}</li>`;
+                    }
+                    return `<li>${Utils.escapeHtml(String(item))}</li>`;
+                }).join('')}</ol>`;
+            }
+            return `<dl style="display:grid;grid-template-columns:max-content 1fr;gap:7px 12px;margin:8px 0 0;">${Object.entries(value).map(([key, entry]) => `
+                <dt style="font-weight:700;">${Utils.escapeHtml(key.replaceAll('_', ' '))}</dt>
+                <dd style="margin:0;">${renderValue(entry)}</dd>`).join('')}</dl>`;
+        };
         let html = '';
         if (methods.methodology) {
             html += `<div class="claim-card"><div class="claim">${I18n.t('methods.methodology')}</div><div class="evidence">${Utils.escapeHtml(methods.methodology)}</div></div>`;
         }
         if (methods.workflow) {
-            html += `<div class="claim-card"><div class="claim">${I18n.t('methods.workflow')}</div><pre style="font-size:12px;white-space:pre-wrap;">${Utils.escapeHtml(JSON.stringify(methods.workflow, null, 2))}</pre></div>`;
+            html += `<div class="claim-card"><div class="claim">${I18n.t('methods.workflow')}</div>${renderValue(methods.workflow)}</div>`;
         }
         if (methods.data_sources) {
-            html += `<div class="claim-card"><div class="claim">${I18n.t('methods.data_sources')}</div><pre style="font-size:12px;white-space:pre-wrap;">${Utils.escapeHtml(JSON.stringify(methods.data_sources, null, 2))}</pre></div>`;
+            html += `<div class="claim-card"><div class="claim">${I18n.t('methods.data_sources')}</div>${renderValue(methods.data_sources)}</div>`;
         }
         if (methods.models_algorithms) {
-            html += `<div class="claim-card"><div class="claim">${I18n.t('methods.models_algorithms')}</div><pre style="font-size:12px;white-space:pre-wrap;">${Utils.escapeHtml(JSON.stringify(methods.models_algorithms, null, 2))}</pre></div>`;
+            html += `<div class="claim-card"><div class="claim">${I18n.t('methods.models_algorithms')}</div>${renderValue(methods.models_algorithms)}</div>`;
         }
         if (methods.evaluation_metrics) {
-            html += `<div class="claim-card"><div class="claim">${I18n.t('methods.evaluation_metrics')}</div><pre style="font-size:12px;white-space:pre-wrap;">${Utils.escapeHtml(JSON.stringify(methods.evaluation_metrics, null, 2))}</pre></div>`;
+            html += `<div class="claim-card"><div class="claim">${I18n.t('methods.evaluation_metrics')}</div>${renderValue(methods.evaluation_metrics)}</div>`;
         }
         return html;
     },

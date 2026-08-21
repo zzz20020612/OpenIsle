@@ -40,10 +40,22 @@ public class PaperArticleService {
   private final PaperArticleValidator validator;
   private final PaperAccessPolicy paperAccessPolicy;
   private final ObjectMapper objectMapper;
+  private final LiteratureIntegrationService literatureIntegrationService;
 
   @Transactional(readOnly = true)
   public PaperArticleDto getDraftArticle(String username, Long draftId) {
     return toDto(requireOwnedDraft(username, draftId));
+  }
+
+  @Transactional(readOnly = true)
+  public LiteratureIntegrationService.LiteratureProxyResponse parseDraftPdf(
+    String username,
+    Long draftId,
+    byte[] pdfBytes
+  ) {
+    PaperSubmissionDraft draft = requireOwnedDraft(username, draftId);
+    requireEditable(draft);
+    return literatureIntegrationService.parseSubmissionPdf(pdfBytes);
   }
 
   @Transactional

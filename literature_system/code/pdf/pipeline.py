@@ -72,14 +72,126 @@ SECTION_RULES = [
 ]
 
 
+def normalize_section_heading(heading: str) -> str:
+    """Remove common academic section numbering before classification.
+
+    PDF text layers frequently expose headings as ``3. Results`` or
+    ``2.1 Study area``.  Keeping the original label is useful for display,
+    but the classifier must operate on the semantic part.
+    """
+    value = (heading or "").strip()
+    return re.sub(r"^\s*(?:\d+(?:\.\d+)*|[IVXLCDM]+)[.)]?\s+", "", value, flags=re.I)
+
+
 def classify_section(heading: str) -> str:
     """根据标题关键词判断章节类型。"""
     if not heading:
         return "other"
+    normalized = normalize_section_heading(heading)
     for sec_type, pattern in SECTION_RULES:
-        if pattern.match(heading.strip()):
+        if pattern.match(normalized):
             return sec_type
     return "other"
+
+
+def _clean_pdf_line(text: str) -> str:
+    return re.sub(r"\s+", " ", text or "").strip()
+
+
+def _join_pdf_spans(spans: List[Dict[str, Any]]) -> str:
+    """Reconstruct spaces that are represented only by PDF coordinates.
+
+    Word processors commonly emit one span per word and omit the literal
+    space from each span's text.  Concatenating span text therefore produces
+    unreadable output such as ``Achievingwatersecurity``.  A visible horizontal
+    gap between adjacent spans is the reliable signal for that missing space;
+    font changes inside a word normally have a zero or near-zero gap.
+    """
+    output = ""
+    previous: Optional[Dict[str, Any]] = None
+    for span in spans:
+        value = str(span.get("text", "") or "")
+        if not value:
+            continue
+        if previous is not None and output and not output[-1].isspace() and not value[0].isspace():
+            previous_box = previous.get("bbox") or (0, 0, 0, 0)
+            current_box = span.get("bbox") or (0, 0, 0, 0)
+            horizontal_gap = float(current_box[0]) - float(previous_box[2])
+            font_size = min(
+                float(previous.get("size", 0) or 0),
+                float(span.get("size", 0) or 0),
+            )
+            if horizontal_gap > max(0.7, font_size * 0.08):
+                output += " "
+        output += value
+        previous = span
+    return _clean_pdf_line(output)
+
+
+def _join_pdf_lines(lines: List[str]) -> str:
+    """Join visual PDF lines without preserving line-number or hyphen noise."""
+    output = ""
+    for raw in lines:
+        line = _clean_pdf_line(raw)
+        if not line:
+            continue
+        if output.endswith("-") and line[:1].islower():
+            output = output[:-1] + line
+        elif not output:
+            output = line
+        else:
+            output += " " + line
+    return output.strip()
+
+
+def _looks_like_section_heading(line: Dict[str, Any], body_size: float) -> bool:
+    """Distinguish real headings from sentences beginning with section words."""
+    text = line.get("text", "")
+    section_type = classify_section(text)
+    if section_type == "other" or len(text) > 80:
+        return False
+    if re.search(r"[.,;:)]\s*$", text):
+        return False
+    normalized = normalize_section_heading(text).strip().lower()
+    canonical = {
+        "abstract", "introduction", "background", "method", "methods",
+        "materials and methods", "results", "findings", "results and discussion",
+        "discussion", "conclusion", "conclusions", "references", "bibliography",
+        "acknowledgement", "acknowledgements", "acknowledgment", "acknowledgments",
+        "data availability", "study area", "data collection",
+    }
+    return bool(line.get("bold")) or normalized in canonical or float(line.get("size", 0)) >= body_size * 1.15
+
+
+def _join_pdf_layout_lines(lines: List[Dict[str, Any]], body_size: float) -> str:
+    """Preserve editable paragraph/subheading boundaries from PDF layout."""
+    paragraphs: List[List[str]] = []
+    current: List[str] = []
+    previous: Optional[Dict[str, Any]] = None
+    for line in lines:
+        text = _clean_pdf_line(line.get("text", ""))
+        if not text:
+            continue
+        vertical_gap = 0.0
+        if previous and previous.get("page") == line.get("page"):
+            vertical_gap = float(line.get("y0", 0)) - float(previous.get("y0", 0))
+        starts_subheading = bool(line.get("bold")) or float(line.get("size", 0)) >= body_size * 1.12
+        starts_paragraph = bool(current) and (
+            starts_subheading
+            or vertical_gap > body_size * 1.75
+            or (
+                float(line.get("x0", 0)) > float(previous.get("x0", 0)) + body_size * 0.9
+                and text[:1].isupper()
+            )
+        )
+        if starts_paragraph:
+            paragraphs.append(current)
+            current = []
+        current.append(text)
+        previous = line
+    if current:
+        paragraphs.append(current)
+    return "\n\n".join(_join_pdf_lines(paragraph) for paragraph in paragraphs if paragraph)
 
 
 def markdown_to_plain(md: str) -> str:
@@ -105,6 +217,9 @@ class UnifiedResult:
     def __init__(self):
         self.parser_used: str = ""
         self.parse_quality: str = "medium"  # high/medium/low
+        self.title: str = ""
+        self.authors: List[str] = []
+        self.keywords: List[str] = []
         self.full_text: str = ""
         self.full_markdown: Optional[str] = None
         self.sections: List[Dict[str, Any]] = []
@@ -119,6 +234,9 @@ class UnifiedResult:
         return {
             "parser_used": self.parser_used,
             "parse_quality": self.parse_quality,
+            "title": self.title,
+            "authors": self.authors,
+            "keywords": self.keywords,
             "full_text": self.full_text,
             "full_markdown": self.full_markdown,
             "sections": self.sections,
@@ -139,7 +257,11 @@ class UnifiedResult:
 # PyMuPDF 解析器（兜底）
 # ============================================================
 class PyMuPDFParser:
-    """快速纯文本解析器，无结构信息，质量 low。"""
+    """Layout-aware local parser used when MinerU is unavailable.
+
+    It intentionally keeps the same ``UnifiedResult`` contract as MinerU so
+    submission drafts and the literature workflow can share one parser.
+    """
 
     name = "pymupdf"
 
@@ -151,54 +273,217 @@ class PyMuPDFParser:
 
         result = UnifiedResult()
         result.parser_used = self.name
-        result.parse_quality = "low"
+        result.parse_quality = "medium"
 
         doc = fitz.open(str(pdf_path))
         result.page_count = len(doc)
-        text_parts = []
-        current_heading = None
-        current_section_text = []
-        sections_raw: List[Tuple[str, str]] = []
+        metadata = doc.metadata or {}
+        result.title = _clean_pdf_line(metadata.get("title", ""))
+        result.authors = [
+            value.strip() for value in re.split(r"[;,]", metadata.get("author", "") or "")
+            if value.strip()
+        ]
+        result.keywords = [
+            value.strip() for value in re.split(r"[;,]", metadata.get("keywords", "") or "")
+            if value.strip()
+        ]
 
+        all_lines: List[Dict[str, Any]] = []
         for page_idx, page in enumerate(doc):
-            page_text = page.get_text()
-            text_parts.append(page_text)
-            # 简单的章节识别：行很短且首字母大写、且匹配关键词
-            for line in page_text.splitlines():
-                stripped = line.strip()
-                if not stripped or len(stripped) > 80:
-                    if current_heading is not None:
-                        current_section_text.append(stripped)
+            blocks = page.get_text("dict", flags=fitz.TEXTFLAGS_TEXT).get("blocks", [])
+            page_width = float(page.rect.width or 1)
+            for block in blocks:
+                if block.get("type") != 0:
                     continue
-                # 章节标题判定
-                if classify_section(stripped) != "other":
-                    if current_heading is not None:
-                        sections_raw.append((current_heading, "\n".join(current_section_text)))
-                    current_heading = stripped
-                    current_section_text = []
-        if current_heading is not None:
-            sections_raw.append((current_heading, "\n".join(current_section_text)))
+                for line in block.get("lines", []):
+                    spans = []
+                    for span in line.get("spans", []):
+                        span_text = _clean_pdf_line(span.get("text", ""))
+                        span_box = span.get("bbox") or (0, 0, 0, 0)
+                        if not span_text:
+                            continue
+                        # Some DOCX-generated PDFs place the line number and
+                        # manuscript text in one PyMuPDF line object. Filter
+                        # margin-number spans before rebuilding that line.
+                        if re.fullmatch(r"\d{1,4}", span_text) and (
+                            float(span_box[2]) < page_width * 0.12
+                            or float(span_box[1]) < 45
+                            or float(span_box[1]) > float(page.rect.height) * 0.88
+                        ):
+                            continue
+                        spans.append(span)
+                    if not spans:
+                        continue
+                    text = _join_pdf_spans(spans)
+                    bbox = line.get("bbox") or spans[0].get("bbox") or (0, 0, 0, 0)
+                    x0, y0, x1, _ = [float(value) for value in bbox]
+                    size = max(float(span.get("size", 0) or 0) for span in spans)
+                    # Continuous manuscript line numbers are normally isolated
+                    # in a narrow left margin.  Page numbers are isolated near
+                    # the top/bottom centre.  Neither belongs in article text.
+                    if re.fullmatch(r"\d{1,4}", text):
+                        if x1 < page_width * 0.12 or y0 < 45 or y0 > float(page.rect.height) * 0.88:
+                            continue
+                    all_lines.append({
+                        "text": text,
+                        "page": page_idx,
+                        "x0": x0,
+                        "y0": y0,
+                        "size": size,
+                        "bold": any(
+                            "bold" in str(span.get("font", "")).lower()
+                            or int(span.get("flags", 0) or 0) & 16
+                            for span in spans
+                        ),
+                    })
+
+        if not all_lines:
+            doc.close()
+            return result
+
+        sizes = sorted(line["size"] for line in all_lines if line["size"] > 0)
+        body_size = sizes[len(sizes) // 2] if sizes else 10.0
+
+        heading_indexes: List[int] = []
+        for index, line in enumerate(all_lines):
+            if _looks_like_section_heading(line, body_size):
+                heading_indexes.append(index)
+
+        # A reliable abstract boundary lets us exclude title/authors/front
+        # matter without guessing them into the first article section.
+        abstract_index = next(
+            (index for index in heading_indexes if classify_section(all_lines[index]["text"]) == "abstract"),
+            None,
+        )
+        if abstract_index is None:
+            first_heading = heading_indexes[0] if heading_indexes else 0
+        else:
+            first_heading = abstract_index
+
+        sections_raw: List[Dict[str, Any]] = []
+        current: Optional[Dict[str, Any]] = None
+        for index, line in enumerate(all_lines[first_heading:], start=first_heading):
+            section_type = classify_section(line["text"])
+            likely_heading = _looks_like_section_heading(line, body_size)
+            if likely_heading:
+                if (
+                    current is not None
+                    and not current["lines"]
+                    and current["section_type"] == section_type
+                ):
+                    current["lines"].append(line)
+                    current["page_end"] = line["page"]
+                    continue
+                if current is not None:
+                    sections_raw.append(current)
+                current = {
+                    "section_type": section_type,
+                    "heading": line["text"],
+                    "lines": [],
+                    "page_start": line["page"],
+                    "page_end": line["page"],
+                }
+                continue
+            if current is None:
+                current = {
+                    "section_type": "other",
+                    "heading": "Manuscript",
+                    "lines": [],
+                    "page_start": line["page"],
+                    "page_end": line["page"],
+                }
+            current["lines"].append(line)
+            current["page_end"] = line["page"]
+        if current is not None:
+            sections_raw.append(current)
 
         doc.close()
 
-        result.full_text = "\n".join(text_parts)
+        result.full_text = "\n\n".join(
+            _join_pdf_layout_lines(section["lines"], body_size)
+            for section in sections_raw if section["lines"]
+        )
         result.full_markdown = None  # PyMuPDF 不输出 Markdown
         result.char_count = len(result.full_text)
 
-        # 构建章节
-        for idx, (heading, content) in enumerate(sections_raw):
+        for idx, section in enumerate(sections_raw):
             result.sections.append({
-                "section_type": classify_section(heading),
-                "heading": heading,
-                "content": content,
-                "page_start": None,
-                "page_end": None,
+                "section_type": section["section_type"],
+                "heading": section["heading"],
+                "content": _join_pdf_layout_lines(section["lines"], body_size),
+                "page_start": section["page_start"],
+                "page_end": section["page_end"],
                 "order_idx": idx,
             })
 
         log.info(f"[pymupdf] {pdf_path.name}: {result.char_count} chars, "
                  f"{result.page_count} pages, {len(result.sections)} sections")
         return result
+
+
+def parse_pdf_document(
+    pdf_path: Path,
+    parser_chain: Optional[List[str]] = None,
+) -> UnifiedResult:
+    """Parse an arbitrary PDF without reading or writing literature records.
+
+    This is the safe reuse boundary for author-submission imports: the caller
+    owns the temporary file and only receives the structured parse result.
+    """
+    path = Path(pdf_path)
+    if not path.is_file():
+        raise FileNotFoundError(f"PDF file not found: {path}")
+
+    chain = parser_chain or get_parser_chain()
+    last_error: Optional[Exception] = None
+    for parser_name in chain:
+        try:
+            if parser_name == "mineru_api":
+                if not config.MINERU_API_KEY:
+                    continue
+                parser = MineruAPIClient()
+            elif parser_name == "pymupdf":
+                parser = PyMuPDFParser()
+            elif parser_name in ("marker_gpu", "marker_cpu"):
+                continue
+            else:
+                continue
+
+            result = parser.parse(path)
+            if not result.validate():
+                raise RuntimeError(f"{parser_name} produced too little readable text")
+            result.sections, _ = _post_process_sections(result.sections, None)
+
+            # MinerU focuses on page content; PDF metadata remains the most
+            # reliable source for title/authors/keywords in born-digital files.
+            if not result.title or not result.authors or not result.keywords:
+                try:
+                    import fitz
+                    document = fitz.open(str(path))
+                    metadata = document.metadata or {}
+                    document.close()
+                    if not result.title:
+                        result.title = _clean_pdf_line(metadata.get("title", ""))
+                    if not result.authors:
+                        result.authors = [
+                            item.strip() for item in re.split(r"[;,]", metadata.get("author", "") or "")
+                            if item.strip()
+                        ]
+                    if not result.keywords:
+                        result.keywords = [
+                            item.strip() for item in re.split(r"[;,]", metadata.get("keywords", "") or "")
+                            if item.strip()
+                        ]
+                except Exception:
+                    pass
+            return result
+        except Exception as exc:
+            last_error = exc
+            log.warning(f"[standalone-chain] {parser_name} failed: {exc}")
+
+    if last_error:
+        raise last_error
+    raise RuntimeError("No PDF parser is available")
 
 
 # ============================================================

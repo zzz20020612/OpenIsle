@@ -257,7 +257,13 @@ def extract_knowledge_card(
     ]
 
     logger.info("paper_id=%d 开始提取知识卡片 model=%s", paper_id, llm_client.model)
-    result = llm_client.chat_json(messages)
+    # Knowledge cards contain nested claims, evidence anchors and limitations.
+    # A 4K output cap regularly truncates otherwise valid DeepSeek JSON, so give
+    # this richest extraction type a larger completion budget.
+    result = llm_client.chat_json(
+        messages,
+        max_tokens=max(8192, llm_client.max_tokens),
+    )
 
     # 补充 source_section_ids（如果 LLM 未填）
     if not result.get("source_section_ids"):

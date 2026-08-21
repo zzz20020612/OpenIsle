@@ -364,9 +364,23 @@ class SearchEngine:
             # title=1, abstract=2, full_text=6 (按建表顺序索引，UNINDEXED 也计数)
             highlight_title = f"highlight({self.FTS_TABLE}, 1, '<em>', '</em>') AS title_hl"
             highlight_abs = f"snippet({self.FTS_TABLE}, 2, '<em>', '</em>', ' ... ', {snippet_size}) AS abstract_hl"
-            select_cols.extend([highlight_title, highlight_abs])
+            highlight_fulltext = f"snippet({self.FTS_TABLE}, 6, '<em>', '</em>', ' ... ', {snippet_size}) AS fulltext_hl"
+            select_cols.extend([highlight_title, highlight_abs, highlight_fulltext])
         else:
-            select_cols.extend(["fts.title AS title_hl", "fts.abstract AS abstract_hl"])
+            select_cols.extend([
+                "fts.title AS title_hl",
+                "fts.abstract AS abstract_hl",
+                "substr(fts.full_text, 1, 900) AS fulltext_hl",
+            ])
+
+        # A publisher abstract is often absent even after a PDF and knowledge
+        # card exist. Read the knowledge summary and content state at query time
+        # so useful records do not render as title-only search results.
+        select_cols.extend([
+            "(SELECT core_answer FROM paper_knowledge_cards pk WHERE pk.paper_id = fts.paper_id) AS knowledge_summary",
+            "length(trim(coalesce(fts.abstract, ''))) AS abstract_length",
+            "length(trim(coalesce(fts.full_text, ''))) AS fulltext_length",
+        ])
 
         # 期刊分级（关联 papers 表取 journal_tier 字段）
         select_cols.append(
@@ -385,11 +399,40 @@ class SearchEngine:
         cur.execute(sql, params + [limit, offset])
         hits = []
         for row in cur.fetchall():
+            abstract_snippet = (row["abstract_hl"] or "").strip()
+            fulltext_snippet = (row["fulltext_hl"] or "").strip()
+            knowledge_summary = (row["knowledge_summary"] or "").strip()
+            if abstract_snippet:
+                snippet = abstract_snippet
+                snippet_source = "abstract"
+            elif match_expr and fulltext_snippet:
+                snippet = fulltext_snippet
+                snippet_source = "fulltext"
+            elif knowledge_summary:
+                snippet = knowledge_summary
+                snippet_source = "knowledge"
+            elif fulltext_snippet:
+                snippet = fulltext_snippet
+                snippet_source = "fulltext"
+            else:
+                snippet = ""
+                snippet_source = "metadata"
+
+            if knowledge_summary:
+                content_status = "knowledge"
+            elif row["fulltext_length"]:
+                content_status = "fulltext"
+            elif row["abstract_length"]:
+                content_status = "abstract"
+            else:
+                content_status = "metadata"
             hits.append({
                 "paper_id": row["paper_id"],
                 "doi": row["doi"],
                 "title": row["title_hl"] or row["title"],
-                "abstract_snippet": row["abstract_hl"],
+                "abstract_snippet": snippet,
+                "snippet_source": snippet_source,
+                "content_status": content_status,
                 "journal": row["journal"],
                 "published_year": row["published_year"],
                 "language": row["language"],

@@ -1,53 +1,66 @@
-# Scholar衡 Source Integration Audit
+# Existing-literature and Scholar衡 integration audit
 
-## Source
+## Accepted test scope
 
-- Package: `ScholarHeng-source-code-2026-08-09.zip`
-- Size: 6,536,282 bytes
-- SHA-256: `F0A9BBB531403EA66CB071FB20E666B56B4C3CE8201D1654625BAB55A013C9A5`
-- Reviewed: 2026-08-09
+The integrated test corpus is the first teammate's online-collected existing literature. OpenIsle submission
+drafts and submitted manuscripts remain a separate domain and are deliberately excluded from this evaluation
+test. A local-PDF import screen is not required for the accepted workflow.
 
-The package is a React 19 / Next-compatible Vinext interaction prototype. Its README explicitly states that
-paper data, reviewer identity, ratings, credit, appeals, and rankings are frontend demo data with no persistent
-database or formal user system. The included Drizzle schema is empty.
+## Data ownership and identity
 
-## Product Capabilities Reviewed
+- Existing literature metadata, downloaded open PDFs, parsed full text, sections, knowledge cards, methods and
+  data points are stored by `literature-system` in the `literature-data` Docker volume. The runtime database is
+  `/app/data/literature.db` and PDFs are under `/app/data/pdfs`.
+- OpenIsle users, literature ratings and score snapshots are stored in the OpenIsle MySQL volume.
+- `papers.id` from the literature database is the stable cross-system identity. It is stored as
+  `literature_ratings.literature_paper_id` and `literature_score_snapshots.literature_paper_id`.
+- Before accepting a rating, OpenIsle calls the literature service to verify that this paper ID exists.
+- Ranking rows use the same ID to retrieve current title, author and journal metadata and link back to
+  `/literature/{paperId}`. No duplicate paper record is created in MySQL.
 
-- PDF reading workspace.
-- AI originality evidence panel.
-- Six-dimensional human evaluation.
-- Written reader assessment and consensus display.
-- Reviewer task/history/credit/appeals concepts.
-- Field- and period-filtered scholar leaderboard.
-- Confidence, sample-size, and governance explanations.
+## Completed functional chain
 
-## Integrated Production Slice
+1. Search online metadata through Crossref, arXiv, PMC, OpenAlex, Semantic Scholar or PubMed. An `all_open`
+   option runs all open sources; WoS and Scopus remain available when their own API keys are configured.
+2. Deduplicate and upsert metadata. Previously collected matches continue into downstream stages instead of
+   incorrectly ending the one-click task with zero new rows.
+3. Locate and download an available open PDF, then parse full text, sections, figures and references.
+4. Extract a knowledge card, methods and data points with the configured DeepSeek-compatible LLM. Optional
+   embeddings are skipped transparently when no embedding key is configured.
+5. Display the same paper and extracted artifacts through the OpenIsle literature detail page.
+6. Let a registered OpenIsle user submit one updateable, written, read-confirmed six-dimensional evaluation.
+7. Recalculate Scholar衡 score status and expose formal paper/author rankings.
 
-The first real integration keeps the smallest complete and auditable slice:
+## Implemented Scholar衡 core rules
 
-- Six 1-5 dimensions: originality, rigor, evidence, significance, reproducibility, and clarity.
-- Mandatory reading confirmation and 20-500 character assessment.
-- One persistent rating per OpenIsle user and literature paper, with update behavior.
-- Synchronous score snapshot recalculation.
-- Public evaluation list and aggregate score on the literature detail page.
-- Evaluated-paper and scholar rankings derived from real literature metadata.
-- OpenIsle registration/JWT as the only user identity system.
-- Existing literature service as the only source of imported paper metadata and extracted knowledge.
+- Six dimensions use a 0-5 scale: originality 25%, rigor 20%, evidence 20%, significance 15%,
+  reproducibility 10%, and clarity 10%.
+- A written assessment of 20-500 characters and reading confirmation are mandatory.
+- Public evaluator names are pseudonymized; the evaluator can still retrieve their own rating.
+- Bayesian shrinkage uses prior mean 3.5, and score snapshots record the rule version.
+- Fewer than five ratings are `INITIAL` and do not expose a single aggregate score.
+- A paper becomes formally rankable only with at least 10 ratings, effective sample size at least 8, at least
+  three institution proxies and no institution contributing more than 40% of ratings. Other evaluated papers
+  remain `PROVISIONAL`.
 
-The prototype source itself is not copied into the Git history because its bundled demonstration PDF is marked
-for controlled internal use. The original package remains the team-controlled source artifact; this repository
-contains the integrated implementation and this reproducible source fingerprint.
+## Runtime evidence (2026-08-21)
 
-## Deferred Prototype Concepts
+- A real arXiv query collected literature paper `13` online.
+- Its open PDF was downloaded and parsed into 4 pages, 14,628 full-text characters and 8 sections.
+- DeepSeek extraction produced a knowledge card, a methods record and numerical data points.
+- OpenIsle `user1` logged in, read paper `13` through the OpenIsle bridge and saved rating `2` against
+  `literaturePaperId=13` under rule `SCHOLARHENG-1.0`.
+- The paper reports processing status `extracted`; with one evaluator its correct score status is `INITIAL`.
 
-The following screens are retained as product references, not presented as working production features:
+## Separate submission domain
 
-- Reviewer task matching.
-- Reviewer credit and qualification scoring.
-- Consensus-deviation penalties.
-- Appeal voting and governance workflow.
-- Field normalization, time-window trends, and confidence shrinkage.
-- AI originality matching against the full corpus.
+OpenIsle submission metadata lives in MySQL (`paper_submission_*`, `paper_profiles` and related tables), while
+uploaded manuscript files are stored under the configured OpenIsle upload directory. Submission-paper ratings
+remain separate and are not part of this existing-literature test or ranking.
 
-These require verified author/account linkage, conflict-of-interest rules, moderation roles, audit logs, and
-statistically defined ranking formulas before implementation.
+## Optional or later governance work
+
+The source prototype's reviewer task matching, reviewer credit/qualification, appeals, conflict-of-interest
+governance, and cross-field/time normalization are not required for this first end-to-end test. They need
+additional product rules and verified institution/account data. Semantic/vector search additionally requires an
+embedding key; keyword search and the complete accepted workflow do not.

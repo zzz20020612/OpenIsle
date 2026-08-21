@@ -156,6 +156,16 @@ export const usePaperApi = () => {
       headers: authHeaders(),
     })
 
+  const importDraftPdf = (draftId, file) => {
+    const body = new FormData()
+    body.append('file', file)
+    return $fetch(`${apiBaseUrl}/api/paper-submission-drafts/${draftId}/article/import-pdf`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body,
+    })
+  }
+
   const getPaperArticle = (paperId) =>
     $fetch(`${apiBaseUrl}/api/papers/${paperId}/article`, {
       headers: authHeaders(),
@@ -255,6 +265,7 @@ export const usePaperApi = () => {
     validateDraftArticle,
     markDraftArticleReady,
     reopenDraftArticle,
+    importDraftPdf,
     getPaperArticle,
     paperFileContentUrl,
     draftFileContentUrl,

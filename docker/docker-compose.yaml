@@ -198,16 +198,17 @@ services:
       CROSSREF_ARTICLE_TYPES_FILTER: ${CROSSREF_ARTICLE_TYPES_FILTER:-journal-article}
       UNPAYWALL_EMAIL: ${UNPAYWALL_EMAIL:-adminmail@openisle.com}
       OPENISLE_INTERNAL_TOKEN: ${LITERATURE_INTERNAL_TOKEN:-local-openisle-literature-bridge}
-      # Reuse the same OpenAI-compatible DeepSeek credentials as AI screening.
-      LLM_API_KEY: ${AI_SCREENING_API_KEY:-}
-      LLM_BASE_URL: ${AI_SCREENING_BASE_URL:-https://api.openai.com/v1}
-      LLM_MODEL: ${AI_SCREENING_MODEL:-deepseek/deepseek-v4-flash}
+      LITERATURE_STANDALONE_ADMIN_ENABLED: ${LITERATURE_STANDALONE_ADMIN_ENABLED:-false}
+      # LLM_* is intentionally not overridden here. config.py reads the
+      # AI_SCREENING_* values loaded from env_file at container runtime, so the
+      # literature worker always uses the same DeepSeek endpoint/model/key as
+      # screening even when Compose interpolation cannot see ../.env.
       EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
       EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-https://api.siliconflow.cn/v1}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-Qwen/Qwen3-Embedding-4B}
       EMBEDDING_DIM: ${EMBEDDING_DIM:-2560}
     ports:
-      - "${LITERATURE_PORT:-8088}:8088"
+      - "127.0.0.1:${LITERATURE_PORT:-8088}:8088"
     volumes:
       - literature-data:/app/data
     healthcheck:

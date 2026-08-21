@@ -53,6 +53,8 @@ import mimetypes
 import os
 import re
 import sys
+import tempfile
+import shutil
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Set, Tuple
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -89,6 +91,8 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
     engine: SearchEngine = None
 
     def _internal_authorized(self) -> bool:
+        if os.getenv("LITERATURE_STANDALONE_ADMIN_ENABLED", "false").lower() in ("1", "true", "yes"):
+            return True
         expected = os.getenv("OPENISLE_INTERNAL_TOKEN", "").strip()
         supplied = self.headers.get("X-OpenIsle-Internal-Token", "").strip()
         return bool(expected) and supplied == expected
@@ -363,6 +367,37 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
             return
 
         try:
+            if path == "/submission/parse-pdf":
+                length = int(self.headers.get("Content-Length", 0) or 0)
+                max_bytes = int(os.getenv("SUBMISSION_PDF_MAX_BYTES", str(100 * 1024 * 1024)))
+                if length <= 0:
+                    self._send_error(400, "PDF body is required")
+                    return
+                if length > max_bytes:
+                    self._send_error(413, "PDF exceeds the submission import size limit")
+                    return
+                body = self.rfile.read(length)
+                if not body.startswith(b"%PDF-"):
+                    self._send_error(400, "The uploaded file is not a valid PDF")
+                    return
+                temp_path = None
+                try:
+                    with tempfile.NamedTemporaryFile(prefix="openisle-submission-", suffix=".pdf", delete=False) as temp_file:
+                        temp_file.write(body)
+                        temp_path = Path(temp_file.name)
+                    from pdf.pipeline import parse_pdf_document
+                    result = parse_pdf_document(temp_path)
+                    self._send_json(200, result.to_dict())
+                finally:
+                    if temp_path is not None:
+                        safe_stem = re.sub(r"[^A-Za-z0-9_.-]", "_", temp_path.stem)[:120]
+                        for artifact_root in ("mineru_results", "figures"):
+                            artifact_dir = Path(config.PDF_DOWNLOAD_DIR) / artifact_root / safe_stem
+                            if artifact_dir.is_dir():
+                                shutil.rmtree(artifact_dir, ignore_errors=True)
+                        temp_path.unlink(missing_ok=True)
+                return
+
             if path == "/rebuild":
                 task_id = submit_task(_rebuild_task)
                 self._send_json(200, {"status": "ok", "task_id": task_id})
@@ -393,8 +428,12 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                 year_from = (data.get("year_from") or "").strip()
                 year_to = (data.get("year_to") or "").strip()
                 journal = (data.get("journal") or "").strip()
-                task_id = submit_task(_collect_task, keyword, rows, max_pages, year_from, year_to, journal)
-                self._send_json(200, {"status": "ok", "task_id": task_id, "keyword": keyword})
+                source = (data.get("collection_source") or data.get("source") or "crossref").strip().lower()
+                if source not in COLLECTION_SOURCES:
+                    self._send_error(400, "不支持的采集来源")
+                    return
+                task_id = submit_task(_collect_task, keyword, rows, max_pages, year_from, year_to, journal, source)
+                self._send_json(200, {"status": "ok", "task_id": task_id, "keyword": keyword, "source": source})
                 return
 
             if path == "/parse":
@@ -527,8 +566,12 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                 journal = (data.get("journal") or "").strip()
                 parse_source = (data.get("parse_source") or "all").strip()
                 parse_limit = int(data.get("parse_limit", 15) or 15)
-                task_id = submit_task(_pipeline_task, keyword, rows, max_pages, year_from, year_to, journal, parse_source, parse_limit)
-                self._send_json(200, {"status": "ok", "task_id": task_id, "keyword": keyword})
+                collection_source = (data.get("collection_source") or "crossref").strip().lower()
+                if collection_source not in COLLECTION_SOURCES:
+                    self._send_error(400, "不支持的采集来源")
+                    return
+                task_id = submit_task(_pipeline_task, keyword, rows, max_pages, year_from, year_to, journal, parse_source, parse_limit, collection_source)
+                self._send_json(200, {"status": "ok", "task_id": task_id, "keyword": keyword, "source": collection_source})
                 return
 
             self._send_error(404, f"未知路径: {path}")
@@ -657,9 +700,9 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
         """
         try:
             if service == "llm":
-                api_key = data.get("api_key", "").strip()
-                base_url = data.get("base_url", "").strip()
-                model = data.get("model", "").strip()
+                api_key = data.get("api_key", "").strip() or config.LLM_API_KEY
+                base_url = data.get("base_url", "").strip() or config.LLM_BASE_URL
+                model = data.get("model", "").strip() or config.LLM_MODEL
                 
                 if not api_key or not base_url:
                     return {"success": False, "message": "缺少 API Key 或 Base URL"}
@@ -688,9 +731,9 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                     return {"success": False, "message": f"连接失败: {response.status_code} - {response.text[:100]}"}
             
             elif service == "embedding":
-                api_key = data.get("api_key", "").strip()
-                base_url = data.get("base_url", "").strip()
-                model = data.get("model", "").strip()
+                api_key = data.get("api_key", "").strip() or config.EMBEDDING_API_KEY
+                base_url = data.get("base_url", "").strip() or config.EMBEDDING_BASE_URL
+                model = data.get("model", "").strip() or config.EMBEDDING_MODEL
                 
                 if not api_key or not base_url:
                     return {"success": False, "message": "缺少 API Key 或 Base URL"}
@@ -718,7 +761,7 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                     return {"success": False, "message": f"连接失败: {response.status_code} - {response.text[:100]}"}
             
             elif service == "mineru":
-                api_key = data.get("api_key", "").strip()
+                api_key = data.get("api_key", "").strip() or config.MINERU_API_KEY
                 if not api_key:
                     return {"success": False, "message": "缺少 API Key"}
                 
@@ -736,7 +779,7 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                     return {"success": False, "message": f"连接失败: {response.status_code}"}
             
             elif service == "wos":
-                api_key = data.get("api_key", "").strip()
+                api_key = data.get("api_key", "").strip() or config.WOS_API_KEY
                 if not api_key:
                     return {"success": False, "message": "缺少 API Key"}
                 
@@ -756,6 +799,8 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
             
             elif service == "scopus":
                 api_key = data.get("api_key", "").strip()
+                if not api_key and config.SCOPUS_API_KEYS:
+                    api_key = config.SCOPUS_API_KEYS[0]
                 if not api_key:
                     return {"success": False, "message": "缺少 API Key"}
                 
@@ -1045,6 +1090,10 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
         if sub_path == "" or sub_path == "detail":
             paper = self.engine.get_paper_detail(pid)
             if paper:
+                from pdf.pipeline import get_pdf_path
+                pdf_path = get_pdf_path(pid, paper.get("doi"))
+                paper["pdf_available"] = bool(pdf_path and pdf_path.exists())
+                paper["processing_status"] = self._get_processing_status(pid, paper)
                 return {"status": 200, "data": paper}
             return {"status": 404, "data": {"error": f"论文 {pid} 不存在"}}
 
@@ -1073,6 +1122,24 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
             return {"status": 200, "data": authors_api.get_paper_authors(self.engine.conn, pid)}
 
         return {"status": 404, "data": {"error": f"未知子路径: {sub_path}"}}
+
+    def _get_processing_status(self, paper_id: int, paper: Dict) -> str:
+        """Expose one stable end-to-end state for OpenIsle and the source UI."""
+        fulltext = bool(paper.get("fulltext_meta"))
+        cur = self.engine.conn.cursor()
+        extracted = []
+        for table in ("paper_knowledge_cards", "paper_methods"):
+            cur.execute(f"SELECT 1 FROM {table} WHERE paper_id = ? LIMIT 1", (paper_id,))
+            extracted.append(cur.fetchone() is not None)
+        if fulltext and all(extracted):
+            return "extracted"
+        if fulltext and any(extracted):
+            return "partially_extracted"
+        if fulltext:
+            return "parsed"
+        if paper.get("pdf_available"):
+            return "pdf_downloaded"
+        return "metadata_only"
 
     def _get_paper_knowledge(self, paper_id: int) -> Dict:
         cur = self.engine.conn.cursor()
@@ -1107,11 +1174,16 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
             return {"paper_id": paper_id, "methods": None}
         methods = dict(row)
         for k in ("workflow", "data_sources", "models_algorithms", "evaluation_metrics"):
-            if methods.get(k) and isinstance(methods[k], str):
+            # Historical extraction rows may contain JSON encoded twice. Decode
+            # until a structured value is reached so the UI does not show an
+            # escaped JSON string as manuscript content.
+            for _ in range(2):
+                if not methods.get(k) or not isinstance(methods[k], str):
+                    break
                 try:
                     methods[k] = json.loads(methods[k])
                 except json.JSONDecodeError:
-                    pass
+                    break
         return {"paper_id": paper_id, "methods": methods}
 
     def _get_paper_data_points(self, paper_id: int) -> Dict:
@@ -2258,7 +2330,20 @@ def _sync_task(proxy, paper_id: int) -> Dict[str, Any]:
         engine.close()
 
 
-def _collect_task(proxy, keyword: str, rows: int, max_pages: int, year_from: str = "", year_to: str = "", journal: str = "") -> Dict[str, Any]:
+OPEN_COLLECTION_SOURCES = ("crossref", "arxiv", "pmc", "openalex", "semanticscholar", "pubmed")
+COLLECTION_SOURCES = frozenset((*OPEN_COLLECTION_SOURCES, "all_open", "wos", "scopus"))
+
+
+def _collect_task(
+    proxy,
+    keyword: str,
+    rows: int,
+    max_pages: int,
+    year_from: str = "",
+    year_to: str = "",
+    journal: str = "",
+    source: str = "crossref",
+) -> Dict[str, Any]:
     """多源文献采集任务。
     
     参数:
@@ -2269,28 +2354,49 @@ def _collect_task(proxy, keyword: str, rows: int, max_pages: int, year_from: str
         year_to: 截止年份（Crossref API 原生支持）
         journal: 期刊名称筛选（预留，Crossref 列表 API 不支持原生过滤）
     """
-    proxy.set_progress(5, f"开始采集关键词: {keyword}")
+    proxy.set_progress(5, f"开始从 {source} 采集关键词: {keyword}")
     wf_settings.apply_to_config()
-    from collect.multi_source_collector import run_collection
     from config import SQLITE_PATH
     start_date = year_from.strip() if year_from else None
     end_date = year_to.strip() if year_to else None
-    collection = run_collection(
-        keyword,
-        rows,
-        max_pages,
-        start_date,
-        end_date,
-        str(SQLITE_PATH),
-        fix_authors_flag=True,
-        return_details=True,
-    )
-    inserted = collection["inserted"]
-    proxy.set_progress(100, f"采集完成，入库 {inserted} 条")
+    sources = OPEN_COLLECTION_SOURCES if source == "all_open" else (source,)
+    paper_ids = []
+    per_source = {}
+    inserted = 0
+    for index, selected_source in enumerate(sources):
+        proxy.set_progress(5 + int(index / len(sources) * 85), f"采集 {selected_source}: {keyword}")
+        try:
+            if selected_source == "crossref":
+                from collect.multi_source_collector import run_collection
+                collection = run_collection(
+                    keyword, rows, max_pages, start_date, end_date,
+                    str(SQLITE_PATH), fix_authors_flag=True, return_details=True,
+                )
+                count = int(collection.get("inserted", 0))
+            else:
+                from collect.oa_import import fetch_and_import
+                collection = fetch_and_import(
+                    selected_source, keyword, rows, max_pages,
+                    start_date=start_date, end_date=end_date, return_details=True,
+                )
+                count = int(collection.get("processed", 0))
+            ids = [int(paper_id) for paper_id in collection.get("paper_ids", [])]
+            paper_ids.extend(ids)
+            inserted += count
+            per_source[selected_source] = {"processed": count, "paper_ids": ids}
+        except Exception as exc:
+            LOGGER.exception("数据源 %s 采集失败", selected_source)
+            per_source[selected_source] = {"processed": 0, "paper_ids": [], "error": str(exc)}
+
+    paper_ids = list(dict.fromkeys(paper_ids))
+    _sync_search_papers(paper_ids)
+    proxy.set_progress(100, f"采集完成，处理 {inserted} 条，匹配 {len(paper_ids)} 篇")
     return {
         "keyword": keyword,
+        "source": source,
         "inserted": inserted,
-        "paper_ids": collection["paper_ids"],
+        "paper_ids": paper_ids,
+        "per_source": per_source,
     }
 
 
@@ -2347,8 +2453,28 @@ def _parse_task(proxy, source: str, limit: int, force: bool, paper_ids=None) -> 
             failed += 1
             LOGGER.exception("解析论文 %s 失败", p['id'])
 
+    # Full text is stored after collection, so refresh every attempted paper.
+    # This makes successful parses searchable without a manual index rebuild.
+    _sync_search_papers([paper["id"] for paper in papers])
     proxy.set_progress(100, f"解析完成: 成功={success}, 跳过={skipped}, 失败={failed}")
     return {"source": source, "limit": limit, "success": success, "skipped": skipped, "failed": failed}
+
+
+def _sync_search_papers(paper_ids) -> int:
+    """Incrementally refresh collected or parsed papers in the FTS index."""
+    ids = list(dict.fromkeys(int(paper_id) for paper_id in (paper_ids or [])))
+    if not ids:
+        return 0
+    engine = SearchEngine()
+    synced = 0
+    try:
+        engine.ensure_index()
+        for paper_id in ids:
+            if engine.sync_paper(paper_id):
+                synced += 1
+    finally:
+        engine.close()
+    return synced
 
 
 def _extract_task(proxy, paper_ids=None) -> Dict[str, Any]:
@@ -2515,21 +2641,21 @@ def _quality_re_extract_task(proxy, paper_id: int) -> Dict[str, Any]:
     }
 
 
-def _pipeline_task(proxy, keyword: str, rows: int, max_pages: int, year_from: str, year_to: str, journal: str, parse_source: str, parse_limit: int) -> Dict[str, Any]:
+def _pipeline_task(proxy, keyword: str, rows: int, max_pages: int, year_from: str, year_to: str, journal: str, parse_source: str, parse_limit: int, collection_source: str = "crossref") -> Dict[str, Any]:
     """一键全流程任务：采集 → 解析 → 提炼，自动串联执行。"""
     result = {"keyword": keyword, "collect": {}, "parse": {}, "extract": {}}
 
     # 阶段 1: 采集 (0-30%)
     proxy.set_progress(0, f"【采集】开始: {keyword}")
-    collect_result = _collect_task(proxy, keyword, rows, max_pages, year_from, year_to, journal)
+    collect_result = _collect_task(proxy, keyword, rows, max_pages, year_from, year_to, journal, collection_source)
     result["collect"] = collect_result
-    if collect_result.get("inserted", 0) == 0:
-        proxy.set_progress(100, "全流程结束: 采集无新增论文")
+    paper_ids = collect_result.get("paper_ids", [])
+    if not paper_ids:
+        proxy.set_progress(100, "全流程结束: 没有检索到可处理的文献")
         return result
 
     # 阶段 2: 解析 (30-60%)
     proxy.set_progress(30, f"【解析】开始: {parse_source}, 上限 {parse_limit} 篇")
-    paper_ids = collect_result.get("paper_ids", [])
     parse_result = _parse_task(
         proxy,
         parse_source,
@@ -2562,6 +2688,12 @@ def _archive_jobs_task(proxy, days: int, batch: int) -> Dict[str, Any]:
 # ============================================================
 def run_server(host: str = "127.0.0.1", port: int = 8088, ensure_index: bool = True):
     """启动 HTTP 服务器。"""
+    # Background extraction threads cannot survive a service restart.  Close
+    # their persisted ``running`` rows before accepting new retry requests so a
+    # restarted Docker service can immediately resume incomplete knowledge
+    # cards instead of waiting for the normal stale-job timeout.
+    from phase3.job_tracker import reset_stale_running_jobs
+    reset_stale_running_jobs(stale_seconds=0)
     engine = SearchEngine()
     if ensure_index:
         engine.ensure_index()

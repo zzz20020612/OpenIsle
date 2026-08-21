@@ -13,6 +13,6 @@ public class LiteraturePaperRankingDto {
   private String journal;
   private Integer year;
   private int ratingCount;
-  private double compositeScore;
+  private Double compositeScore;
   private LiteratureScoreSnapshotDto scoreSnapshot;
 }

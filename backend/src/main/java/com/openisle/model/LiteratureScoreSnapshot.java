@@ -50,6 +50,27 @@ public class LiteratureScoreSnapshot {
   @Column(name = "composite_score", nullable = false)
   private double compositeScore;
 
+  @Column(name = "unshrunk_composite_score", nullable = false)
+  private double unshrunkCompositeScore;
+
+  @Column(name = "effective_sample_size", nullable = false)
+  private double effectiveSampleSize;
+
+  @Column(name = "institution_count", nullable = false)
+  private int institutionCount;
+
+  @Column(name = "largest_institution_share", nullable = false)
+  private double largestInstitutionShare;
+
+  @Column(name = "ranking_status", nullable = false, length = 20)
+  private String rankingStatus;
+
+  @Column(name = "ranking_eligible", nullable = false)
+  private boolean rankingEligible;
+
+  @Column(name = "rule_version", nullable = false, length = 32)
+  private String ruleVersion;
+
   @UpdateTimestamp
   @Column(name = "calculated_at", nullable = false)
   private LocalDateTime calculatedAt;

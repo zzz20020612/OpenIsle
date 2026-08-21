@@ -77,7 +77,7 @@ const {
 } = usePaperArticleDraft(draftId)
 const submission = usePaperSubmissionDraft()
 const docxImport = useDocxArticleImport()
-const pdfImport = usePdfArticleImport()
+const pdfImport = usePdfArticleImport(draftId)
 const form = submission.form
 const selectedKey = ref('')
 const showImportReview = ref(false)
@@ -175,7 +175,11 @@ const handleManuscriptImport = async (event) => {
     const imported = file.name.toLowerCase().endsWith('.pdf')
       ? await pdfImport.importPdf(file)
       : await docxImport.importDocx(file, uploadImportedFigure)
+    if (imported.metadata?.title && !form.title?.trim()) form.title = imported.metadata.title
+    if (imported.metadata?.abstractText && !form.abstractText?.trim()) form.abstractText = imported.metadata.abstractText
+    if (imported.metadata?.keywords?.length && !form.keywords?.length) form.keywords = imported.metadata.keywords
     article.value.sections = imported.sections
+    await submission.flush()
     showImportReview.value = true
     selectedKey.value = imported.sections[0]?.key || ''
     scheduleSave()

@@ -3,6 +3,7 @@ package com.openisle.controller;
 import com.openisle.dto.PaperArticleDto;
 import com.openisle.dto.PaperArticleValidationDto;
 import com.openisle.service.PaperArticleService;
+import com.openisle.service.LiteratureIntegrationService.LiteratureProxyResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +16,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequiredArgsConstructor
@@ -39,6 +43,33 @@ public class PaperArticleController {
     Authentication authentication
   ) {
     return articleService.updateDraftArticle(authentication.getName(), draftId, request);
+  }
+
+  @PostMapping(
+    value = "/api/paper-submission-drafts/{draftId}/article/import-pdf",
+    consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+  )
+  @SecurityRequirement(name = "JWT")
+  @Operation(summary = "Parse a PDF into editable structured article content")
+  public ResponseEntity<?> importPdf(
+    @PathVariable Long draftId,
+    @org.springframework.web.bind.annotation.RequestParam("file") MultipartFile file,
+    Authentication authentication
+  ) throws java.io.IOException {
+    if (file.isEmpty()) throw new IllegalArgumentException("PDF file is empty");
+    if (file.getSize() > 100L * 1024L * 1024L) {
+      throw new IllegalArgumentException("PDF exceeds the 100 MB import limit");
+    }
+    String name = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase();
+    if (!name.endsWith(".pdf") && !MediaType.APPLICATION_PDF_VALUE.equalsIgnoreCase(file.getContentType())) {
+      throw new IllegalArgumentException("Only PDF files can be imported here");
+    }
+    LiteratureProxyResponse response = articleService.parseDraftPdf(
+      authentication.getName(),
+      draftId,
+      file.getBytes()
+    );
+    return ResponseEntity.status(response.status()).body(response.body());
   }
 
   @PostMapping("/api/paper-submission-drafts/{draftId}/article/validate")

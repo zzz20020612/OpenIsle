@@ -1423,7 +1423,13 @@
                     ...(state.year_from ? { year_from: state.year_from } : {}),
                     ...(state.year_to ? { year_to: state.year_to } : {})
                 };
-                const diagnostics = await API.getGraphDiagnostics(diagParams);
+                // Diagnostics are an administrator-only capability in the OpenIsle integration.
+                // The public graph must remain usable when the original standalone workspace
+                // does not have the internal service credential.
+                const diagnostics = await API.getGraphDiagnostics(diagParams).catch((error) => {
+                    console.info('[network] graph diagnostics unavailable in public workspace:', error.message);
+                    return { issue_count: 0, issues: [], unavailable: true };
+                });
                 lastDiagnostics = diagnostics;
 
                 // 收集问题节点 ID（孤立节点、时间异常等）

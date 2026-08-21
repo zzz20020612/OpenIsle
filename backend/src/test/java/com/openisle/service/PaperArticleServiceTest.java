@@ -45,6 +45,7 @@ class PaperArticleServiceTest {
   @Mock private UserRepository userRepository;
   @Mock private PaperArticleValidator validator;
   @Mock private PaperAccessPolicy paperAccessPolicy;
+  @Mock private LiteratureIntegrationService literatureIntegrationService;
 
   private PaperArticleService service;
   private User owner;
@@ -60,7 +61,8 @@ class PaperArticleServiceTest {
       userRepository,
       validator,
       paperAccessPolicy,
-      new ObjectMapper().findAndRegisterModules()
+      new ObjectMapper().findAndRegisterModules(),
+      literatureIntegrationService
     );
     owner = new User();
     owner.setId(7L);

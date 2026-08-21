@@ -23,14 +23,15 @@
             <span v-if="paper.journal" class="paper-pill subject">{{ paper.journal }}</span>
             <span v-if="publicationYear" class="paper-pill">{{ publicationYear }}</span>
             <span v-if="paper.source" class="paper-pill">Source: {{ paper.source }}</span>
+            <span class="paper-pill" :class="{ subject: paper.processing_status === 'extracted' }">{{ processingStatusLabel }}</span>
             <span v-if="paper.citation_count != null" class="paper-pill">
               {{ paper.citation_count }} citations
             </span>
             <a v-if="paper.doi" class="paper-pill literature-doi" :href="doiUrl" target="_blank" rel="noopener">
               DOI {{ paper.doi }}
             </a>
-            <a class="paper-pill literature-doi" :href="pdfViewUrl" target="_blank" rel="noopener">View open PDF</a>
-            <button v-if="clientReady && authState.loggedIn" class="paper-pill literature-doi" type="button" @click="downloadPdf">Download PDF</button>
+            <a v-if="paper.pdf_available" class="paper-pill literature-doi" :href="pdfViewUrl" target="_blank" rel="noopener">View open PDF</a>
+            <button v-if="paper.pdf_available && clientReady && authState.loggedIn" class="paper-pill literature-doi" type="button" @click="downloadPdf">Download PDF</button>
           </div>
         </header>
 
@@ -112,11 +113,17 @@
             <section class="paper-card literature-rating-card">
               <div class="literature-score-heading">
                 <span>
-                  <small>Community score</small>
-                  <strong>{{ score.ratingCount ? Number(score.compositeScore).toFixed(1) : '—' }}</strong>
+                  <small>{{ scoreStatusLabel }}</small>
+                  <strong>{{ score.compositeScore == null ? '—' : Number(score.compositeScore).toFixed(2) }}</strong>
                 </span>
-                <p>{{ score.ratingCount || 0 }} verified {{ score.ratingCount === 1 ? 'rating' : 'ratings' }}</p>
+                <p>{{ score.ratingCount || 0 }} {{ score.ratingCount === 1 ? 'rating' : 'ratings' }} · n_eff {{ Number(score.effectiveSampleSize || 0).toFixed(1) }}</p>
               </div>
+              <p class="paper-section-note score-rule-note">
+                Rule {{ score.ruleVersion || 'SCHOLARHENG-1.0' }} · weighted 0–5 evaluation.
+                <template v-if="score.rankingStatus === 'INITIAL'">Fewer than five ratings: dimension summaries are shown without a single overall score.</template>
+                <template v-else-if="score.rankingStatus === 'PROVISIONAL'">This score is provisional and does not enter the formal ranking.</template>
+                <template v-else-if="score.rankingStatus === 'FORMAL'">This paper meets the current formal-ranking sample thresholds.</template>
+              </p>
 
               <ClientOnly>
                 <template v-if="clientReady && authState.loggedIn">
@@ -127,7 +134,7 @@
                       <legend><span>{{ dimension.label }}</span><small>{{ dimension.hint }}</small></legend>
                       <div role="group" :aria-label="`${dimension.label} score`">
                         <button
-                          v-for="value in 5"
+                          v-for="value in scoreOptions"
                           :key="value"
                           type="button"
                           :class="{ selected: ratingForm[dimension.key] === value }"
@@ -191,8 +198,8 @@
             <section class="paper-card">
               <h2 class="paper-section-title">PDF access</h2>
               <p class="paper-section-note">
-                Open PDFs can be viewed in the browser. Registered users can also download the source file
-                through OpenIsle's authenticated access endpoint.
+                <template v-if="paper.pdf_available">The downloaded open PDF is connected to this record and can be viewed here. Registered users can also download it through OpenIsle.</template>
+                <template v-else>No open PDF has been downloaded for this record yet. Metadata remains available, and the processing workflow can retry open-access discovery.</template>
               </p>
             </section>
           </aside>
@@ -222,20 +229,21 @@ const paperId = computed(() => String(route.params.id))
 const clientReady = ref(false)
 
 const dimensions = [
-  { key: 'originalityScore', label: 'Originality', short: 'Originality', hint: 'What is genuinely new?' },
-  { key: 'rigorScore', label: 'Methodological rigor', short: 'Rigor', hint: 'Are the methods reliable?' },
-  { key: 'evidenceScore', label: 'Evidence sufficiency', short: 'Evidence', hint: 'Do the results support the claims?' },
-  { key: 'significanceScore', label: 'Scholarly significance', short: 'Significance', hint: 'Does the work matter to the field?' },
-  { key: 'reproducibilityScore', label: 'Reproducibility', short: 'Reproducibility', hint: 'Is the process transparent?' },
-  { key: 'clarityScore', label: 'Clarity', short: 'Clarity', hint: 'Is the argument understandable?' },
+  { key: 'originalityScore', label: 'Originality', short: 'Originality', hint: '25% · What is genuinely new?', weight: .25 },
+  { key: 'rigorScore', label: 'Methodological rigor', short: 'Rigor', hint: '20% · Are the methods reliable?', weight: .20 },
+  { key: 'evidenceScore', label: 'Evidence sufficiency', short: 'Evidence', hint: '20% · Do results support claims?', weight: .20 },
+  { key: 'significanceScore', label: 'Scholarly significance', short: 'Significance', hint: '15% · Does the work matter?', weight: .15 },
+  { key: 'reproducibilityScore', label: 'Reproducibility', short: 'Reproducibility', hint: '10% · Is the process transparent?', weight: .10 },
+  { key: 'clarityScore', label: 'Clarity', short: 'Clarity', hint: '10% · Is the argument clear?', weight: .10 },
 ]
+const scoreOptions = [0, 1, 2, 3, 4, 5]
 const ratingForm = reactive({
-  originalityScore: 0,
-  rigorScore: 0,
-  evidenceScore: 0,
-  significanceScore: 0,
-  reproducibilityScore: 0,
-  clarityScore: 0,
+  originalityScore: null,
+  rigorScore: null,
+  evidenceScore: null,
+  significanceScore: null,
+  reproducibilityScore: null,
+  clarityScore: null,
   comment: '',
   readConfirmed: false,
 })
@@ -267,14 +275,26 @@ const dataPoints = computed(() => data.value?.dataPointsResult?.data_points || [
 const score = computed(() => data.value?.score || {})
 const ratings = computed(() => Array.isArray(data.value?.ratings) ? data.value.ratings : [])
 const canSubmitRating = computed(() =>
-  dimensions.every((dimension) => ratingForm[dimension.key] >= 1) &&
+  dimensions.every((dimension) => Number.isInteger(ratingForm[dimension.key]) && ratingForm[dimension.key] >= 0 && ratingForm[dimension.key] <= 5) &&
   ratingForm.readConfirmed &&
   ratingForm.comment.trim().length >= 20,
 )
+const scoreStatusLabel = computed(() => ({
+  INITIAL: 'Initial distribution',
+  PROVISIONAL: 'Provisional score',
+  FORMAL: 'Formal score',
+})[score.value.rankingStatus] || 'Community evaluation')
 const publicationYear = computed(() => {
   const date = paper.value?.published_date
   return date ? String(date).slice(0, 4) : ''
 })
+const processingStatusLabel = computed(() => ({
+  extracted: 'PDF parsed · knowledge extracted',
+  partially_extracted: 'Knowledge partially extracted',
+  parsed: 'PDF parsed',
+  pdf_downloaded: 'PDF downloaded',
+  metadata_only: 'Metadata only',
+})[paper.value?.processing_status] || 'Processing status unavailable')
 const doiUrl = computed(() => `https://doi.org/${paper.value?.doi || ''}`)
 const pdfViewUrl = computed(() => `${runtimeConfig.public.apiBaseUrl}/api/literature/papers/${paperId.value}/pdf`)
 const downloadPdf = async () => {
@@ -306,7 +326,7 @@ onMounted(async () => {
 
 function fillRatingForm(rating) {
   if (!rating) return
-  dimensions.forEach((dimension) => { ratingForm[dimension.key] = Number(rating[dimension.key] || 0) })
+  dimensions.forEach((dimension) => { ratingForm[dimension.key] = Number(rating[dimension.key]) })
   ratingForm.comment = rating.comment || ''
   ratingForm.readConfirmed = true
 }
@@ -328,8 +348,7 @@ async function submitRating() {
 }
 
 function ratingAverage(rating) {
-  const total = dimensions.reduce((sum, dimension) => sum + Number(rating?.[dimension.key] || 0), 0)
-  return (total / dimensions.length).toFixed(1)
+  return dimensions.reduce((sum, dimension) => sum + Number(rating?.[dimension.key] || 0) * dimension.weight, 0).toFixed(2)
 }
 
 function formatDate(value) {
@@ -536,7 +555,7 @@ function formatAuthors(value) {
 
 .literature-dimensions fieldset > div {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 5px;
 }
 
@@ -615,6 +634,7 @@ function formatAuthors(value) {
 
 .literature-rating-error { color: #b42318; }
 .literature-rating-success { color: var(--paper-green); }
+.score-rule-note { margin: -6px 0 18px; }
 
 .literature-review-list {
   display: grid;

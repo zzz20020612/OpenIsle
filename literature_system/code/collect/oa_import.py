@@ -145,7 +145,15 @@ def upsert_paper(cur, item):
     row = cur.fetchone()
     return row[0] if row else None
 
-def fetch_and_import(source, keyword, page_size, max_pages, start_date=None, end_date=None):
+def fetch_and_import(
+    source,
+    keyword,
+    page_size,
+    max_pages,
+    start_date=None,
+    end_date=None,
+    return_details=False,
+):
     """采集数据并导入数据库"""
     adapter_classes = {
         "arxiv": ArxivAdapter,
@@ -165,6 +173,7 @@ def fetch_and_import(source, keyword, page_size, max_pages, start_date=None, end
     cur = conn.cursor()
 
     total_inserted = 0
+    paper_ids = []
     for page in range(max_pages):
         LOGGER.info("%s 正在抓取第 %s 页...", source, page + 1)
         items = adapter.fetch(keyword, page, page_size, start_date=start_date, end_date=end_date)
@@ -176,6 +185,7 @@ def fetch_and_import(source, keyword, page_size, max_pages, start_date=None, end
             try:
                 paper_id = upsert_paper(cur, item)
                 if paper_id:
+                    paper_ids.append(int(paper_id))
                     try:
                         resolve_paper(paper_id, item.get("author"), conn)
                     except Exception as e:
@@ -190,6 +200,12 @@ def fetch_and_import(source, keyword, page_size, max_pages, start_date=None, end
     cur.close()
     conn.close()
     LOGGER.info("%s 入库完成，共导入 %s 条", source, total_inserted)
+    if return_details:
+        return {
+            "source": source,
+            "processed": total_inserted,
+            "paper_ids": list(dict.fromkeys(paper_ids)),
+        }
     return total_inserted
 
 

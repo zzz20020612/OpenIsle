@@ -28,6 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class LiteratureRatingService {
 
+  static final String RULE_VERSION = "SCHOLARHENG-1.0";
+  static final double PRIOR_MEAN = 3.5;
+
   private final LiteratureRatingRepository ratingRepository;
   private final LiteratureScoreSnapshotRepository snapshotRepository;
   private final UserRepository userRepository;
@@ -80,7 +83,7 @@ public class LiteratureRatingService {
     return ratingRepository
       .findByLiteraturePaperIdOrderByUpdatedAtDesc(literaturePaperId)
       .stream()
-      .map(rating -> toResponse(rating, null))
+      .map(this::toPublicResponse)
       .toList();
   }
 
@@ -99,7 +102,7 @@ public class LiteratureRatingService {
     List<LiteratureScoreSnapshot> snapshots = snapshotRepository
       .findAll()
       .stream()
-      .filter(snapshot -> snapshot.getRatingCount() > 0)
+      .filter(LiteratureScoreSnapshot::isRankingEligible)
       .sorted(
         Comparator.comparingDouble(LiteratureScoreSnapshot::getCompositeScore)
           .reversed()
@@ -182,8 +185,8 @@ public class LiteratureRatingService {
   }
 
   private void validateScore(String field, Integer value) {
-    if (value == null || value < 1 || value > 5) {
-      throw new IllegalArgumentException(field + " must be between 1 and 5");
+    if (value == null || value < 0 || value > 5) {
+      throw new IllegalArgumentException(field + " must be between 0 and 5");
     }
   }
 
@@ -200,19 +203,45 @@ public class LiteratureRatingService {
     snapshot.setAverageSignificanceScore(average(ratings, LiteratureRating::getSignificanceScore));
     snapshot.setAverageReproducibilityScore(average(ratings, LiteratureRating::getReproducibilityScore));
     snapshot.setAverageClarityScore(average(ratings, LiteratureRating::getClarityScore));
-    snapshot.setCompositeScore(
-      round(
-        (
-          snapshot.getAverageOriginalityScore() +
-          snapshot.getAverageRigorScore() +
-          snapshot.getAverageEvidenceScore() +
-          snapshot.getAverageSignificanceScore() +
-          snapshot.getAverageReproducibilityScore() +
-          snapshot.getAverageClarityScore()
-        ) / 6.0
-      )
+    double unshrunk = round(ratings.stream().mapToDouble(this::weightedScore).average().orElse(0));
+    double effectiveSampleSize = ratings.size();
+    Map<String, Long> institutionCounts = ratings.stream().collect(
+      java.util.stream.Collectors.groupingBy(this::institutionKey, java.util.stream.Collectors.counting())
     );
+    double largestInstitutionShare = ratings.isEmpty()
+      ? 0
+      : institutionCounts.values().stream().mapToLong(Long::longValue).max().orElse(0) / (double) ratings.size();
+    boolean formal = ratings.size() >= 10 && effectiveSampleSize >= 8 && institutionCounts.size() >= 3 && largestInstitutionShare <= 0.4;
+    String status = ratings.size() < 5 ? "INITIAL" : formal ? "FORMAL" : "PROVISIONAL";
+    double shrunk = ratings.isEmpty()
+      ? 0
+      : (effectiveSampleSize / (effectiveSampleSize + 10.0)) * unshrunk + (10.0 / (effectiveSampleSize + 10.0)) * PRIOR_MEAN;
+    snapshot.setUnshrunkCompositeScore(unshrunk);
+    snapshot.setCompositeScore(round(shrunk));
+    snapshot.setEffectiveSampleSize(round(effectiveSampleSize));
+    snapshot.setInstitutionCount(institutionCounts.size());
+    snapshot.setLargestInstitutionShare(round(largestInstitutionShare));
+    snapshot.setRankingStatus(status);
+    snapshot.setRankingEligible(formal);
+    snapshot.setRuleVersion(RULE_VERSION);
     return snapshotRepository.save(snapshot);
+  }
+
+  private double weightedScore(LiteratureRating rating) {
+    return (
+      0.25 * rating.getOriginalityScore() +
+      0.20 * rating.getRigorScore() +
+      0.20 * rating.getEvidenceScore() +
+      0.15 * rating.getSignificanceScore() +
+      0.10 * rating.getReproducibilityScore() +
+      0.10 * rating.getClarityScore()
+    );
+  }
+
+  private String institutionKey(LiteratureRating rating) {
+    String email = rating.getRater().getEmail();
+    if (email == null || !email.contains("@")) return "unverified:" + rating.getRater().getId();
+    return email.substring(email.lastIndexOf('@') + 1).strip().toLowerCase(java.util.Locale.ROOT);
   }
 
   private double average(List<LiteratureRating> ratings, ScoreReader reader) {
@@ -274,6 +303,13 @@ public class LiteratureRatingService {
     return dto;
   }
 
+  private LiteratureRatingResponse toPublicResponse(LiteratureRating rating) {
+    LiteratureRatingResponse dto = toResponse(rating, null);
+    dto.setRaterId(null);
+    dto.setRaterUsername(String.format("Evaluator E-%05d", rating.getRater().getId()));
+    return dto;
+  }
+
   private LiteratureScoreSnapshotDto toSnapshotDto(LiteratureScoreSnapshot snapshot) {
     LiteratureScoreSnapshotDto dto = new LiteratureScoreSnapshotDto();
     dto.setRatingCount(snapshot.getRatingCount());
@@ -283,12 +319,22 @@ public class LiteratureRatingService {
     dto.setAverageSignificanceScore(snapshot.getAverageSignificanceScore());
     dto.setAverageReproducibilityScore(snapshot.getAverageReproducibilityScore());
     dto.setAverageClarityScore(snapshot.getAverageClarityScore());
-    dto.setCompositeScore(snapshot.getCompositeScore());
+    dto.setCompositeScore("INITIAL".equals(snapshot.getRankingStatus()) ? null : snapshot.getCompositeScore());
+    dto.setUnshrunkCompositeScore(snapshot.getUnshrunkCompositeScore());
+    dto.setEffectiveSampleSize(snapshot.getEffectiveSampleSize());
+    dto.setInstitutionCount(snapshot.getInstitutionCount());
+    dto.setLargestInstitutionShare(snapshot.getLargestInstitutionShare());
+    dto.setRankingStatus(snapshot.getRankingStatus());
+    dto.setRankingEligible(snapshot.isRankingEligible());
+    dto.setRuleVersion(snapshot.getRuleVersion());
     return dto;
   }
 
   private static LiteratureScoreSnapshotDto emptySnapshot() {
-    return new LiteratureScoreSnapshotDto();
+    LiteratureScoreSnapshotDto dto = new LiteratureScoreSnapshotDto();
+    dto.setRankingStatus("INITIAL");
+    dto.setRuleVersion(RULE_VERSION);
+    return dto;
   }
 
   private double round(double value) {
@@ -308,7 +354,7 @@ public class LiteratureRatingService {
     private void add(LiteraturePaperRankingDto paper) {
       paperCount++;
       ratingCount += paper.getRatingCount();
-      compositeTotal += paper.getCompositeScore();
+      compositeTotal += paper.getCompositeScore() == null ? 0 : paper.getCompositeScore();
     }
 
     private double average() {

@@ -13,6 +13,7 @@
         <div class="literature-header-actions">
           <NuxtLink class="paper-button" to="/papers">Submission papers</NuxtLink>
           <NuxtLink class="paper-button" to="/literature/explore">Advanced exploration</NuxtLink>
+          <a class="paper-button" :href="literatureWorkspaceUrl" target="_blank" rel="noopener">Original research workspace</a>
           <NuxtLink class="paper-button primary" to="/literature/workflow">Knowledge workflow</NuxtLink>
         </div>
       </header>
@@ -92,6 +93,8 @@ import '~/assets/paper-platform.css'
 const route = useRoute()
 const router = useRouter()
 const { listLiterature } = useLiteratureApi()
+const runtimeConfig = useRuntimeConfig()
+const literatureWorkspaceUrl = computed(() => runtimeConfig.public.literatureWorkspaceUrl)
 
 useHead({ title: 'Knowledge Base - OpenIsle' })
 

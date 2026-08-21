@@ -123,6 +123,7 @@ class LLMClient:
         messages: List[Dict[str, str]],
         *,
         temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
     ) -> Dict[str, Any]:
         """调用 LLM 并解析为 JSON 对象。
 
@@ -138,6 +139,7 @@ class LLMClient:
         content = self.chat(
             messages,
             temperature=temperature,
+            max_tokens=max_tokens,
             response_format={"type": "json_object"},
         )
         return self._parse_json(content)
