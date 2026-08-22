@@ -49,13 +49,13 @@ def audit_corpus() -> dict[int, dict[str, Any]]:
 
 
 def choose_retry_ids(
-    audit: Mapping[int, Mapping[str, Any]], limit: int, excluded: set[int] | None = None
+    audit: Mapping[int, Mapping[str, Any]], limit: int
 ) -> list[int]:
     """Choose deterministic, bounded retry candidates from persisted state."""
     return [
         paper_id
         for paper_id, result in sorted(audit.items())
-        if result.get("retryable") and paper_id not in (excluded or set())
+        if result.get("retryable")
     ][: max(0, limit)]
 
 
@@ -186,16 +186,14 @@ def stabilize(
     proxy = ConsoleProgress()
     attempts: list[dict[str, Any]] = []
     completed_rounds = 0
-    attempted_retries: set[int] = set()
     audit = audit_corpus()
     for round_index in range(max_rounds):
         if sum(1 for result in audit.values() if result.get("state") == "complete") >= target:
             break
         completed_rounds += 1
 
-        for paper_id in choose_retry_ids(audit, retry_limit, attempted_retries):
+        for paper_id in choose_retry_ids(audit, retry_limit):
             attempts.append(_retry(proxy, paper_id, str(audit[paper_id].get("stage"))))
-            attempted_retries.add(paper_id)
 
         audit = audit_corpus()
         if sum(1 for result in audit.values() if result.get("state") == "complete") >= target:

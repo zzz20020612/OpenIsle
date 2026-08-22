@@ -1,29 +1,7 @@
-from __future__ import annotations
-
 import json
 import re
 from datetime import datetime
-from xml.etree import ElementTree
 from .base import SourceAdapter
-
-
-def _parse_oa_package_url(xml: str) -> str | None:
-    """Return the official HTTPS OA package URL, or None for non-OA records."""
-    try:
-        root = ElementTree.fromstring(xml)
-    except ElementTree.ParseError:
-        return None
-    for link in root.findall(".//link"):
-        if link.attrib.get("format") != "tgz":
-            continue
-        href = link.attrib.get("href", "").strip()
-        if href.startswith("ftp://ftp.ncbi.nlm.nih.gov/"):
-            return "https://ftp.ncbi.nlm.nih.gov/" + href.removeprefix(
-                "ftp://ftp.ncbi.nlm.nih.gov/"
-            )
-        if href.startswith("https://"):
-            return href
-    return None
 
 
 def _parse_pmc_pubdate(pubdate: str) -> str:
@@ -95,15 +73,6 @@ class PmcAdapter(SourceAdapter):
             if not item_data:
                 continue
 
-            oa_response = self.request_with_retry(
-                "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi",
-                params={"id": f"PMC{pmc_id}"},
-                timeout=30,
-            )
-            oa_package_url = _parse_oa_package_url(oa_response.text)
-            if not oa_package_url:
-                continue
-
             # 解析作者
             authors = []
             for author in item_data.get("authors", []):
@@ -143,8 +112,8 @@ class PmcAdapter(SourceAdapter):
                 "issn": item_data.get("issn", ""),
                 "article_type": pubtype,
                 "subject": json.dumps(item_data.get("doctype", []), ensure_ascii=False) if item_data.get("doctype") else None,
-                # PMC OA API 提供官方压缩包，下载器会安全提取其中的主 PDF。
-                "oa_url": oa_package_url,
+                # PMC 特有：PDF 直链，便于后续下载解析
+                "oa_url": f"https://www.ncbi.nlm.nih.gov/pmc/articles/PMC{pmc_id}/pdf/",
                 "oa_category": item_data.get("pubtype", [None])[0] if item_data.get("pubtype") else None,
                 # 原始数据
                 "meta_json": json.dumps({

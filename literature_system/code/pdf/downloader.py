@@ -14,8 +14,6 @@ import time
 import hashlib
 import argparse
 import requests
-import io
-import tarfile
 from pathlib import Path
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -95,14 +93,6 @@ def download_pdf(url, doi, timeout=60, max_retries=3):
             if response.status_code == 200:
                 content_type = response.headers.get('content-type', '').lower()
 
-                if url.lower().endswith((".tar.gz", ".tgz")) or "gzip" in content_type:
-                    pdf_content = _pdf_from_oa_archive(response.content)
-                    if pdf_content:
-                        with open(file_path, 'wb') as f:
-                            f.write(pdf_content)
-                        return True, str(file_path), None
-                    return False, None, "PMC OA 压缩包中没有有效 PDF"
-
                 # 检查是否是 PDF
                 if 'pdf' in content_type or response.content[:4] == b'%PDF':
                     # 直接保存文件（避免调用方重复下载）
@@ -132,24 +122,6 @@ def download_pdf(url, doi, timeout=60, max_retries=3):
             return False, None, f"异常: {str(e)[:50]}"
 
     return False, None, f"重试 {max_retries} 次后失败"
-
-
-def _pdf_from_oa_archive(content: bytes):
-    """Read a PDF member without extracting untrusted archive paths to disk."""
-    try:
-        with tarfile.open(fileobj=io.BytesIO(content), mode="r:gz") as archive:
-            candidates = [
-                member for member in archive.getmembers()
-                if member.isfile() and member.name.lower().endswith(".pdf")
-            ]
-            for member in sorted(candidates, key=lambda item: item.size, reverse=True):
-                stream = archive.extractfile(member)
-                payload = stream.read() if stream else b""
-                if payload.startswith(b"%PDF"):
-                    return payload
-    except (tarfile.TarError, OSError):
-        return None
-    return None
 
 
 def get_pdf_url_from_doi(doi, timeout=30):

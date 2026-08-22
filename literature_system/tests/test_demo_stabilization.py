@@ -27,7 +27,6 @@ def sample_audit():
 def test_retry_selection_is_bounded_and_excludes_complete_and_terminal():
     assert choose_retry_ids(sample_audit(), limit=1) == [2]
     assert choose_retry_ids(sample_audit(), limit=10) == [2, 3]
-    assert choose_retry_ids(sample_audit(), limit=10, excluded={2}) == [3]
 
 
 def test_report_counts_states_and_failure_reasons():
