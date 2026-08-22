@@ -74,6 +74,7 @@ from search.engine import SearchEngine
 from search.tasks import submit_task, get_task
 import search.authors_api as authors_api
 import workflow_settings as wf_settings
+from quality.completeness import load_completeness_many
 
 LOGGER = get_logger("search_api")
 
@@ -1094,6 +1095,9 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                 pdf_path = get_pdf_path(pid, paper.get("doi"))
                 paper["pdf_available"] = bool(pdf_path and pdf_path.exists())
                 paper["processing_status"] = self._get_processing_status(pid, paper)
+                paper["completeness"] = load_completeness_many(
+                    self.engine.conn, [pid], {pid: paper["pdf_available"]}
+                ).get(pid)
                 return {"status": 200, "data": paper}
             return {"status": 404, "data": {"error": f"论文 {pid} 不存在"}}
 
@@ -1884,6 +1888,18 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
             r["author"] = _safe_json_loads(r.get("author"))
             r["keywords"] = _safe_json_loads(r.get("keywords"))
             r["year"] = _extract_year(r.get("published_date"))
+
+        if rows:
+            from pdf.pipeline import get_pdf_path
+            pdf_availability = {
+                r["id"]: bool(get_pdf_path(r["id"], r.get("doi"))) for r in rows
+            }
+            completeness = load_completeness_many(
+                self.engine.conn, [r["id"] for r in rows], pdf_availability
+            )
+            for r in rows:
+                r["pdf_available"] = pdf_availability[r["id"]]
+                r["completeness"] = completeness.get(r["id"])
 
         return {
             "total": total,
