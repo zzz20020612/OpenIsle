@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import sys
+import io
+import tarfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -12,6 +14,33 @@ from pdf import downloader
 
 
 class PdfDownloaderFallbackTest(unittest.TestCase):
+    def test_downloads_pdf_from_official_pmc_oa_package(self):
+        archive = io.BytesIO()
+        with tarfile.open(fileobj=archive, mode="w:gz") as bundle:
+            content = b"%PDF-1.7\nopen article"
+            info = tarfile.TarInfo("PMC123/article.pdf")
+            info.size = len(content)
+            bundle.addfile(info, io.BytesIO(content))
+        response = Mock(status_code=200, content=archive.getvalue())
+        response.headers = {"content-type": "application/gzip"}
+
+        with (
+            patch.object(downloader.requests, "get", return_value=response),
+            patch.object(downloader, "PDF_DIR", self._temporary_directory()),
+        ):
+            success, path, error = downloader.download_pdf(
+                "https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_package/demo.tar.gz",
+                "oa:PMC123",
+            )
+
+        self.assertTrue(success)
+        self.assertIsNone(error)
+        self.assertEqual(b"%PDF", Path(path).read_bytes()[:4])
+
+    def _temporary_directory(self):
+        import tempfile
+        return Path(tempfile.mkdtemp())
+
     def test_tries_later_provider_when_first_candidate_is_not_a_pdf(self):
         attempts = []
 
