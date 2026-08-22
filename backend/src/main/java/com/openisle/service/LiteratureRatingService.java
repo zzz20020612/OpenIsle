@@ -35,6 +35,7 @@ public class LiteratureRatingService {
   private final LiteratureScoreSnapshotRepository snapshotRepository;
   private final UserRepository userRepository;
   private final LiteratureIntegrationService literatureIntegrationService;
+  private final LiteratureReviewTaskService literatureReviewTaskService;
 
   @Transactional
   public LiteratureRatingResponse rateLiterature(
@@ -63,6 +64,8 @@ public class LiteratureRatingService {
     rating.setReadConfirmed(true);
     rating.setComment(request.getComment().strip());
     rating = ratingRepository.save(rating);
+
+    literatureReviewTaskService.completeAcceptedTask(rater, literaturePaperId);
 
     return toResponse(rating, recalculateSnapshot(literaturePaperId));
   }

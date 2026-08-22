@@ -11,4 +11,6 @@ public interface LiteratureRatingRepository extends JpaRepository<LiteratureRati
   List<LiteratureRating> findByLiteraturePaperIdOrderByUpdatedAtDesc(Long literaturePaperId);
 
   List<LiteratureRating> findByLiteraturePaperId(Long literaturePaperId);
+
+  boolean existsByLiteraturePaperIdAndRaterId(Long literaturePaperId, Long raterId);
 }

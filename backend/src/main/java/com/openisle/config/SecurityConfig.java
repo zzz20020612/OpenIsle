@@ -150,6 +150,8 @@ public class SecurityConfig {
           .authenticated()
           .requestMatchers("/api/literature/admin/**")
           .hasAuthority("ADMIN")
+          .requestMatchers(HttpMethod.GET, "/api/literature/review-tasks/**")
+          .authenticated()
           .requestMatchers(HttpMethod.GET, "/api/literature/**")
           .permitAll()
           .requestMatchers(HttpMethod.GET, "/api/experts/**")

@@ -38,5 +38,13 @@ export const useLiteratureApi = () => {
       }),
     getPaperRankings: (limit = 50) => request('/rankings/papers', { params: { limit } }),
     getAuthorRankings: (limit = 50) => request('/rankings/authors', { params: { limit } }),
+    listAvailableReviewTasks: (limit = 20) => request('/review-tasks/available', { params: { limit }, headers: authHeaders() }),
+    listMyReviewTasks: () => request('/review-tasks/mine', { headers: authHeaders() }),
+    getReviewerProfile: () => request('/review-tasks/profile', { headers: authHeaders() }),
+    claimReviewTask: (paperId, declaration) => request(`/review-tasks/${paperId}/claim`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: declaration,
+    }),
   }
 }

@@ -947,7 +947,17 @@ GET  /api/literature/papers/{paperId}/ratings/me
 GET  /api/literature/papers/{paperId}/score
 GET  /api/literature/rankings/papers
 GET  /api/literature/rankings/authors
+GET  /api/literature/review-tasks/available
+GET  /api/literature/review-tasks/mine
+GET  /api/literature/review-tasks/profile
+POST /api/literature/review-tasks/{paperId}/claim
 ```
+
+The review-task endpoints require an authenticated OpenIsle user. A claim stores the conflict-of-interest
+declaration, creates a seven-day assignment, and is completed by the existing six-dimensional rating endpoint.
+Completion awards reviewer points and updates the user's Scholar衡 reviewer profile. These workflow mutations
+remain intentionally outside MCP until the governance contract is stable; they are available through the web UI
+and documented OpenAPI contract.
 
 Browser draft and human-rating APIs remain user-interactive authenticated workflows and are not exposed as MCP
 tools. Public finalized literature and ranking reads can be considered for MCP only after a stable cross-system

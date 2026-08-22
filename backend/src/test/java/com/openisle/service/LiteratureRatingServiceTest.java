@@ -39,7 +39,8 @@ class LiteratureRatingServiceTest {
       ratingRepository,
       snapshotRepository,
       userRepository,
-      integrationService
+      integrationService,
+      mock(LiteratureReviewTaskService.class)
     );
 
     User reader = new User();
@@ -81,7 +82,8 @@ class LiteratureRatingServiceTest {
       ratingRepository,
       mock(LiteratureScoreSnapshotRepository.class),
       mock(UserRepository.class),
-      mock(LiteratureIntegrationService.class)
+      mock(LiteratureIntegrationService.class),
+      mock(LiteratureReviewTaskService.class)
     );
     LiteratureRatingRequest request = validRequest();
     request.setReadConfirmed(false);
@@ -97,7 +99,7 @@ class LiteratureRatingServiceTest {
     UserRepository userRepository = mock(UserRepository.class);
     LiteratureIntegrationService integrationService = mock(LiteratureIntegrationService.class);
     LiteratureRatingService service = new LiteratureRatingService(
-      ratingRepository, snapshotRepository, userRepository, integrationService
+      ratingRepository, snapshotRepository, userRepository, integrationService, mock(LiteratureReviewTaskService.class)
     );
     User reader = new User();
     reader.setId(3L);
@@ -127,7 +129,7 @@ class LiteratureRatingServiceTest {
     UserRepository userRepository = mock(UserRepository.class);
     LiteratureIntegrationService integrationService = mock(LiteratureIntegrationService.class);
     LiteratureRatingService service = new LiteratureRatingService(
-      ratingRepository, snapshotRepository, userRepository, integrationService
+      ratingRepository, snapshotRepository, userRepository, integrationService, mock(LiteratureReviewTaskService.class)
     );
     List<LiteratureRating> ratings = new ArrayList<>();
     AtomicReference<LiteratureScoreSnapshot> snapshot = new AtomicReference<>();

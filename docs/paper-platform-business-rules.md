@@ -157,6 +157,11 @@ Current integrated-product rule:
 - The public can browse imported literature metadata, extracted knowledge, aggregated scores, and rankings.
 - Only registered OpenIsle users can create or update a literature rating.
 - One user has one active rating per imported literature paper.
+- Complete imported-literature records can be claimed as seven-day review tasks. Claiming requires a mandatory
+  conflict-of-interest declaration covering authorship, shared institution, recent collaboration,
+  advisor/student relationships, and other direct conflicts; any disclosed conflict blocks the claim.
+- Completing a claimed review on time awards 20 reviewer points (10 when late). Reviewer profiles begin at
+  credit 75 / level B and expose accepted, completed, on-time, points, level, and qualification status.
 - A literature rating requires six 1-5 scores: originality, methodological rigor, evidence sufficiency,
   scholarly significance, reproducibility, and clarity.
 - The rater must confirm that they read the paper and provide a 20-500 character assessment.

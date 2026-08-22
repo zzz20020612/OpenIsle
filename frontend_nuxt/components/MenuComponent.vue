@@ -95,6 +95,7 @@ const primaryItems = computed(() => [
   { to: '/literature', label: 'Knowledge Base', icon: 'code-icon' },
   { to: '/papers/submit', label: 'Submit', icon: 'edit' },
   { to: '/papers/rankings', label: 'Rankings', icon: 'chart-line' },
+  { to: '/papers/review-tasks', label: 'Review Tasks', icon: 'check-correct' },
   {
     to: '/message',
     label: 'Notifications',

@@ -6,11 +6,15 @@ import com.openisle.dto.LiteraturePaperRankingDto;
 import com.openisle.dto.LiteratureRatingRequest;
 import com.openisle.dto.LiteratureRatingResponse;
 import com.openisle.dto.LiteratureScoreSnapshotDto;
+import com.openisle.dto.LiteratureConflictDeclarationRequest;
+import com.openisle.dto.LiteratureReviewTaskDto;
+import com.openisle.dto.LiteratureReviewerProfileDto;
 import com.openisle.service.LiteratureIntegrationService;
 import com.openisle.service.LiteratureAdminAuditService;
 import com.openisle.service.LiteratureIntegrationService.LiteratureProxyResponse;
 import com.openisle.service.LiteratureIntegrationService.LiteratureFileResponse;
 import com.openisle.service.LiteratureRatingService;
+import com.openisle.service.LiteratureReviewTaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,6 +43,7 @@ public class LiteratureController {
   private final LiteratureIntegrationService literatureService;
   private final LiteratureRatingService literatureRatingService;
   private final LiteratureAdminAuditService literatureAdminAuditService;
+  private final LiteratureReviewTaskService literatureReviewTaskService;
 
   @GetMapping("/health")
   @Operation(summary = "Check literature service availability")
@@ -160,6 +165,41 @@ public class LiteratureController {
   @Operation(summary = "Rank authors from rated existing literature papers")
   public List<LiteratureAuthorRankingDto> rankAuthors(@RequestParam(defaultValue = "50") int limit) {
     return literatureRatingService.rankAuthors(limit);
+  }
+
+  @GetMapping("/review-tasks/available")
+  @SecurityRequirement(name = "JWT")
+  @Operation(summary = "List complete literature records available to claim for review")
+  public List<LiteratureReviewTaskDto> availableReviewTasks(
+    @RequestParam(defaultValue = "20") int limit,
+    Authentication authentication
+  ) {
+    return literatureReviewTaskService.available(authentication.getName(), limit);
+  }
+
+  @GetMapping("/review-tasks/mine")
+  @SecurityRequirement(name = "JWT")
+  @Operation(summary = "List the current reviewer's accepted and completed tasks")
+  public List<LiteratureReviewTaskDto> myReviewTasks(Authentication authentication) {
+    return literatureReviewTaskService.mine(authentication.getName());
+  }
+
+  @GetMapping("/review-tasks/profile")
+  @SecurityRequirement(name = "JWT")
+  @Operation(summary = "Get reviewer points, level, credit, and qualification")
+  public LiteratureReviewerProfileDto myReviewerProfile(Authentication authentication) {
+    return literatureReviewTaskService.myProfile(authentication.getName());
+  }
+
+  @PostMapping("/review-tasks/{paperId}/claim")
+  @SecurityRequirement(name = "JWT")
+  @Operation(summary = "Declare conflicts and claim an existing-literature review task")
+  public LiteratureReviewTaskDto claimReviewTask(
+    @PathVariable Long paperId,
+    @RequestBody LiteratureConflictDeclarationRequest declaration,
+    Authentication authentication
+  ) {
+    return literatureReviewTaskService.claim(authentication.getName(), paperId, declaration);
   }
 
   private ResponseEntity<JsonNode> response(LiteratureProxyResponse response) {
