@@ -11,6 +11,11 @@
       </header>
 
       <div v-if="message" class="workflow-message" :class="{ error: failed, partial }">{{ message }}</div>
+      <section class="completeness-grid" aria-label="Literature completeness summary">
+        <article v-for="item in completenessCards" :key="item.state" class="paper-panel completeness-card" :class="item.state">
+          <strong>{{ item.count }}</strong><span>{{ item.label }}</span>
+        </article>
+      </section>
       <section v-if="activeTask" class="paper-panel task-progress" aria-live="polite">
         <div class="task-progress-heading">
           <div>
@@ -74,6 +79,7 @@ definePageMeta({ middleware: 'auth-client', keepalive: false })
 useHead({ title: 'Knowledge Workflow - OpenIsle' })
 
 const config = useRuntimeConfig()
+const { listLiterature } = useLiteratureApi()
 const jobs = ref([])
 const jobStats = ref({})
 const loading = ref(true)
@@ -83,6 +89,7 @@ const failed = ref(false)
 const partial = ref(false)
 const activeTask = ref(null)
 const embeddingConfigured = ref(false)
+const completenessStats = ref({})
 const collectionSources = [
   { value: 'crossref', label: 'Crossref (recommended)' },
   { value: 'all_open', label: 'All open sources' },
@@ -107,6 +114,13 @@ const advancedPath = ref(advancedOperations[0].path)
 const advancedBody = ref(JSON.stringify(advancedOperations[0].body, null, 2))
 watch(advancedPath, value => { advancedBody.value = JSON.stringify(advancedOperations.find(item => item.path === value)?.body || {}, null, 2) })
 const statsText = computed(() => Object.entries(jobStats.value || {}).map(([key, value]) => `${key}: ${value}`).join(' · ') || 'Current task history')
+const completenessCards = computed(() => [
+  { state: 'complete', label: 'Complete', count: completenessStats.value.complete || 0 },
+  { state: 'processing', label: 'Processing', count: completenessStats.value.processing || 0 },
+  { state: 'retryable', label: 'Needs retry', count: completenessStats.value.retryable || 0 },
+  { state: 'incomplete', label: 'Incomplete', count: completenessStats.value.incomplete || 0 },
+  { state: 'terminal', label: 'Cannot process', count: completenessStats.value.terminal || 0 },
+])
 const taskStatusLabel = computed(() => {
   const status = String(activeTask.value?.status || 'pending').toLowerCase()
   if (status === 'done') return partial.value ? 'Completed with warnings' : 'Pipeline completed'
@@ -142,10 +156,15 @@ const request = (path, options = {}) => $fetch(endpoint(path), { ...options, hea
 const refresh = async () => {
   loading.value = true
   try {
-    const [jobResult, statsResult, workflowSettings] = await Promise.all([request('/jobs?limit=100'), request('/jobs/stats'), request('/workflow/settings')])
+    const [jobResult, statsResult, workflowSettings, literatureResult] = await Promise.all([request('/jobs?limit=100'), request('/jobs/stats'), request('/workflow/settings'), listLiterature({ limit: 1000, offset: 0 })])
     jobs.value = jobResult.jobs || jobResult.items || jobResult || []
     jobStats.value = statsResult
     embeddingConfigured.value = Boolean(workflowSettings.embedding_api_key_configured || workflowSettings.EMBEDDING_API_KEY_configured || workflowSettings.embedding?.configured)
+    completenessStats.value = (literatureResult.papers || []).reduce((counts, paper) => {
+      const state = paper.completeness?.state || 'unknown'
+      counts[state] = (counts[state] || 0) + 1
+      return counts
+    }, {})
   } catch (cause) {
     failed.value = true
     message.value = cause?.data?.message || cause?.data?.error || cause?.message || 'Unable to load the literature workflow.'
@@ -205,6 +224,7 @@ onBeforeUnmount(() => { pollGeneration++ })
 .literature-workflow-container { max-width: 1240px; }
 .workflow-actions,.stage-actions,.field-row,.panel-heading { display:flex; gap:10px; }
 .workflow-actions { flex-wrap:wrap; }
+.completeness-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}.completeness-card{display:grid;gap:3px;padding:14px 16px;border-top:3px solid var(--paper-line)}.completeness-card strong{font-size:24px}.completeness-card span{color:var(--paper-muted);font-size:11px;font-weight:800;text-transform:uppercase}.completeness-card.complete{border-top-color:#34866a}.completeness-card.processing{border-top-color:#3480a0}.completeness-card.retryable,.completeness-card.incomplete{border-top-color:#c58a2b}.completeness-card.terminal{border-top-color:#a33d34}
 .workflow-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:14px; }
 .workflow-card,.jobs-panel,.advanced-panel { padding:20px; }
 .workflow-card h2,.panel-heading h2 { margin:0 0 8px; font-family:Georgia,serif; font-weight:500; }
@@ -221,5 +241,5 @@ button:disabled { opacity:.5; cursor:wait; }
 .task-progress{padding:18px 20px;margin-bottom:14px}.task-progress-heading{display:flex;align-items:start;justify-content:space-between;gap:16px}.task-progress-heading p{margin:4px 0 0;color:var(--paper-muted);font-size:12px}.task-progress-heading b{color:var(--paper-green);font-size:22px}.task-progress-track{height:8px;margin:14px 0;border-radius:999px;background:var(--paper-line);overflow:hidden}.task-progress-track span{display:block;height:100%;border-radius:inherit;background:var(--paper-teal);transition:width .25s ease}.task-result-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0 0}.task-result-grid div{padding:10px;border:1px solid var(--paper-line);background:var(--paper-surface-soft)}.task-result-grid dt{color:var(--paper-soft);font-size:10px;font-weight:800;text-transform:uppercase}.task-result-grid dd{margin:4px 0 0;color:var(--paper-ink);font-size:12px}
 .panel-heading { justify-content:space-between; align-items:start; }.panel-heading p { margin:0; color:var(--paper-muted); font-size:12px; }
 .job-table-wrap { overflow:auto; } table { width:100%; border-collapse:collapse; font-size:12px; } th,td { padding:10px; border-top:1px solid var(--paper-line); text-align:left; vertical-align:top; } .status { font-weight:800; text-transform:uppercase; }.status.failed { color:#a33d34; }.status.completed,.status.success { color:#236b52; }.empty { padding:40px; text-align:center; color:var(--paper-muted); }
-@media(max-width:1000px){.advanced-panel{grid-template-columns:1fr 1fr}.workflow-grid{grid-template-columns:1fr}.task-result-grid{grid-template-columns:1fr}}
+@media(max-width:1000px){.advanced-panel{grid-template-columns:1fr 1fr}.workflow-grid{grid-template-columns:1fr}.task-result-grid{grid-template-columns:1fr}.completeness-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>

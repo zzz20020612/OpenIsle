@@ -23,7 +23,7 @@
             <span v-if="paper.journal" class="paper-pill subject">{{ paper.journal }}</span>
             <span v-if="publicationYear" class="paper-pill">{{ publicationYear }}</span>
             <span v-if="paper.source" class="paper-pill">Source: {{ paper.source }}</span>
-            <span class="paper-pill" :class="{ subject: paper.processing_status === 'extracted' }">{{ processingStatusLabel }}</span>
+            <span class="paper-pill" :class="{ subject: paper.completeness?.state === 'complete' }">{{ processingStatusLabel }}</span>
             <span v-if="paper.citation_count != null" class="paper-pill">
               {{ paper.citation_count }} citations
             </span>
@@ -34,6 +34,14 @@
             <button v-if="paper.pdf_available && clientReady && authState.loggedIn" class="paper-pill literature-doi" type="button" @click="downloadPdf">Download PDF</button>
           </div>
         </header>
+
+        <section v-if="paper.completeness?.state !== 'complete'" class="paper-card literature-processing-notice" :class="paper.completeness?.state">
+          <strong>{{ processingStatusLabel }}</strong>
+          <p>{{ completenessExplanation }}</p>
+          <ul v-if="paper.completeness?.reasons?.length">
+            <li v-for="reason in paper.completeness.reasons" :key="reason">{{ reason }}</li>
+          </ul>
+        </section>
 
         <div class="paper-detail-layout">
           <div>
@@ -57,7 +65,7 @@
                 <KnowledgeField label="Boundaries and limitations" :value="knowledge.boundaries" />
                 <KnowledgeField label="Reusable inspiration" :value="knowledge.reusable_inspiration" />
               </template>
-              <p v-else class="literature-muted">No knowledge card has been extracted for this record yet.</p>
+              <p v-else class="literature-muted">{{ missingArtifactText('knowledge card') }}</p>
             </section>
 
             <section class="paper-block">
@@ -69,7 +77,7 @@
                 <KnowledgeField label="Models and algorithms" :value="methods.models_algorithms" />
                 <KnowledgeField label="Evaluation metrics" :value="methods.evaluation_metrics" />
               </template>
-              <p v-else class="literature-muted">No structured methods have been extracted yet.</p>
+              <p v-else class="literature-muted">{{ missingArtifactText('structured methods') }}</p>
             </section>
 
             <section class="paper-block">
@@ -289,12 +297,21 @@ const publicationYear = computed(() => {
   return date ? String(date).slice(0, 4) : ''
 })
 const processingStatusLabel = computed(() => ({
-  extracted: 'PDF parsed · knowledge extracted',
-  partially_extracted: 'Knowledge partially extracted',
-  parsed: 'PDF parsed',
-  pdf_downloaded: 'PDF downloaded',
-  metadata_only: 'Metadata only',
+  complete: 'Complete · ready for review',
+  processing: 'Processing now',
+  retryable: 'Processing can be retried',
+  incomplete: 'Processing is incomplete',
+  terminal: 'Automatic processing unavailable',
+})[paper.value?.completeness?.state] || ({
+  extracted: 'PDF parsed · knowledge extracted', partially_extracted: 'Knowledge partially extracted',
+  parsed: 'PDF parsed', pdf_downloaded: 'PDF downloaded', metadata_only: 'Metadata only',
 })[paper.value?.processing_status] || 'Processing status unavailable')
+const completenessExplanation = computed(() => ({
+  processing: 'A background task is currently working on this record.',
+  retryable: 'The source or processing step failed temporarily. An administrator can retry it from the knowledge workflow.',
+  incomplete: 'Some required content is missing or too short for a reliable demonstration.',
+  terminal: 'The source cannot currently be processed automatically, for example because no open PDF is available.',
+})[paper.value?.completeness?.state] || 'The completeness audit has not run for this record.')
 const doiUrl = computed(() => `https://doi.org/${paper.value?.doi || ''}`)
 const pdfViewUrl = computed(() => `${runtimeConfig.public.apiBaseUrl}/api/literature/papers/${paperId.value}/pdf`)
 const downloadPdf = async () => {
@@ -310,6 +327,14 @@ const qualityLabel = computed(() => {
   if (!Number.isFinite(score)) return 'Not assessed'
   return score <= 1 ? `${Math.round(score * 100)}%` : score.toFixed(1)
 })
+
+function missingArtifactText(name) {
+  const completeness = paper.value?.completeness
+  if (completeness?.state === 'processing') return `The ${name} is still being generated.`
+  if (completeness?.retryable) return `The ${name} is missing. An administrator can retry the ${completeness.stage || 'processing'} stage.`
+  if (completeness?.state === 'terminal') return `The ${name} cannot be generated until an accessible source PDF is available.`
+  return `No ${name} has been extracted for this record yet.`
+}
 
 useHead(() => ({ title: paper.value?.title ? `${paper.value.title} - Knowledge Base` : 'Literature - OpenIsle' }))
 
@@ -404,6 +429,12 @@ function formatAuthors(value) {
   font-size: 17px;
   line-height: 1.55;
 }
+
+.literature-processing-notice { margin: 14px 0; padding: 16px 18px; border-left: 4px solid var(--paper-amber); }
+.literature-processing-notice.processing { border-left-color: var(--paper-teal); }
+.literature-processing-notice.terminal { border-left-color: #a33d34; }
+.literature-processing-notice p { margin: 6px 0; color: var(--paper-muted); }
+.literature-processing-notice ul { margin: 8px 0 0; padding-left: 20px; color: var(--paper-muted); font-size: 13px; }
 
 .literature-doi {
   text-decoration: none;

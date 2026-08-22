@@ -32,6 +32,17 @@
             <option value="title_asc">Title A–Z</option>
           </select>
         </label>
+        <label class="literature-sort">
+          <span>Processing state</span>
+          <select v-model="stateFilter">
+            <option value="">All states</option>
+            <option value="complete">Complete</option>
+            <option value="processing">Processing</option>
+            <option value="retryable">Needs retry</option>
+            <option value="incomplete">Incomplete</option>
+            <option value="terminal">Cannot process</option>
+          </select>
+        </label>
         <button class="paper-button primary" type="submit">Search</button>
       </form>
 
@@ -52,6 +63,7 @@
         <div class="literature-summary">
           <strong>{{ total }}</strong> literature records
           <span v-if="query">matching “{{ query }}”</span>
+          <span> · {{ papers.length }} shown</span>
         </div>
 
         <section v-if="papers.length" class="literature-list paper-panel">
@@ -69,6 +81,9 @@
                 <span v-if="paper.year" class="paper-pill">{{ paper.year }}</span>
                 <span v-if="paper.source" class="paper-pill">{{ paper.source }}</span>
                 <span v-if="paper.language" class="paper-pill">{{ paper.language }}</span>
+                <span class="paper-pill literature-status" :class="paper.completeness?.state">
+                  {{ completenessLabel(paper.completeness) }}
+                </span>
               </div>
             </div>
             <div class="literature-citations">
@@ -101,6 +116,7 @@ useHead({ title: 'Knowledge Base - OpenIsle' })
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const searchInput = ref(query.value)
 const sort = ref(typeof route.query.sort === 'string' ? route.query.sort : 'year_desc')
+const stateFilter = ref(typeof route.query.state === 'string' ? route.query.state : '')
 const requestParams = computed(() => ({ q: query.value, sort: sort.value, limit: 50, offset: 0 }))
 
 const { data, pending, error, refresh } = await useAsyncData(
@@ -109,12 +125,16 @@ const { data, pending, error, refresh } = await useAsyncData(
   { watch: [requestParams] },
 )
 
-const papers = computed(() => (Array.isArray(data.value?.papers) ? data.value.papers : []))
+const papers = computed(() => {
+  const rows = Array.isArray(data.value?.papers) ? data.value.papers : []
+  return stateFilter.value ? rows.filter(paper => paper.completeness?.state === stateFilter.value) : rows
+})
 const total = computed(() => Number(data.value?.total || 0).toLocaleString())
 
 watch(sort, async () => {
   await updateRoute()
 })
+watch(stateFilter, updateRoute)
 
 async function applySearch() {
   query.value = searchInput.value.trim()
@@ -126,8 +146,16 @@ async function updateRoute() {
     query: {
       q: query.value || undefined,
       sort: sort.value === 'year_desc' ? undefined : sort.value,
+      state: stateFilter.value || undefined,
     },
   })
+}
+
+function completenessLabel(value) {
+  return ({
+    complete: 'Complete', processing: 'Processing', retryable: 'Needs retry',
+    incomplete: 'Incomplete', terminal: 'Cannot process',
+  })[value?.state] || 'Not audited'
 }
 
 function formatAuthors(value) {
@@ -159,7 +187,7 @@ function formatAuthors(value) {
 
 .literature-search {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 180px auto;
+  grid-template-columns: minmax(0, 1fr) 160px 160px auto;
   gap: 12px;
   align-items: end;
   padding: 16px;
@@ -246,6 +274,11 @@ function formatAuthors(value) {
   color: var(--paper-soft);
   font-size: 11px;
 }
+
+.literature-status.complete { color: #22624e; background: #edf7f3; }
+.literature-status.processing { color: #245f78; background: #edf6fa; }
+.literature-status.retryable,.literature-status.incomplete { color: #835713; background: #fff6e8; }
+.literature-status.terminal { color: #923b32; background: #fff1ef; }
 
 .literature-state {
   text-align: center;
