@@ -14,6 +14,7 @@ import com.openisle.service.LiteratureIntegrationService;
 import com.openisle.service.LiteratureAdminAuditService;
 import com.openisle.service.LiteratureIntegrationService.LiteratureProxyResponse;
 import com.openisle.service.LiteratureRatingService;
+import com.openisle.service.LiteratureReviewTaskService;
 import com.openisle.service.UserVisitService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,9 @@ class LiteratureControllerTest {
 
   @MockBean
   private LiteratureAdminAuditService literatureAdminAuditService;
+
+  @MockBean
+  private LiteratureReviewTaskService literatureReviewTaskService;
 
   @MockBean
   private JwtService jwtService;
