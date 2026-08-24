@@ -1,501 +1,82 @@
 <template>
-  <header class="header">
-    <div class="header-content">
-      <div class="header-content-left">
-        <div v-if="showMenuBtn" class="menu-btn-wrapper">
-          <button class="menu-btn" ref="menuBtn" type="button" @click="$emit('toggle-menu')">
-            <ToolTip content="Toggle navigation" placement="bottom">
-              <application-menu class="micon" />
-            </ToolTip>
-          </button>
-          <span
-            v-if="isMobile && (unreadMessageCount > 0 || hasChannelUnread)"
-            class="menu-unread-dot"
-          ></span>
-        </div>
-
-        <NuxtLink class="logo-container" to="/papers">
-          <BaseImage
-            alt="OpenIsle"
-            src="https://openisle-1307107697.cos.ap-guangzhou.myqcloud.com/assert/image.png"
-            width="42"
-            height="42"
-          />
-          <div class="logo-copy">
-            <span class="logo-text">OpenIsle</span>
-            <span class="logo-subtitle">Research Evaluation</span>
-          </div>
-        </NuxtLink>
+  <header class="site-header">
+    <div class="utility-bar">
+      <div class="header-width utility-inner">
+        <span>Open research infrastructure</span>
+        <nav aria-label="Utility navigation">
+          <NuxtLink to="/about">About</NuxtLink>
+          <NuxtLink v-if="isLogin" to="/message">Notifications<span v-if="unreadNotificationCount"> ({{ unreadNotificationCount }})</span></NuxtLink>
+          <NuxtLink v-if="isLogin" to="/message-box">Messages<span v-if="unreadMessageCount"> ({{ unreadMessageCount }})</span></NuxtLink>
+          <NuxtLink v-if="isLogin" to="/settings">Settings</NuxtLink>
+          <button type="button" @click="cycleTheme">Display</button>
+        </nav>
       </div>
+    </div>
 
-      <ClientOnly>
-        <div class="header-content-right">
-          <SearchDropdown
-            ref="searchDropdown"
-            v-if="!isMobile || showSearch"
-            @close="closeSearch"
-          />
-
-          <ToolTip v-if="isMobile" content="Search" placement="bottom">
-            <button class="header-icon-item" type="button" @click="search">
-              <search-icon class="header-icon" />
-              <span class="header-label">Search</span>
-            </button>
-          </ToolTip>
-
-          <ToolTip v-if="isMobile" content="Switch theme" placement="bottom">
-            <button class="header-icon-item" type="button" @click="cycleTheme">
-              <component :is="iconClass" class="header-icon" />
-              <span class="header-label">Theme</span>
-            </button>
-          </ToolTip>
-
-          <ToolTip v-if="!isMobile && isLogin" content="Submit a paper" placement="bottom">
-            <button class="header-submit-button" type="button" @click="goToSubmitPaper">
-              <edit class="header-icon" />
-              <span>Submit</span>
-            </button>
-          </ToolTip>
-
-          <ToolTip v-if="isLogin" content="Notifications" placement="bottom">
-            <button class="header-icon-item" type="button" @click="goToNotifications">
-              <remind class="header-icon" />
-              <span class="header-label">Notifications</span>
-              <span v-if="unreadNotificationCount > 0" class="unread-badge">
-                {{ unreadNotificationCount }}
-              </span>
-            </button>
-          </ToolTip>
-
-          <ToolTip v-if="isLogin" content="Messages and channels" placement="bottom">
-            <button class="header-icon-item" type="button" @click="goToMessages">
-              <message-emoji class="header-icon" />
-              <span class="header-label">Messages</span>
-              <span v-if="unreadMessageCount > 0" class="unread-badge">
-                {{ unreadMessageCount }}
-              </span>
-              <span v-else-if="hasChannelUnread" class="unread-dot"></span>
-            </button>
-          </ToolTip>
-
-          <DropdownMenu v-if="isLogin" ref="userMenu" :items="headerMenuItems">
-            <template #trigger>
-              <button class="avatar-container" type="button">
-                <BaseUserAvatar
-                  class="avatar-img"
-                  :user-id="authState.userId"
-                  :src="authState.avatar"
-                  :disable-link="true"
-                  :width="32"
-                />
-                <down />
-              </button>
-            </template>
-          </DropdownMenu>
-
-          <div v-if="!isLogin" class="auth-btns">
-            <button class="header-content-item-secondary" type="button" @click="goToLogin">
-              Log in
-            </button>
-            <button class="header-content-item-main" type="button" @click="goToSignup">
-              Sign up
-            </button>
-          </div>
+    <div class="masthead">
+      <div class="header-width masthead-inner">
+        <NuxtLink class="identity" to="/papers" aria-label="OpenIsle home">
+          <BaseImage class="identity-mark" alt="" src="https://openisle-1307107697.cos.ap-guangzhou.myqcloud.com/assert/image.png" width="58" height="58" />
+          <span><strong>OpenIsle</strong><small>Research Submission, Knowledge and Evaluation</small></span>
+        </NuxtLink>
+        <div class="masthead-actions">
+          <SearchDropdown v-if="!isMobile" />
+          <template v-if="isLogin">
+            <NuxtLink class="account-link" :to="`/users/${authState.username || authState.userId}`">My account</NuxtLink>
+            <button class="signout-link" type="button" @click="logout">Log out</button>
+          </template>
+          <template v-else>
+            <NuxtLink class="account-link" to="/login">Log in</NuxtLink>
+            <NuxtLink class="primary-action" to="/signup">Create account</NuxtLink>
+          </template>
         </div>
-      </ClientOnly>
+      </div>
+    </div>
+
+    <div class="navigation-bar">
+      <div class="header-width nav-inner">
+        <button class="mobile-toggle" type="button" :aria-expanded="mobileOpen" aria-controls="primary-nav" @click="mobileOpen = !mobileOpen">
+          <application-menu /> <span>Menu</span>
+        </button>
+        <nav id="primary-nav" class="primary-nav" :class="{ open: mobileOpen }" aria-label="Primary navigation">
+          <NuxtLink v-for="item in navItems" :key="item.to" :to="item.to" @click="mobileOpen = false">{{ item.label }}</NuxtLink>
+        </nav>
+        <NuxtLink v-if="isLogin" class="submit-action" :to="{ path: '/papers/submit', query: { entry: Date.now().toString() } }">Submit research</NuxtLink>
+        <NuxtLink v-else class="submit-action" to="/login">Submit research</NuxtLink>
+      </div>
     </div>
   </header>
 </template>
 
 <script setup>
-import { ClientOnly } from '#components'
-import { computed, nextTick, onMounted, ref } from 'vue'
-import DropdownMenu from '~/components/DropdownMenu.vue'
-import ToolTip from '~/components/ToolTip.vue'
+import BaseImage from '~/components/BaseImage.vue'
 import SearchDropdown from '~/components/SearchDropdown.vue'
-import BaseUserAvatar from '~/components/BaseUserAvatar.vue'
 import { authState, clearToken } from '~/utils/auth'
+import { notificationState, fetchUnreadCount as fetchNotificationUnreadCount } from '~/utils/notification'
 import { useUnreadCount } from '~/composables/useUnreadCount'
-import { useChannelsUnreadCount } from '~/composables/useChannelsUnreadCount'
-import {
-  fetchUnreadCount as fetchNotificationUnreadCount,
-  notificationState,
-} from '~/utils/notification'
 import { useIsMobile } from '~/utils/screen'
-import { themeState, cycleTheme, ThemeMode } from '~/utils/theme'
-
-defineProps({
-  showMenuBtn: {
-    type: Boolean,
-    default: true,
-  },
-})
+import { cycleTheme } from '~/utils/theme'
 
 const isLogin = computed(() => authState.loggedIn)
 const isMobile = useIsMobile()
+const mobileOpen = ref(false)
 const { count: unreadMessageCount, fetchUnreadCount } = useUnreadCount()
-const { hasUnread: hasChannelUnread, fetchChannelUnread } = useChannelsUnreadCount()
 const unreadNotificationCount = computed(() => notificationState.unreadCount)
-const showSearch = ref(false)
-const searchDropdown = ref(null)
-
-const search = () => {
-  showSearch.value = true
-  nextTick(() => {
-    searchDropdown.value?.toggle?.()
-  })
-}
-
-const closeSearch = () => {
-  nextTick(() => {
-    showSearch.value = false
-  })
-}
-
-const goToLogin = () => {
-  navigateTo('/login', { replace: true })
-}
-
-const goToSignup = () => {
-  navigateTo('/signup', { replace: true })
-}
-
-const goToSettings = () => {
-  navigateTo('/settings', { replace: true })
-}
-
-const goToAdminPapers = () => {
-  navigateTo('/admin/papers', { replace: false })
-}
-
-const goToProfile = () => {
-  const id = authState.username || authState.id
-  if (id) {
-    navigateTo(`/users/${id}`, { replace: true })
-  }
-}
-
-const goToLogout = () => {
-  clearToken()
-  navigateTo('/login', { replace: true })
-}
-
-const goToSubmitPaper = () => {
-  navigateTo({
-    path: '/papers/submit',
-    query: { entry: Date.now().toString() },
-  }, { replace: false })
-}
-
-const goToNotifications = () => {
-  navigateTo('/message')
-}
-
-const goToMessages = () => {
-  navigateTo('/message-box')
-}
-
-const headerMenuItems = computed(() => {
-  const items = [
-    { text: 'Settings', onClick: goToSettings },
-    { text: 'Profile', onClick: goToProfile },
-  ]
-  if (authState.role === 'ADMIN') {
-    items.push({ text: 'Paper Admin', onClick: goToAdminPapers })
-  }
-  items.push({ text: 'Log out', onClick: goToLogout })
-  return items
-})
-
-const iconClass = computed(() => {
-  switch (themeState.mode) {
-    case ThemeMode.DARK:
-      return 'Moon'
-    case ThemeMode.LIGHT:
-      return 'SunOne'
-    default:
-      return 'ComputerOne'
-  }
-})
-
-onMounted(async () => {
-  const updateUnread = async () => {
-    if (authState.loggedIn) {
-      fetchUnreadCount()
-      fetchChannelUnread()
-      fetchNotificationUnreadCount()
-    } else {
-      fetchChannelUnread()
-      notificationState.unreadCount = 0
-    }
-  }
-
-  await updateUnread()
+const navItems = computed(() => [
+  { to: '/papers', label: 'Papers' },
+  { to: '/literature', label: 'Knowledge Base' },
+  { to: '/literature/workflow', label: 'Literature Processing' },
+  { to: '/papers/review-tasks', label: 'Reviews' },
+  { to: '/papers/rankings', label: 'Rankings' },
+  { to: '/papers/submissions', label: 'My Submissions' },
+  ...(authState.role === 'ADMIN' ? [{ to: '/admin/papers', label: 'Administration' }] : []),
+])
+const logout = () => { clearToken(); navigateTo('/login') }
+onMounted(() => {
+  if (authState.loggedIn) Promise.allSettled([fetchUnreadCount(), fetchNotificationUnreadCount()])
 })
 </script>
 
 <style scoped>
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: var(--header-height);
-  background: color-mix(in srgb, var(--background-color) 86%, transparent);
-  backdrop-filter: var(--blur-10);
-  color: var(--header-text-color);
-  border-bottom: 1px solid var(--header-border-color);
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  max-width: var(--page-max-width);
-  padding: 0 18px;
-}
-
-.header-content-left,
-.header-content-right,
-.auth-btns {
-  display: flex;
-  align-items: center;
-}
-
-.header-content-right {
-  margin-left: auto;
-  gap: 18px;
-}
-
-.auth-btns {
-  gap: 10px;
-}
-
-.logo-container {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: inherit;
-  text-decoration: none;
-}
-
-.logo-copy {
-  display: grid;
-  gap: 1px;
-}
-
-.logo-text {
-  color: var(--header-text-color);
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.logo-subtitle {
-  color: var(--menu-text-color);
-  font-size: 10px;
-  font-weight: 650;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.menu-btn,
-.header-icon-item,
-.avatar-container,
-.header-content-item-main,
-.header-content-item-secondary,
-.header-submit-button {
-  border: 0;
-  font: inherit;
-  cursor: pointer;
-}
-
-.menu-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  margin-right: 8px;
-  border-radius: 12px;
-  color: var(--menu-text-color);
-  background: transparent;
-}
-
-.menu-btn:hover,
-.header-icon-item:hover,
-.avatar-container:hover {
-  background: var(--secondary-color-hover);
-}
-
-.menu-btn-wrapper {
-  position: relative;
-  display: inline-flex;
-}
-
-.micon {
-  font-size: 23px;
-}
-
-.menu-unread-dot,
-.unread-dot {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #b74135;
-}
-
-.menu-unread-dot {
-  top: 4px;
-  right: 10px;
-}
-
-.unread-dot {
-  top: 4px;
-  right: 4px;
-}
-
-.header-icon-item {
-  position: relative;
-  display: inline-flex;
-  min-width: 42px;
-  min-height: 42px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  border-radius: 12px;
-  color: var(--menu-text-color);
-  background: transparent;
-  transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    transform 0.15s ease;
-}
-
-.header-icon-item:not(.passive):active {
-  transform: translateY(1px);
-}
-
-.header-icon-item.passive {
-  cursor: default;
-}
-
-.header-icon,
-.theme-icon {
-  font-size: 19px;
-  line-height: 1;
-}
-
-.header-label {
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.header-submit-button {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  gap: 7px;
-  padding: 0 14px;
-  border: 1px solid color-mix(in srgb, var(--primary-color) 24%, transparent);
-  border-radius: 999px;
-  color: #fff;
-  background: var(--primary-color);
-  font-size: 13px;
-  font-weight: 780;
-}
-
-.header-submit-button:hover {
-  background: var(--primary-color-hover);
-}
-
-.header-badge,
-.unread-badge {
-  position: absolute;
-  top: -3px;
-  right: -5px;
-  display: inline-flex;
-  min-width: 17px;
-  min-height: 17px;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  border-radius: 999px;
-  color: #fff;
-  background: #b74135;
-  font-size: 10px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.header-badge {
-  color: var(--primary-color);
-  background: transparent;
-}
-
-.avatar-container {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 4px 6px;
-  border-radius: 999px;
-  color: var(--menu-text-color);
-  background: transparent;
-}
-
-.avatar-img {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: lightgray;
-  object-fit: cover;
-}
-
-.header-content-item-main,
-.header-content-item-secondary {
-  min-height: 38px;
-  padding: 0 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 760;
-}
-
-.header-content-item-main {
-  color: #fff;
-  background: var(--primary-color);
-}
-
-.header-content-item-main:hover {
-  background: var(--primary-color-hover);
-}
-
-.header-content-item-secondary {
-  color: var(--primary-color);
-  background: transparent;
-}
-
-.header-content-item-secondary:hover {
-  background: var(--secondary-color-hover);
-}
-
-@media (max-width: 768px) {
-  .logo-subtitle,
-  .header-content-item-secondary,
-  .header-label,
-  .header-badge {
-    display: none;
-  }
-
-  .header-content {
-    padding: 0 12px;
-  }
-
-  .header-content-right {
-    gap: 8px;
-  }
-}
+.site-header{position:relative;z-index:1000;color:#222;background:#fff;border-bottom:1px solid #d2d2d2}.header-width{width:min(1180px,calc(100% - 40px));margin:0 auto}.utility-bar{min-height:34px;color:#eee;background:#242424;font-size:12px}.utility-inner{min-height:34px;display:flex;align-items:center;justify-content:space-between;gap:20px}.utility-inner nav{display:flex;align-items:center;gap:22px}.utility-inner a,.utility-inner button{padding:0;border:0;color:inherit;background:transparent;font:inherit;text-decoration:none;cursor:pointer}.utility-inner a:hover,.utility-inner button:hover{text-decoration:underline}.masthead{border-bottom:1px solid #ddd}.masthead-inner{min-height:105px;display:flex;align-items:center;justify-content:space-between;gap:32px}.identity{display:flex;align-items:center;gap:16px;color:#1b1b1b;text-decoration:none}.identity-mark{width:58px;height:58px;object-fit:contain}.identity span{display:grid;gap:4px}.identity strong{font-family:Georgia,'Times New Roman',serif;font-size:37px;font-weight:400;line-height:1}.identity small{color:#555;font-size:12px;letter-spacing:.055em;text-transform:uppercase}.masthead-actions{display:flex;align-items:center;gap:16px}.account-link,.signout-link{padding:8px 0;border:0;color:#333;background:transparent;font-size:13px;text-decoration:none;cursor:pointer}.primary-action{padding:10px 14px;color:#fff;background:#0072bc;font-size:13px;font-weight:700;text-decoration:none}.navigation-bar{color:#fff;background:#0065a8;border-bottom:5px solid #009edb}.nav-inner{display:flex;align-items:stretch;min-height:50px}.primary-nav{display:flex;align-items:stretch}.primary-nav a,.submit-action{display:flex;align-items:center;padding:0 17px;color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-left:1px solid rgba(255,255,255,.2)}.primary-nav a:hover,.primary-nav a.router-link-active{background:#004f85}.submit-action{margin-left:auto;border-right:1px solid rgba(255,255,255,.2);background:#004f85}.mobile-toggle{display:none}.primary-nav a:focus-visible,.submit-action:focus-visible{outline:3px solid #fff;outline-offset:-4px}@media(max-width:900px){.masthead-actions>:first-child{display:none}.identity small{display:none}.identity strong{font-size:31px}.masthead-inner{min-height:82px}.nav-inner{display:block;width:100%}.mobile-toggle{display:flex;width:calc(100% - 32px);height:48px;align-items:center;gap:8px;margin:0 16px;border:0;color:#fff;background:transparent;font-weight:700}.primary-nav{display:none;flex-direction:column;border-top:1px solid rgba(255,255,255,.25)}.primary-nav.open{display:flex}.primary-nav a{min-height:45px;border-left:0;border-bottom:1px solid rgba(255,255,255,.18)}.submit-action{display:none}}@media(max-width:560px){.header-width{width:min(100% - 28px,1180px)}.utility-inner>span{display:none}.utility-inner{justify-content:flex-end}.utility-inner nav{gap:14px}.masthead-actions{gap:10px}.primary-action{display:none}.identity-mark{width:46px;height:46px}}
 </style>

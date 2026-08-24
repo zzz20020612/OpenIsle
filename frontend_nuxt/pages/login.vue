@@ -199,12 +199,12 @@ const submitLogin = async () => {
   width: min(460px, 100%);
   padding: 38px 42px;
   border: 1px solid #cbd5d8;
+  border-top: 5px solid #0065a8;
   background: #fff;
-  box-shadow: 0 18px 45px rgba(30, 48, 57, .1);
 }
 
 .login-heading > span {
-  color: #2c657d;
+  color: #0065a8;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: .07em;
@@ -241,7 +241,7 @@ const submitLogin = async () => {
   min-height: 46px;
   box-sizing: border-box;
   padding: 11px 13px;
-  border-radius: 2px;
+  border-radius: 0;
   background: #fbfcfc;
 }
 
@@ -260,8 +260,8 @@ const submitLogin = async () => {
 .login-submit,
 .login-retry {
   min-height: 46px;
-  border: 1px solid #28647f;
-  border-radius: 2px;
+  border: 1px solid #0065a8;
+  border-radius: 0;
   font: inherit;
   font-size: 14px;
   font-weight: 780;
@@ -274,11 +274,11 @@ const submitLogin = async () => {
   justify-content: center;
   gap: 8px;
   margin-top: 2px;
-  background: #28647f;
+  background: #0065a8;
   color: #fff;
 }
 
-.login-submit:hover:not(:disabled) { background: #1f526b; }
+.login-submit:hover:not(:disabled) { background: #004f85; }
 .login-submit:disabled, .login-retry:disabled { opacity: .58; cursor: wait; }
 .login-retry { background: #fff; color: #245a72; }
 .login-retry:hover:not(:disabled) { background: #edf4f6; }

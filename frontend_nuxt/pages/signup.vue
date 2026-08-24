@@ -1,9 +1,11 @@
 <template>
-  <div class="signup-page">
-    <div class="signup-page-content">
-      <div class="signup-page-header">
-        <div class="signup-page-header-title">Welcome :)</div>
-      </div>
+  <main class="signup-page">
+    <section class="signup-page-content" aria-labelledby="signup-title">
+      <header class="signup-page-header">
+        <span>OpenIsle account</span>
+        <h1 id="signup-title">Create a research account</h1>
+        <p>Register once to submit manuscripts, access literature PDFs, and participate in evaluation.</p>
+      </header>
 
       <div v-if="emailStep === 0" class="email-signup-page-content">
         <BaseInput icon="mail" v-model="email" @input="emailError = ''" placeholder="邮箱" />
@@ -26,45 +28,48 @@
         />
         <div v-if="passwordError" class="error-message">{{ passwordError }}</div>
 
-        <div
+        <button
           v-if="!isWaitingForEmailSent"
           class="signup-page-button-primary"
+          type="button"
           @click="sendVerification"
         >
-          <div class="signup-page-button-text">验证并注册</div>
-        </div>
-        <div v-else class="signup-page-button-primary disabled">
+          <span class="signup-page-button-text">Verify and register</span>
+        </button>
+        <button v-else class="signup-page-button-primary disabled" type="button" disabled>
           <div class="signup-page-button-text">
             <loading-four class="loading-icon" />
-            发送中...
+            Sending…
           </div>
-        </div>
+        </button>
 
         <div class="signup-page-button-secondary">
-          已经有账号？ <a class="signup-page-button-secondary-link" href="/login">登录</a>
+          Already registered? <NuxtLink class="signup-page-button-secondary-link" to="/login">Sign in</NuxtLink>
         </div>
       </div>
 
       <div v-if="emailStep === 1" class="email-signup-page-content">
         <BaseInput icon="mail" v-model="code" placeholder="邮箱验证码" />
-        <div
+        <button
           v-if="!isWaitingForEmailVerified"
           class="signup-page-button-primary"
+          type="button"
           @click="verifyCode"
         >
-          <div class="signup-page-button-text">注册</div>
-        </div>
-        <div v-else class="signup-page-button-primary disabled">
+          <span class="signup-page-button-text">Complete registration</span>
+        </button>
+        <button v-else class="signup-page-button-primary disabled" type="button" disabled>
           <div class="signup-page-button-text">
             <loading-four class="loading-icon" />
-            验证中...
+            Verifying…
           </div>
-        </div>
+        </button>
       </div>
-    </div>
+      <div class="signup-divider"><span>or continue with</span></div>
+      <ThirdPartyAuth mode="signup" :invite-token="inviteToken" />
+    </section>
 
-    <ThirdPartyAuth mode="signup" :invite-token="inviteToken" />
-  </div>
+  </main>
 </template>
 
 <script setup>
@@ -344,4 +349,8 @@ const verifyCode = async () => {
     font-size: 13px;
   }
 }
+</style>
+
+<style scoped>
+.signup-page{min-height:600px;height:auto;padding:48px 20px 72px;color:#222;background:#f4f4f4}.signup-page-content{display:block;width:min(480px,100%);padding:38px 42px;border:1px solid #bbb;border-top:5px solid #0065a8;background:#fff}.signup-page-header{font-size:inherit}.signup-page-header>span{color:#0065a8;font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.signup-page-header h1{margin:9px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:32px;font-weight:400;line-height:1.2}.signup-page-header p{margin:11px 0 0;color:#595959;font-size:14px;line-height:1.6}.email-signup-page-content{align-items:stretch;margin-top:28px;gap:17px}.email-signup-page-content :deep(.base-input){width:100%;min-height:46px;box-sizing:border-box;border-radius:0}.signup-page-button-primary{box-sizing:border-box;width:100%;min-height:46px;margin-top:4px;padding:10px 18px;border:1px solid #0065a8;border-radius:0;background:#0065a8;font-weight:700}.signup-page-button-primary:hover{background:#004f85}.signup-page-button-secondary{margin-top:2px;color:#595959;font-size:13px}.error-message{width:100%;margin:-10px 0 0;color:#a51e22;font-size:13px}.signup-divider{display:flex;align-items:center;gap:12px;margin:27px 0 17px;color:#666;font-size:11px;letter-spacing:.05em;text-transform:uppercase}.signup-divider:before,.signup-divider:after{height:1px;flex:1;background:#ccc;content:''}.signup-page-content :deep(.third-party-auth){width:100%;margin:0}@media(max-width:600px){.signup-page{padding:24px 12px 50px}.signup-page-content{width:100%;margin:0;padding:28px 22px}.signup-page-header h1{font-size:28px}}
 </style>

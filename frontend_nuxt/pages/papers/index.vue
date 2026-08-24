@@ -15,20 +15,11 @@
         </div>
       </header>
 
-      <section class="paper-stats-row">
-        <div class="paper-stat">
-          <div class="paper-stat-value">{{ papers.length }}</div>
-          <div class="paper-stat-label">Published records</div>
-        </div>
-        <div class="paper-stat">
-          <div class="paper-stat-value">{{ topScore }}</div>
-          <div class="paper-stat-label">Highest score</div>
-        </div>
-        <div class="paper-stat">
-          <div class="paper-stat-value">{{ totalRatings }}</div>
-          <div class="paper-stat-label">Reader ratings</div>
-        </div>
-      </section>
+      <dl class="paper-register-summary" aria-label="Paper register summary">
+        <div><dt>Published records</dt><dd>{{ papers.length }}</dd></div>
+        <div><dt>Highest score</dt><dd>{{ topScore }}</dd></div>
+        <div><dt>Recorded ratings</dt><dd>{{ totalRatings }}</dd></div>
+      </dl>
 
       <section class="paper-filter-bar paper-panel">
         <label class="paper-filter-field">
@@ -61,7 +52,7 @@
         </button>
       </section>
 
-      <section class="paper-grid">
+      <section>
         <div class="paper-list">
           <div class="paper-feed-table paper-panel">
             <div class="paper-feed-row paper-feed-head">
@@ -116,8 +107,8 @@
           </div>
         </div>
 
-        <aside class="paper-sidebar">
-          <section class="paper-card">
+        <aside class="paper-register-ranking">
+          <section>
             <h3 class="paper-section-title">Top Rated</h3>
             <p class="paper-section-note">Based on current reader score snapshots.</p>
             <div class="paper-ranking-list">
@@ -135,14 +126,6 @@
                 <span class="paper-rank-score">{{ formatScore(item.compositeScore) }}</span>
               </NuxtLink>
             </div>
-          </section>
-
-          <section class="paper-card">
-            <h3 class="paper-section-title">Library View</h3>
-            <p class="paper-section-note">
-              Papers are treated as research records: metadata, score, discussion, authorship, and
-              institutional links can evolve around the same object.
-            </p>
           </section>
         </aside>
       </section>
@@ -253,3 +236,11 @@ const normalizeStatus = (value) => {
   return String(value).replaceAll('_', ' ').toLowerCase()
 }
 </script>
+
+<style scoped>
+.paper-register-summary{display:flex;flex-wrap:wrap;margin:0 0 24px;padding:0;border-top:1px solid var(--paper-line);border-bottom:1px solid var(--paper-line)}
+.paper-register-summary div{display:flex;align-items:baseline;gap:10px;min-width:190px;padding:12px 24px 12px 0;margin-right:24px;border-right:1px solid var(--paper-line)}
+.paper-register-summary div:last-child{border-right:0}.paper-register-summary dt{color:var(--paper-muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}.paper-register-summary dd{margin:0;font-family:Georgia,serif;font-size:23px;color:var(--paper-ink)}
+.paper-register-ranking{margin-top:32px;padding-top:22px;border-top:3px solid #0065a8}.paper-register-ranking .paper-ranking-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid var(--paper-line)}
+@media(max-width:720px){.paper-register-summary{display:grid}.paper-register-summary div{border-right:0;margin-right:0}.paper-register-ranking .paper-ranking-list{grid-template-columns:1fr}}
+</style>

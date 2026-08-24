@@ -1,11 +1,11 @@
 :root {
-  --primary-color-hover: rgb(9, 95, 105);
-  --primary-color: rgb(10, 110, 120);
+  --primary-color-hover: #004f85;
+  --primary-color: #0065a8;
   --primary-color-disabled: rgba(93, 152, 156, 0.5);
   --secondary-color: rgb(255, 255, 255);
   --secondary-color-hover: rgba(10, 111, 120, 0.079);
   --new-post-icon-color: rgba(10, 111, 120, 0.598);
-  --header-height: 60px;
+  --header-height: 189px;
   --header-background-color: white;
   --header-border-color: lightgray;
   --header-text-color: black;
@@ -89,16 +89,21 @@
   --background-color-blur: var(--background-color);
 }
 
+html { scroll-behavior: smooth; }
+
 body {
   margin: 0;
   padding: 0;
-  font-family: 'WenQuanYi Micro Hei', 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Helvetica Neue', 'WenQuanYi Micro Hei', Arial, sans-serif;
   background-color: var(--normal-background-color);
   color: var(--text-color);
   text-underline-offset: 4px;
   /* 禁止滚动 */
   /* overflow: hidden;  */
 }
+
+button, input, select, textarea { font: inherit; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #009edb; outline-offset: 2px; }
 
 /*************************
  * Vditor 自定义皮肤覆写
