@@ -1013,7 +1013,7 @@ const formatSavedTime = (value) => {
 .submission-loading { min-height: 280px; display: grid; place-items: center; border: 1px solid #d4dade; background: #fff; color: #5f6b73; }
 .submission-loading.error { color: #a33b33; }
 .draft-choice-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(19, 31, 39, .52); }
-.draft-choice-dialog { position: relative; width: min(540px, 100%); padding: 30px; border: 1px solid #c8d2d7; background: #fff; box-shadow: 0 24px 70px rgba(18, 37, 47, .24); color: #19252d; }
+.draft-choice-dialog { position: relative; width: min(540px, 100%); padding: 30px; border: 1px solid #c8d2d7; border-top: 5px solid #0065a8; background: #fff; color: #19252d; }
 .draft-choice-close { position: absolute; top: 16px; right: 16px; display: inline-grid; width: 36px; height: 36px; place-items: center; padding: 0; border: 1px solid transparent; background: transparent; color: #53636c; cursor: pointer; }
 .draft-choice-close:hover { border-color: #b7c5cb; background: #f1f5f6; color: #1d536b; }
 .draft-choice-close:focus-visible { outline: 2px solid #2b6b87; outline-offset: 2px; }
@@ -1099,7 +1099,7 @@ button.invalid .submission-progress-node { border-color: #b34a40; background: #f
 .submission-error-summary { display: grid; gap: 7px; margin-top: 18px; padding-top: 14px; border-top: 1px solid #d1d8dc; }
 .submission-error-summary strong { color: #9d3830; font-size: 12px; }
 .submission-error-summary button { padding: 0; border: 0; background: transparent; color: #6d4743; text-align: left; font-size: 11px; line-height: 1.35; cursor: pointer; }
-.submission-action-bar { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; min-height: 74px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px max(20px, calc((100vw - 1320px) / 2 + 20px)); border-top: 1px solid #c9d1d5; background: rgba(255, 255, 255, .97); box-shadow: 0 -6px 18px rgba(31, 48, 58, .08); }
+.submission-action-bar { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; min-height: 74px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px max(20px, calc((100vw - 1320px) / 2 + 20px)); border-top: 3px solid #0065a8; background: #fff; }
 .submission-action-bar > div { display: flex; align-items: center; gap: 16px; color: #68747c; font-size: 12px; }
 .submission-text-button { border: 0; background: transparent; padding: 8px 0; color: #4e5b63; font-weight: 700; cursor: pointer; }
 .submission-text-button.danger { color: #a23c34; }

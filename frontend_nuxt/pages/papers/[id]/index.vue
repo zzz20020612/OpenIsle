@@ -997,7 +997,7 @@ const normalizeStatus = (value) => {
 .journal-full-article-heading { display: flex; justify-content: flex-end; margin-bottom: 18px; }
 .article-contents-menu { position: relative; flex: 0 0 auto; }
 .article-contents-menu summary { padding: 8px 10px; border: 1px solid #bdcbd0; color: #31586a; font-size: 12px; font-weight: 750; cursor: pointer; }
-.article-contents-menu nav { position: absolute; z-index: 2; right: 0; width: 230px; display: grid; gap: 2px; padding: 10px; border: 1px solid #cbd5d9; background: #fff; box-shadow: 0 6px 18px rgba(31, 48, 58, .12); }
+.article-contents-menu nav { position: absolute; z-index: 2; right: 0; width: 230px; display: grid; gap: 2px; padding: 10px; border: 1px solid #9baeb6; border-top: 4px solid #0065a8; background: #fff; }
 .article-contents-menu a { padding: 5px 3px; color: #52646e; font-size: 12px; text-decoration: none; }
 .article-contents-menu a:hover { color: #1f617f; }
 .journal-file-list { border: 1px solid #d2d9dc; border-bottom: 0; }

@@ -593,7 +593,7 @@ function formatAuthors(value) {
 .literature-dimensions button {
   height: 32px;
   border: 1px solid var(--paper-line-strong);
-  border-radius: 7px;
+  border-radius: 0;
   background: var(--paper-surface);
   color: var(--paper-muted);
   cursor: pointer;
@@ -622,7 +622,7 @@ function formatAuthors(value) {
   min-height: 116px;
   padding: 11px 12px;
   border: 1px solid var(--paper-line-strong);
-  border-radius: 9px;
+  border-radius: 0;
   background: var(--paper-surface);
   color: var(--paper-ink);
   font: inherit;
@@ -675,7 +675,7 @@ function formatAuthors(value) {
 .literature-review {
   padding: 16px;
   border: 1px solid var(--paper-line);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--paper-surface-soft);
 }
 
@@ -715,7 +715,7 @@ function formatAuthors(value) {
 
 .literature-review-scores span {
   padding: 4px 7px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--paper-surface);
   color: var(--paper-muted);
   font-size: 10px;

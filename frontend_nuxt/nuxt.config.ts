@@ -28,7 +28,6 @@ export default defineNuxtConfig({
       discordClientId: process.env.NUXT_PUBLIC_DISCORD_CLIENT_ID || '',
       twitterClientId: process.env.NUXT_PUBLIC_TWITTER_CLIENT_ID || '',
       telegramBotId: process.env.NUXT_PUBLIC_TELEGRAM_BOT_ID || '',
-      literatureWorkspaceUrl: process.env.NUXT_PUBLIC_LITERATURE_WORKSPACE_URL || 'http://localhost:8088',
     },
   },
   css: [

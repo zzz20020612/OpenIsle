@@ -152,11 +152,11 @@ const openRevision = async (paper) => {
 .submission-list-page { max-width: 980px; margin: 0 auto; padding: 42px 28px 64px; color: #1a2a33; }
 header { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding-bottom: 24px; border-bottom: 2px solid #2f505e; }
 header a { color: #24617d; font-size: 13px; text-decoration: none; }
-h1 { margin: 8px 0 6px; font-size: 30px; }
+h1 { margin: 8px 0 6px; font-family: Georgia, 'Times New Roman', serif; font-size: 36px; font-weight: 400; }
 header p { margin: 0; color: #65747b; }
 .submit-link { padding: 10px 14px; border: 1px solid #2f6178; background: #2f6178; color: #fff; white-space: nowrap; }
 .submission-list { border-top: 1px solid #d7dee1; }
-.draft-list { margin: 24px 0 30px; border: 1px solid #cad6db; background: #f7fafb; }
+.draft-list { margin: 24px 0 30px; border: 1px solid #cad6db; border-top: 4px solid #0065a8; background: #fff; }
 .draft-list-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding: 16px 18px; border-bottom: 1px solid #d7e0e4; }
 .draft-list-heading span { color: #2f657c; font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
 .draft-list-heading h2 { margin: 4px 0 0; font-family: Georgia, serif; font-size: 21px; font-weight: 500; }

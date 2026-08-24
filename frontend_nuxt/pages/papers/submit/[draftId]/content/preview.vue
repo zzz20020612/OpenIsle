@@ -94,7 +94,7 @@ h1 { margin: 8px 0 5px; font-family: Georgia, serif; font-size: 38px; font-weigh
 .preview-alert, .issue-list { max-width: 980px; margin: 0 auto 16px; padding: 12px 14px; border: 1px solid #bdd6c6; background: #f2faf4; color: #2f6b4f; }
 .preview-alert.error, .issue-list { border-color: #e0b5af; background: #fff7f6; color: #923b32; }
 .issue-list p { margin: 7px 0 0; }
-.paper-preview { max-width: 980px; margin: 0 auto; padding: 50px clamp(24px, 6vw, 86px); background: #fff; box-shadow: 0 3px 15px rgba(27, 46, 56, .07); }
+.paper-preview { max-width: 980px; margin: 0 auto; padding: 50px clamp(24px, 6vw, 86px); border-top: 4px solid #0065a8; background: #fff; }
 .paper-preview-header { margin-bottom: 42px; text-align: center; }
 .paper-preview-header > span { color: #65727b; font-size: 13px; }
 .paper-preview-header h2 { margin: 12px 0 14px; font-family: Georgia, serif; font-size: clamp(27px, 4vw, 42px); font-weight: 500; line-height: 1.2; }

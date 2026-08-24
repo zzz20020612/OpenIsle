@@ -205,7 +205,7 @@ function formatAuthors(value) {
   width: 100%;
   padding: 0 12px;
   border: 1px solid var(--paper-line);
-  border-radius: 8px;
+  border-radius: 0;
   color: var(--paper-ink);
   background: var(--paper-panel-subtle);
   font: inherit;

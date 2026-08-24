@@ -65,11 +65,15 @@ const unreadNotificationCount = computed(() => notificationState.unreadCount)
 const navItems = computed(() => [
   { to: '/papers', label: 'Papers' },
   { to: '/literature', label: 'Knowledge Base' },
-  { to: '/literature/workflow', label: 'Literature Processing' },
-  { to: '/papers/review-tasks', label: 'Reviews' },
   { to: '/papers/rankings', label: 'Rankings' },
-  { to: '/papers/submissions', label: 'My Submissions' },
-  ...(authState.role === 'ADMIN' ? [{ to: '/admin/papers', label: 'Administration' }] : []),
+  ...(authState.loggedIn ? [
+    { to: '/papers/review-tasks', label: 'Reviews' },
+    { to: '/papers/submissions', label: 'My Submissions' },
+  ] : []),
+  ...(authState.role === 'ADMIN' ? [
+    { to: '/literature/workflow', label: 'Literature Processing' },
+    { to: '/admin/papers', label: 'Administration' },
+  ] : []),
 ])
 const logout = () => { clearToken(); navigateTo('/login') }
 onMounted(() => {
