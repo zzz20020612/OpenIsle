@@ -7,16 +7,26 @@
           <h1 class="paper-page-title">Literature processing workflow</h1>
           <p class="paper-page-description">Collect metadata, download open PDFs, parse full text, and extract knowledge. Every action is recorded in OpenIsle.</p>
         </div>
-        <div class="workflow-actions"><NuxtLink class="paper-button" to="/literature">View knowledge base</NuxtLink><button class="paper-button" @click="refresh">Refresh</button></div>
+        <div class="workflow-actions"><NuxtLink class="paper-button" to="/literature">View knowledge base</NuxtLink><button v-if="!accessDenied" class="paper-button" @click="refresh">Refresh</button></div>
       </header>
 
-      <div v-if="message" class="workflow-message" :class="{ error: failed, partial }">{{ message }}</div>
-      <section class="completeness-grid" aria-label="Literature completeness summary">
+      <section v-if="accessDenied" class="paper-panel workflow-access-notice" role="alert">
+        <div class="paper-page-eyebrow">Administrator access required</div>
+        <h2>The workflow is available, but this account cannot run processing jobs.</h2>
+        <p>Literature collection, PDF processing, knowledge extraction, and task retries modify the shared corpus and therefore require an administrator account.</p>
+        <div class="workflow-actions">
+          <button class="primary-action" type="button" @click="switchAccount">Switch to administrator account</button>
+          <NuxtLink class="paper-button" to="/literature">Continue browsing the knowledge base</NuxtLink>
+        </div>
+      </section>
+
+      <div v-if="!accessDenied && message" class="workflow-message" :class="{ error: failed, partial }">{{ message }}</div>
+      <section v-if="!accessDenied" class="completeness-grid" aria-label="Literature completeness summary">
         <article v-for="item in completenessCards" :key="item.state" class="paper-panel completeness-card" :class="item.state">
           <strong>{{ item.count }}</strong><span>{{ item.label }}</span>
         </article>
       </section>
-      <section v-if="activeTask" class="paper-panel task-progress" aria-live="polite">
+      <section v-if="!accessDenied && activeTask" class="paper-panel task-progress" aria-live="polite">
         <div class="task-progress-heading">
           <div>
             <strong>{{ taskStatusLabel }}</strong>
@@ -31,7 +41,7 @@
           <div v-for="row in taskResultRows" :key="row.label"><dt>{{ row.label }}</dt><dd>{{ row.value }}</dd></div>
         </dl>
       </section>
-      <section class="workflow-grid">
+      <section v-if="!accessDenied" class="workflow-grid">
         <article class="paper-panel workflow-card">
           <h2>Run complete pipeline</h2>
           <label>Search topic<input v-model="pipeline.keyword" placeholder="e.g. climate adaptation" /></label>
@@ -54,14 +64,14 @@
         </article>
       </section>
 
-      <section class="paper-panel advanced-panel">
+      <section v-if="!accessDenied" class="paper-panel advanced-panel">
         <div><h2>Advanced maintenance</h2><p>Quality review, author merging, connection checks, single-paper sync, and workflow settings remain available through the audited bridge.</p></div>
         <label>Operation<select v-model="advancedPath"><option v-for="item in advancedOperations" :key="item.path" :value="item.path">{{ item.label }}</option></select></label>
         <label>JSON parameters<textarea v-model="advancedBody" rows="5" spellcheck="false" /></label>
         <button class="primary-action" :disabled="busy" @click="runAdvanced">Run advanced operation</button>
       </section>
 
-      <section class="paper-panel jobs-panel">
+      <section v-if="!accessDenied" class="paper-panel jobs-panel">
         <div class="panel-heading"><div><h2>Recent processing jobs</h2><p>{{ statsText }}</p></div><button :disabled="busy" @click="run('/jobs/archive', { days: 7, batch: 1000 })">Archive old jobs</button></div>
         <div v-if="loading" class="empty">Loading jobs...</div>
         <div v-else-if="!jobs.length" class="empty">No processing jobs yet.</div>
@@ -73,7 +83,7 @@
 
 <script setup>
 import '~/assets/paper-platform.css'
-import { authState, getToken, loadCurrentUser } from '~/utils/auth'
+import { authState, clearToken, getToken, loadCurrentUser } from '~/utils/auth'
 
 definePageMeta({ middleware: 'auth-client', keepalive: false })
 useHead({ title: 'Knowledge Workflow - OpenIsle' })
@@ -90,6 +100,7 @@ const partial = ref(false)
 const activeTask = ref(null)
 const embeddingConfigured = ref(false)
 const completenessStats = ref({})
+const accessDenied = ref(false)
 const collectionSources = [
   { value: 'crossref', label: 'Crossref (recommended)' },
   { value: 'all_open', label: 'All open sources' },
@@ -214,9 +225,17 @@ const formatTime = (value) => value ? new Intl.DateTimeFormat(undefined, { dateS
 
 onMounted(async () => {
   if (!authState.role) await loadCurrentUser()
-  if (authState.role !== 'ADMIN') return navigateTo('/literature', { replace: true })
+  if (authState.role !== 'ADMIN') {
+    accessDenied.value = true
+    loading.value = false
+    return
+  }
   await refresh()
 })
+const switchAccount = () => {
+  clearToken()
+  navigateTo('/login?redirect=/literature/workflow')
+}
 onBeforeUnmount(() => { pollGeneration++ })
 </script>
 
@@ -224,6 +243,7 @@ onBeforeUnmount(() => { pollGeneration++ })
 .literature-workflow-container { max-width: 1240px; }
 .workflow-actions,.stage-actions,.field-row,.panel-heading { display:flex; gap:10px; }
 .workflow-actions { flex-wrap:wrap; }
+.workflow-access-notice{max-width:760px;padding:28px;border-left:5px solid #0065a8}.workflow-access-notice h2{margin:6px 0 10px;font-family:Georgia,serif;font-size:27px;font-weight:400}.workflow-access-notice p{margin:0 0 20px;color:var(--paper-muted);line-height:1.65}
 .completeness-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin-bottom:24px;border-top:1px solid var(--paper-line);border-bottom:1px solid var(--paper-line)}.completeness-card{display:grid;gap:3px;padding:14px 16px;border:0;border-right:1px solid var(--paper-line);border-top:3px solid var(--paper-line)}.completeness-card:last-child{border-right:0}.completeness-card strong{font-family:Georgia,serif;font-size:24px;font-weight:400}.completeness-card span{color:var(--paper-muted);font-size:11px;font-weight:800;text-transform:uppercase}.completeness-card.complete{border-top-color:#34866a}.completeness-card.processing{border-top-color:#3480a0}.completeness-card.retryable,.completeness-card.incomplete{border-top-color:#c58a2b}.completeness-card.terminal{border-top-color:#a33d34}
 .workflow-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:14px; }
 .workflow-card,.jobs-panel,.advanced-panel { padding:20px; border-top:4px solid #0065a8; }
