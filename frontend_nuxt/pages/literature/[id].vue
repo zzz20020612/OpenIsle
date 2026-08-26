@@ -45,14 +45,23 @@
 
         <div class="paper-detail-layout">
           <div>
-            <section class="paper-block">
+            <nav class="literature-content-tabs" aria-label="Literature record content">
+              <button v-for="tab in contentTabs" :key="tab.id" type="button" :class="{ active: activeContentTab === tab.id }" @click="activeContentTab = tab.id">{{ tab.label }}</button>
+            </nav>
+
+            <div class="literature-reading-context">
+              <span>{{ activeTabMeta.eyebrow }}</span>
+              <p>{{ activeTabMeta.description }}</p>
+            </div>
+
+            <section v-show="activeContentTab === 'abstract'" class="paper-block">
               <h2 class="paper-block-title">Abstract</h2>
               <div class="paper-manuscript literature-prose">
                 {{ paper.abstract || 'No abstract is available for this record.' }}
               </div>
             </section>
 
-            <section class="paper-block">
+            <section v-show="activeContentTab === 'knowledge'" class="paper-block">
               <div class="paper-card-heading">
                 <h2 class="paper-block-title">Extracted Knowledge</h2>
                 <span class="paper-mini-label">Machine extracted · verify with source</span>
@@ -68,7 +77,7 @@
               <p v-else class="literature-muted">{{ missingArtifactText('knowledge card') }}</p>
             </section>
 
-            <section class="paper-block">
+            <section v-show="activeContentTab === 'methods'" class="paper-block">
               <h2 class="paper-block-title">Methods</h2>
               <template v-if="methods">
                 <KnowledgeField label="Methodology" :value="methods.methodology" />
@@ -80,7 +89,7 @@
               <p v-else class="literature-muted">{{ missingArtifactText('structured methods') }}</p>
             </section>
 
-            <section class="paper-block">
+            <section v-show="activeContentTab === 'data'" class="paper-block">
               <h2 class="paper-block-title">Extracted Data Points</h2>
               <div v-if="dataPoints.length" class="literature-data-list">
                 <article v-for="point in dataPoints" :key="point.id" class="literature-data-item">
@@ -94,36 +103,37 @@
               <p v-else class="literature-muted">No structured data points have been extracted yet.</p>
             </section>
 
-            <section v-if="sections.length" class="paper-block">
-              <h2 class="paper-block-title">Parsed Full Text</h2>
-              <article v-for="(section,index) in sections" :key="section.id || index" class="literature-section">
-                <h3>{{ section.heading || section.title || `Section ${index + 1}` }}</h3>
-                <div class="paper-manuscript literature-prose">{{ section.text || section.content }}</div>
-              </article>
+            <section v-show="activeContentTab === 'sections'" class="paper-block">
+              <div class="paper-card-heading"><h2 class="paper-block-title">Sections</h2><span class="paper-mini-label">Machine-extracted from the source PDF</span></div>
+              <div v-if="sections.length" class="literature-sections">
+                <details v-for="(section,index) in sections" :key="section.id || index" class="literature-section" :open="index === 0">
+                  <summary><span>{{ section.heading || section.title || `Section ${index + 1}` }}</span><small v-if="section.page_start != null">Pages {{ Number(section.page_start) + 1 }}–{{ Number(section.page_end ?? section.page_start) + 1 }}</small></summary>
+                  <div class="paper-manuscript literature-prose">{{ section.text || section.content }}</div>
+                </details>
+              </div><p v-else class="literature-muted">No parsed sections are available for this record.</p>
             </section>
 
-            <section v-if="figures.length" class="paper-block">
+            <section v-show="activeContentTab === 'figures'" class="paper-block">
               <h2 class="paper-block-title">Figures and Tables</h2>
-              <div class="literature-data-list"><article v-for="(figure,index) in figures" :key="figure.id || index" class="literature-data-item"><strong>{{ figure.label || figure.title || `Figure ${index + 1}` }}</strong><p>{{ figure.caption || figure.description || 'Caption unavailable' }}</p></article></div>
+              <div v-if="figures.length" class="literature-data-list"><article v-for="(figure,index) in figures" :key="figure.id || index" class="literature-data-item"><strong>{{ figure.label || figure.title || `Figure ${index + 1}` }}</strong><p>{{ figure.caption || figure.description || 'Caption unavailable' }}</p></article></div><p v-else class="literature-muted">No figures or tables were extracted.</p>
             </section>
 
-            <section class="paper-block">
+            <section v-show="activeContentTab === 'citations'" class="paper-block">
               <h2 class="paper-block-title">Citations</h2>
               <AdminDataTable :rows="citations" empty="No structured citations are available." />
             </section>
 
-            <section class="paper-block">
+            <details class="paper-block literature-supplement">
+              <summary>Authors and related literature</summary>
               <h2 class="paper-block-title">Authors</h2>
               <AdminDataTable :rows="paperAuthors" empty="No structured author records are available." />
-            </section>
-
-            <section class="paper-block">
-              <h2 class="paper-block-title">Similar Literature</h2>
+              <h2 class="paper-block-title literature-subheading">Similar Literature</h2>
               <div v-if="similar.length" class="literature-data-list"><NuxtLink v-for="item in similar" :key="item.id || item.paper_id" class="literature-similar" :to="`/literature/${item.id || item.paper_id}`"><strong>{{ item.title || item.paper_title }}</strong><span>{{ item.score ?? item.similarity ?? '' }}</span></NuxtLink></div><p v-else class="literature-muted">No similar-paper recommendations are available.</p>
-            </section>
+            </details>
 
-            <section class="paper-block">
-              <div class="paper-card-heading">
+            <details class="paper-block literature-supplement">
+              <summary>Reader evaluations ({{ ratings.length }})</summary>
+              <div class="paper-card-heading literature-supplement-heading">
                 <h2 class="paper-block-title">Reader Evaluations</h2>
                 <span class="paper-mini-label">Registered readers · human judgment</span>
               </div>
@@ -142,7 +152,7 @@
                 </article>
               </div>
               <p v-else class="literature-muted">No human evaluations yet. Be the first registered reader to evaluate this paper.</p>
-            </section>
+            </details>
           </div>
 
           <aside class="paper-sidebar">
@@ -162,7 +172,9 @@
               </p>
 
               <ClientOnly>
-                <template v-if="clientReady && authState.loggedIn">
+                <details v-if="clientReady && authState.loggedIn" class="literature-evaluate-panel">
+                  <summary>{{ myRating ? 'Update your evaluation' : 'Evaluate this paper' }}</summary>
+                  <div class="literature-evaluate-body">
                   <h2 class="paper-section-title">{{ myRating ? 'Update your evaluation' : 'Six-dimensional evaluation' }}</h2>
                   <p class="paper-section-note">Scores stay hidden from your form until submission. Each user keeps one active evaluation.</p>
                   <div class="literature-dimensions">
@@ -198,7 +210,8 @@
                   <button class="paper-button primary literature-submit-rating" type="button" :disabled="!canSubmitRating || submittingRating" @click="submitRating">
                     {{ submittingRating ? 'Saving…' : myRating ? 'Update evaluation' : 'Submit evaluation' }}
                   </button>
-                </template>
+                  </div>
+                </details>
                 <template v-else>
                   <h2 class="paper-section-title">Evaluate this paper</h2>
                   <p class="paper-section-note">Browsing is public. Sign in with a registered OpenIsle account to submit a human evaluation.</p>
@@ -264,6 +277,26 @@ const {
 } = useLiteratureApi()
 const paperId = computed(() => String(route.params.id))
 const clientReady = ref(false)
+const activeContentTab = ref('sections')
+const contentTabs = [
+  { id: 'abstract', label: 'Abstract' },
+  { id: 'sections', label: 'Sections' },
+  { id: 'figures', label: 'Figures' },
+  { id: 'citations', label: 'Citations' },
+  { id: 'knowledge', label: 'Knowledge' },
+  { id: 'methods', label: 'Methods' },
+  { id: 'data', label: 'Data' },
+]
+const tabMeta = {
+  abstract: { eyebrow: 'Paper overview', description: 'Read the authors’ abstract before checking the extracted evidence.' },
+  sections: { eyebrow: 'Full-text reading', description: 'Parsed chapter content from the source PDF. Open one chapter at a time.' },
+  figures: { eyebrow: 'Visual evidence', description: 'Figures and tables identified during PDF processing.' },
+  citations: { eyebrow: 'Reference trail', description: 'Structured citations linked to this literature record.' },
+  knowledge: { eyebrow: 'AI synthesis', description: 'Machine-extracted claims and research insights; verify them against Sections or the PDF.' },
+  methods: { eyebrow: 'Method extraction', description: 'A structured view of methodology, workflow, data sources, and evaluation.' },
+  data: { eyebrow: 'Reported results', description: 'Quantitative data points detected in the paper.' },
+}
+const activeTabMeta = computed(() => tabMeta[activeContentTab.value] || tabMeta.sections)
 
 const dimensions = [
   { key: 'originalityScore', label: 'Originality', short: 'Originality', hint: '25% · What is genuinely new?', weight: .25 },
@@ -551,7 +584,8 @@ function formatAuthors(value) {
   font-size: 12px;
   line-height: 1.5;
 }
-.literature-section{padding:14px 0;border-top:1px solid var(--paper-line)}.literature-section h3{margin:0 0 8px;font:500 18px Georgia,serif}.literature-similar{display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-top:1px solid var(--paper-line);color:var(--paper-ink);text-decoration:none}.literature-similar span{color:var(--paper-green)}
+.literature-content-tabs{position:sticky;top:0;z-index:3;display:flex;overflow:auto;margin-bottom:0;border:1px solid var(--paper-line);background:var(--paper-line);gap:1px}.literature-content-tabs button{min-width:max-content;border:0;padding:12px 15px;background:#fff;color:var(--paper-muted);font-size:12px;font-weight:800;cursor:pointer}.literature-content-tabs button.active{background:var(--paper-teal);color:#fff}.literature-reading-context{display:flex;align-items:baseline;gap:14px;padding:12px 15px;margin-bottom:14px;border:1px solid var(--paper-line);border-top:0;background:var(--paper-surface-soft)}.literature-reading-context span{flex:0 0 auto;color:var(--paper-teal);font-size:10px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}.literature-reading-context p{margin:0;color:var(--paper-muted);font-size:12px;line-height:1.5}.literature-section{border-top:1px solid var(--paper-line)}.literature-section summary{display:flex;justify-content:space-between;gap:16px;padding:16px 0;cursor:pointer;font:500 19px Georgia,serif}.literature-section summary small{color:var(--paper-soft);font:700 10px var(--paper-font-ui);text-transform:uppercase}.literature-section .paper-manuscript{max-width:72ch;padding:4px 0 24px;font-size:16px;line-height:1.85}.literature-similar{display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-top:1px solid var(--paper-line);color:var(--paper-ink);text-decoration:none}.literature-similar span{color:var(--paper-green)}
+.literature-supplement{padding:0}.literature-supplement>summary,.literature-evaluate-panel>summary{padding:16px 18px;color:var(--paper-ink);cursor:pointer;font-weight:800;list-style-position:inside}.literature-supplement[open]{padding:0 18px 18px}.literature-supplement[open]>summary{margin:0 -18px 18px;border-bottom:1px solid var(--paper-line)}.literature-supplement-heading{margin-top:0}.literature-subheading{margin-top:24px}.literature-evaluate-panel{margin-top:8px;border:1px solid var(--paper-line)}.literature-evaluate-panel>summary{color:var(--paper-teal)}.literature-evaluate-body{padding:0 14px 14px}
 
 .literature-state {
   text-align: center;
