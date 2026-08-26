@@ -89,7 +89,7 @@ import '~/assets/paper-platform.css'
 import { authState, clearToken, getToken, loadCurrentUser } from '~/utils/auth'
 
 definePageMeta({ middleware: 'auth-client', keepalive: false })
-useHead({ title: 'Knowledge Workflow - OpenIsle' })
+useHead({ title: 'Knowledge Workflow Overview - OpenIsle' })
 
 const config = useRuntimeConfig()
 const { listLiterature } = useLiteratureApi()
@@ -116,7 +116,15 @@ const collectionSources = [
   { value: 'scopus', label: 'Scopus (API key required)' },
 ]
 const pipeline = reactive({ keyword: '', collection_source: 'crossref', rows: 20, max_pages: 3, year_from: '', year_to: '', journal: '', parse_source: 'all', parse_limit: 15 })
-const statsText = computed(() => Object.entries(jobStats.value || {}).map(([key, value]) => `${key}: ${value}`).join(' · ') || 'Current task history')
+const statsText = computed(() => {
+  const stats = jobStats.value || {}
+  const parts = []
+  if (stats.total_failed != null) parts.push(`${stats.total_failed} failed`)
+  if (stats.archived_count != null) parts.push(`${stats.archived_count} archived`)
+  if (Array.isArray(stats.by_error_class)) parts.push(`${stats.by_error_class.length} error categories`)
+  if (Array.isArray(stats.by_stage_status)) parts.push(`${stats.by_stage_status.length} stage/status groups`)
+  return parts.join(' · ') || 'Current task history'
+})
 const completenessCards = computed(() => [
   { state: 'complete', label: 'Complete', count: completenessStats.value.complete || 0 },
   { state: 'processing', label: 'Processing', count: completenessStats.value.processing || 0 },
