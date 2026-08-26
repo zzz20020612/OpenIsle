@@ -27,6 +27,7 @@ export const useLiteratureApi = () => {
     getKnowledge: (paperId) => request(`/papers/${paperId}/knowledge`),
     getMethods: (paperId) => request(`/papers/${paperId}/methods`),
     getDataPoints: (paperId) => request(`/papers/${paperId}/data-points`),
+    explore: (path, params = {}) => request(`/explore${path}`, { params }),
     getScore: (paperId) => request(`/papers/${paperId}/score`),
     listRatings: (paperId) => request(`/papers/${paperId}/ratings`),
     getMyRating: (paperId) => request(`/papers/${paperId}/ratings/me`, { headers: authHeaders() }),

@@ -1,0 +1,4 @@
+<template><div v-if="!rows?.length" class="empty">{{ empty }}</div><div v-else class="table-wrap"><table><thead><tr><th v-for="key in keys" :key="key">{{ label(key) }}</th></tr></thead><tbody><tr v-for="(row,index) in rows" :key="row.id||index"><td v-for="key in keys" :key="key">{{ display(row[key]) }}</td></tr></tbody></table></div></template>
+<script setup>
+const props=defineProps({rows:{type:Array,default:()=>[]},empty:{type:String,default:'No records.'}});const keys=computed(()=>{const set=[];props.rows.slice(0,20).forEach(row=>Object.keys(row||{}).forEach(key=>{if(!set.includes(key)&&set.length<10)set.push(key)}));return set});const label=(v)=>v.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase());const display=(v)=>v==null?'—':typeof v==='object'?JSON.stringify(v):String(v)
+</script>

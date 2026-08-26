@@ -94,6 +94,34 @@
               <p v-else class="literature-muted">No structured data points have been extracted yet.</p>
             </section>
 
+            <section v-if="sections.length" class="paper-block">
+              <h2 class="paper-block-title">Parsed Full Text</h2>
+              <article v-for="(section,index) in sections" :key="section.id || index" class="literature-section">
+                <h3>{{ section.heading || section.title || `Section ${index + 1}` }}</h3>
+                <div class="paper-manuscript literature-prose">{{ section.text || section.content }}</div>
+              </article>
+            </section>
+
+            <section v-if="figures.length" class="paper-block">
+              <h2 class="paper-block-title">Figures and Tables</h2>
+              <div class="literature-data-list"><article v-for="(figure,index) in figures" :key="figure.id || index" class="literature-data-item"><strong>{{ figure.label || figure.title || `Figure ${index + 1}` }}</strong><p>{{ figure.caption || figure.description || 'Caption unavailable' }}</p></article></div>
+            </section>
+
+            <section class="paper-block">
+              <h2 class="paper-block-title">Citations</h2>
+              <AdminDataTable :rows="citations" empty="No structured citations are available." />
+            </section>
+
+            <section class="paper-block">
+              <h2 class="paper-block-title">Authors</h2>
+              <AdminDataTable :rows="paperAuthors" empty="No structured author records are available." />
+            </section>
+
+            <section class="paper-block">
+              <h2 class="paper-block-title">Similar Literature</h2>
+              <div v-if="similar.length" class="literature-data-list"><NuxtLink v-for="item in similar" :key="item.id || item.paper_id" class="literature-similar" :to="`/literature/${item.id || item.paper_id}`"><strong>{{ item.title || item.paper_title }}</strong><span>{{ item.score ?? item.similarity ?? '' }}</span></NuxtLink></div><p v-else class="literature-muted">No similar-paper recommendations are available.</p>
+            </section>
+
             <section class="paper-block">
               <div class="paper-card-heading">
                 <h2 class="paper-block-title">Reader Evaluations</h2>
@@ -232,6 +260,7 @@ const {
   listRatings,
   getMyRating,
   rateLiterature,
+  explore,
 } = useLiteratureApi()
 const paperId = computed(() => String(route.params.id))
 const clientReady = ref(false)
@@ -264,14 +293,17 @@ const { data, pending, error, refresh } = await useAsyncData(
   () => `literature:${paperId.value}`,
   async () => {
     const paper = await getLiterature(paperId.value)
-    const [knowledgeResult, methodsResult, dataPointsResult, score, ratings] = await Promise.all([
+    const [knowledgeResult, methodsResult, dataPointsResult, score, ratings, citations, authors, similar] = await Promise.all([
       getKnowledge(paperId.value).catch(() => null),
       getMethods(paperId.value).catch(() => null),
       getDataPoints(paperId.value).catch(() => null),
       getScore(paperId.value).catch(() => ({})),
       listRatings(paperId.value).catch(() => []),
+      explore(`/paper/${paperId.value}/citations`).catch(() => ({})),
+      explore(`/paper/${paperId.value}/authors`).catch(() => ({})),
+      explore(`/paper/${paperId.value}/similar`, { top_k: 8 }).catch(() => ({})),
     ])
-    return { paper, knowledgeResult, methodsResult, dataPointsResult, score, ratings }
+    return { paper, knowledgeResult, methodsResult, dataPointsResult, score, ratings, citations, authors, similar }
   },
   { watch: [paperId] },
 )
@@ -282,6 +314,11 @@ const methods = computed(() => data.value?.methodsResult?.methods || null)
 const dataPoints = computed(() => data.value?.dataPointsResult?.data_points || [])
 const score = computed(() => data.value?.score || {})
 const ratings = computed(() => Array.isArray(data.value?.ratings) ? data.value.ratings : [])
+const sections = computed(() => paper.value?.sections || paper.value?.fulltext?.sections || [])
+const figures = computed(() => paper.value?.figures || paper.value?.fulltext?.figures || [])
+const citations = computed(() => data.value?.citations?.citations || data.value?.citations?.items || [])
+const paperAuthors = computed(() => data.value?.authors?.authors || data.value?.authors?.items || [])
+const similar = computed(() => data.value?.similar?.papers || data.value?.similar?.results || data.value?.similar?.items || [])
 const canSubmitRating = computed(() =>
   dimensions.every((dimension) => Number.isInteger(ratingForm[dimension.key]) && ratingForm[dimension.key] >= 0 && ratingForm[dimension.key] <= 5) &&
   ratingForm.readConfirmed &&
@@ -514,6 +551,7 @@ function formatAuthors(value) {
   font-size: 12px;
   line-height: 1.5;
 }
+.literature-section{padding:14px 0;border-top:1px solid var(--paper-line)}.literature-section h3{margin:0 0 8px;font:500 18px Georgia,serif}.literature-similar{display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-top:1px solid var(--paper-line);color:var(--paper-ink);text-decoration:none}.literature-similar span{color:var(--paper-green)}
 
 .literature-state {
   text-align: center;

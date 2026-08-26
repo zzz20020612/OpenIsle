@@ -10,6 +10,8 @@
         <div class="workflow-actions"><NuxtLink class="paper-button" to="/literature">View knowledge base</NuxtLink><button v-if="!accessDenied" class="paper-button" @click="refresh">Refresh</button></div>
       </header>
 
+      <LiteratureAdminNav v-if="!accessDenied" />
+
       <section v-if="accessDenied" class="paper-panel workflow-access-notice" role="alert">
         <div class="paper-page-eyebrow">Administrator access required</div>
         <h2>The workflow is available, but this account cannot run processing jobs.</h2>
@@ -65,10 +67,11 @@
       </section>
 
       <section v-if="!accessDenied" class="paper-panel advanced-panel">
-        <div><h2>Advanced maintenance</h2><p>Quality review, author merging, connection checks, single-paper sync, and workflow settings remain available through the audited bridge.</p></div>
-        <label>Operation<select v-model="advancedPath"><option v-for="item in advancedOperations" :key="item.path" :value="item.path">{{ item.label }}</option></select></label>
-        <label>JSON parameters<textarea v-model="advancedBody" rows="5" spellcheck="false" /></label>
-        <button class="primary-action" :disabled="busy" @click="runAdvanced">Run advanced operation</button>
+        <div><h2>Administration modules</h2><p>Every maintenance function now has a typed, audited workspace. Raw JSON input is no longer required.</p></div>
+        <NuxtLink class="paper-button" to="/literature/workflow/quality">Quality management</NuxtLink>
+        <NuxtLink class="paper-button" to="/literature/workflow/authors">Author governance</NuxtLink>
+        <NuxtLink class="paper-button" to="/literature/workflow/diagnostics">Service diagnostics</NuxtLink>
+        <NuxtLink class="paper-button" to="/literature/workflow/settings">Workflow settings</NuxtLink>
       </section>
 
       <section v-if="!accessDenied" class="paper-panel jobs-panel">
@@ -113,17 +116,6 @@ const collectionSources = [
   { value: 'scopus', label: 'Scopus (API key required)' },
 ]
 const pipeline = reactive({ keyword: '', collection_source: 'crossref', rows: 20, max_pages: 3, year_from: '', year_to: '', journal: '', parse_source: 'all', parse_limit: 15 })
-const advancedOperations = [
-  { path:'/collect',label:'Collect metadata only',body:{ keyword:'',collection_source:'crossref',rows:20,max_pages:3,year_from:'',year_to:'',journal:'' } },
-  { path:'/sync',label:'Synchronize one paper',body:{ paper_id:1 } },
-  { path:'/quality/re_extract',label:'Re-extract one low-quality paper',body:{ paper_id:1 } },
-  { path:'/authors/merge',label:'Merge duplicate authors',body:{ primary_id:1,duplicate_ids:[] } },
-  { path:'/test/connection',label:'Test external service connection',body:{ service:'llm' } },
-  { path:'/workflow/settings',label:'Update workflow settings',body:{} },
-]
-const advancedPath = ref(advancedOperations[0].path)
-const advancedBody = ref(JSON.stringify(advancedOperations[0].body, null, 2))
-watch(advancedPath, value => { advancedBody.value = JSON.stringify(advancedOperations.find(item => item.path === value)?.body || {}, null, 2) })
 const statsText = computed(() => Object.entries(jobStats.value || {}).map(([key, value]) => `${key}: ${value}`).join(' · ') || 'Current task history')
 const completenessCards = computed(() => [
   { state: 'complete', label: 'Complete', count: completenessStats.value.complete || 0 },
@@ -220,7 +212,6 @@ const run = async (path, body) => {
   }
 }
 const retry = (job) => run('/retry', { paper_id: job.paper_id, stage: job.stage || job.job_type, job_id: job.id })
-const runAdvanced = async () => { try { await run(advancedPath.value, JSON.parse(advancedBody.value || '{}')) } catch { failed.value = true; message.value = 'Advanced parameters must be valid JSON.' } }
 const formatTime = (value) => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(/Z|[+-]\d\d:?\d\d$/.test(value) ? value : `${value}Z`)) : '—'
 
 onMounted(async () => {
@@ -255,7 +246,7 @@ onBeforeUnmount(() => { pollGeneration++ })
 button:disabled { opacity:.5; cursor:wait; }
 .stage-actions { flex-wrap:wrap; margin:20px 0; }
 .readiness { padding:10px; background:#edf7f3; color:#22624e; }.readiness.missing { background:#fff6e8; color:#835713; }.hint { color:var(--paper-muted); font-size:12px; }
-.advanced-panel{display:grid;grid-template-columns:1fr minmax(220px,.45fr) minmax(300px,.75fr) auto;align-items:end;gap:12px;margin-bottom:14px}.advanced-panel h2{margin:0 0 6px;font-family:Georgia,serif;font-weight:500}.advanced-panel p{margin:0;color:var(--paper-muted);font-size:12px}.advanced-panel label{display:grid;gap:5px;color:var(--paper-muted);font-size:12px;font-weight:700}.advanced-panel select,.advanced-panel textarea{border:1px solid var(--paper-line);padding:8px;background:#fff;font:inherit}.advanced-panel textarea{font-family:monospace;font-size:11px}
+.advanced-panel{display:grid;grid-template-columns:minmax(280px,1fr) repeat(4,auto);align-items:center;gap:12px;margin-bottom:14px}.advanced-panel h2{margin:0 0 6px;font-family:Georgia,serif;font-weight:500}.advanced-panel p{margin:0;color:var(--paper-muted);font-size:12px}
 .workflow-message { margin-bottom:14px; border:1px solid #a9cfbf; padding:11px 14px; background:#eff8f4; color:#245e49; }.workflow-message.error { border-color:#e0b5af; background:#fff7f6; color:#923b32; }
 .workflow-message.partial { border-color:#e3c27d; background:#fff8e9; color:#795517; }
 .task-progress{padding:18px 20px;margin-bottom:14px;border-left:4px solid #0065a8}.task-progress-heading{display:flex;align-items:start;justify-content:space-between;gap:16px}.task-progress-heading p{margin:4px 0 0;color:var(--paper-muted);font-size:12px}.task-progress-heading b{color:var(--paper-green);font-size:22px}.task-progress-track{height:8px;margin:14px 0;background:var(--paper-line);overflow:hidden}.task-progress-track span{display:block;height:100%;background:var(--paper-teal);transition:width .25s ease}.task-result-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:12px 0 0;border-top:1px solid var(--paper-line);border-left:1px solid var(--paper-line)}.task-result-grid div{padding:10px;border-right:1px solid var(--paper-line);border-bottom:1px solid var(--paper-line);background:var(--paper-panel-subtle)}.task-result-grid dt{color:var(--paper-soft);font-size:10px;font-weight:800;text-transform:uppercase}.task-result-grid dd{margin:4px 0 0;color:var(--paper-ink);font-size:12px}

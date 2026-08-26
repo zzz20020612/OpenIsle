@@ -23,10 +23,12 @@ useHead({ title: 'Explore Literature Knowledge - OpenIsle' })
 const modes = [
   { id:'papers',label:'Papers',path:'/search',needsQuery:true,placeholder:'Title, abstract, author, or keyword' },
   { id:'semantic',label:'Semantic',path:'/hybrid/search',needsQuery:true,placeholder:'Describe the concept you need' },
+  { id:'vector',label:'Vector search',path:'/vector/search',needsQuery:true,placeholder:'Describe the research concept' },
   { id:'knowledge',label:'Knowledge',path:'/knowledge/list',needsQuery:true,placeholder:'Claim, finding, or question' },
   { id:'methods',label:'Methods',path:'/methods/list',needsQuery:true,placeholder:'Method or analytical approach' },
   { id:'data',label:'Data points',path:'/data_points/list',needsQuery:true,placeholder:'Metric or measured quantity' },
   { id:'authors',label:'Authors',path:'/authors/list',needsQuery:true,placeholder:'Author name' },
+  { id:'institutions',label:'Institutions',path:'/institution/network',needsQuery:true,placeholder:'Institution or affiliation' },
   { id:'graph',label:'Relationships',path:'/graph',needsQuery:true,placeholder:'Topic for relationship graph' },
   { id:'timeline',label:'Timeline',path:'/timeline',needsQuery:false },
   { id:'compare',label:'Metric comparison',path:'/compare/metric',needsQuery:false,metric:true },
