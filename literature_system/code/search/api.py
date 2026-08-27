@@ -75,6 +75,7 @@ from search.tasks import submit_task, get_task
 import search.authors_api as authors_api
 import workflow_settings as wf_settings
 from quality.completeness import load_completeness_many
+from engine_capabilities import get_engine_capabilities
 
 LOGGER = get_logger("search_api")
 
@@ -180,7 +181,17 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                 return
 
             if path == "/health":
-                self._send_json(200, {"status": "ok", "service": "search_api"})
+                capabilities = get_engine_capabilities()
+                self._send_json(200, {
+                    "status": "ok" if capabilities["runtime_ready"] else "degraded",
+                    "service": "search_api",
+                    "runtime_ready": capabilities["runtime_ready"],
+                    "full_restore_ready": capabilities["full_restore_ready"],
+                })
+                return
+
+            if path == "/capabilities":
+                self._send_json(200, get_engine_capabilities())
                 return
 
             protected_gets = {

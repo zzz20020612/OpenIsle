@@ -69,4 +69,18 @@ class LiteratureControllerTest {
       .andExpect(status().isOk())
       .andExpect(jsonPath("$.status").value("ok"));
   }
+
+  @Test
+  void capabilitiesExposeEffectiveEngineStateWithoutJwt() throws Exception {
+    var body = JsonNodeFactory.instance.objectNode();
+    body.put("runtime_ready", true);
+    body.put("full_restore_ready", false);
+    when(literatureService.capabilities()).thenReturn(new LiteratureProxyResponse(HttpStatus.OK, body));
+
+    mockMvc
+      .perform(get("/api/literature/capabilities"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.runtime_ready").value(true))
+      .andExpect(jsonPath("$.full_restore_ready").value(false));
+  }
 }

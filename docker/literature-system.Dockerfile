@@ -5,8 +5,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY literature_system/requirements-runtime.txt ./requirements-runtime.txt
-RUN pip install --no-cache-dir -r requirements-runtime.txt
+# The integrated service must run the teammate project's complete engine, not
+# the former five-package compatibility subset.  Keep requirements.txt as the
+# single dependency contract shared by standalone and Docker execution.
+COPY literature_system/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY literature_system/ ./
 

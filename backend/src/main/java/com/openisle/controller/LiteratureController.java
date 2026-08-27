@@ -51,6 +51,12 @@ public class LiteratureController {
     return response(literatureService.health());
   }
 
+  @GetMapping("/capabilities")
+  @Operation(summary = "Inspect the literature engine's effective runtime capabilities")
+  public ResponseEntity<JsonNode> capabilities() {
+    return response(literatureService.capabilities());
+  }
+
   @GetMapping("/papers")
   @Operation(summary = "List existing literature records")
   public ResponseEntity<JsonNode> listPapers(

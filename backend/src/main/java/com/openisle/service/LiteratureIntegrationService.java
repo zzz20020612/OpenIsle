@@ -102,6 +102,10 @@ public class LiteratureIntegrationService {
     return get("/health");
   }
 
+  public LiteratureProxyResponse capabilities() {
+    return get("/capabilities");
+  }
+
   public LiteratureProxyResponse listPapers(
     String query,
     String sort,
