@@ -1,5 +1,10 @@
 <template>
-  <div class="message-page">
+  <main class="message-page">
+    <header class="message-page-title">
+      <p>ACCOUNT</p>
+      <h1>Notifications</h1>
+      <span>Review scholarly activity, moderation decisions and account updates.</span>
+    </header>
     <BaseTabs v-model="selectedTab" :tabs="tabs">
       <template #right>
         <div class="message-page-header-right">
@@ -637,7 +642,7 @@
         </div>
       </template>
     </BaseTabs>
-  </div>
+  </main>
 </template>
 
 <script setup>
@@ -859,9 +864,19 @@ onActivated(async () => {
 }
 
 .message-page {
-  background-color: var(--background-color);
+  width: min(980px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 44px 0 68px;
+  color: #2d424c;
   overflow-x: hidden;
 }
+.message-page-title { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #c7d1d5; }
+.message-page-title p { margin: 0 0 6px; color: #176582; font-size: 11px; font-weight: 800; letter-spacing: .1em; }
+.message-page-title h1 { margin: 0 0 7px; font-family: Georgia, 'Times New Roman', serif; font-size: 38px; font-weight: 400; }
+.message-page-title span { color: #607078; font-size: 14px; }
+.message-page :deep(.base-tabs-header) { border-bottom: 4px solid #009edb; background: #fff; }
+.message-page :deep(.base-tabs-item) { min-height: 42px; padding: 0 16px; border: 0; color: #435861; font-size: 13px; font-weight: 750; }
+.message-page :deep(.base-tabs-item.selected) { color: #fff; background: #0065a8; }
 
 .message-page-header-right {
   display: flex;
@@ -874,8 +889,9 @@ onActivated(async () => {
   flex-direction: row;
   align-items: center;
   cursor: pointer;
-  color: var(--primary-color);
-  padding-right: 10px;
+  color: #0065a8;
+  padding: 8px 10px;
+  border: 1px solid #0065a8;
   gap: 5px;
 }
 
@@ -892,14 +908,15 @@ onActivated(async () => {
 }
 
 .timeline-container {
-  padding: 10px 20px;
+  padding: 22px 4px 0;
   height: 100%;
 }
 
 .notif-content {
   display: flex;
   flex-direction: column;
-  margin-bottom: 30px;
+  margin-bottom: 0;
+  padding: 4px 0 18px;
   position: relative;
 }
 
@@ -978,7 +995,11 @@ onActivated(async () => {
 }
 
 .message-control-container {
-  padding: 20px;
+  margin-top: 18px;
+  padding: 22px 24px;
+  border: 1px solid #c8d3d7;
+  border-top: 4px solid #009edb;
+  background: #fff;
 }
 
 .message-control-item-container {
@@ -991,7 +1012,10 @@ onActivated(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 200px;
+  max-width: 520px;
+  min-height: 38px;
+  padding: 5px 0;
+  border-bottom: 1px solid #e0e6e8;
 }
 
 .message-control-item-label {
@@ -999,6 +1023,7 @@ onActivated(async () => {
 }
 
 @media (max-width: 768px) {
+  .message-page { width: min(100% - 28px, 980px); padding-top: 28px; }
   .has_read_button {
     display: none;
   }

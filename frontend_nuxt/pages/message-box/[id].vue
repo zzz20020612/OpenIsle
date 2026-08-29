@@ -585,7 +585,10 @@ function goBack() {
 .chat-container {
   display: flex;
   flex-direction: column;
+  width: min(920px, 100%);
   margin: 0 auto;
+  border-left: 1px solid #d2dade;
+  border-right: 1px solid #d2dade;
   overflow: auto;
   height: calc(100vh - var(--header-height));
   position: relative;
@@ -602,10 +605,9 @@ function goBack() {
   top: 0;
   z-index: 100;
   align-items: center;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--normal-border-color);
-  background-color: var(--background-color-blur);
-  backdrop-filter: var(--blur-10);
+  padding: 14px 20px;
+  border-bottom: 4px solid #009edb;
+  background: #fff;
 }
 
 .header-main {
@@ -634,8 +636,10 @@ function goBack() {
 }
 
 .participant-name {
-  font-size: 18px;
-  font-weight: 600;
+  color: #29424e;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 21px;
+  font-weight: 400;
   margin: 0;
 }
 
@@ -700,9 +704,9 @@ function goBack() {
   gap: 5px;
   cursor: pointer;
   border: 1px solid var(--normal-border-color);
-  border-radius: 20px;
+  border-radius: 0;
   padding: 3px 6px;
-  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 0 7px 18px rgba(31,57,69,.12);
   width: fit-content;
   position: absolute;
   bottom: calc(100% + 20px);
@@ -782,7 +786,7 @@ function goBack() {
 .reply-preview {
   margin-top: 10px;
   padding: 10px;
-  border-left: 5px solid var(--primary-color);
+  border-left: 4px solid #009edb;
   margin-bottom: 5px;
   font-size: 13px;
   background-color: var(--normal-light-background-color);
@@ -807,7 +811,7 @@ function goBack() {
 .reaction-action {
   cursor: pointer;
   padding: 4px 10px;
-  border-radius: 10px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -857,7 +861,7 @@ function goBack() {
 .active-reply {
   background-color: var(--normal-light-background-color);
   padding: 5px 10px;
-  border-left: 5px solid var(--primary-color);
+  border-left: 4px solid #009edb;
   margin-bottom: 5px;
   font-size: 13px;
 }

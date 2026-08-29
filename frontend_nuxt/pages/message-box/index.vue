@@ -1,9 +1,8 @@
 <template>
-  <div class="messages-container">
-    <div class="page-title">
-      <message-emoji />
-      <span class="page-title-text">Conversations</span>
-    </div>
+  <main class="messages-container" :class="{ float: isFloatMode }">
+    <header v-if="!isFloatMode" class="page-title">
+      <div><p>RESEARCH NETWORK</p><h1>Messages</h1><span>Direct conversations and team channels associated with your OpenIsle account.</span></div>
+    </header>
     <div v-if="!isFloatMode" class="float-control">
       <collapse-text-input class="float-control-icon" @click="minimize" title="Minimize" />
     </div>
@@ -115,7 +114,7 @@
         </div>
       </div>
     </BaseTabs>
-  </div>
+  </main>
 </template>
 
 <script setup>
@@ -318,7 +317,12 @@ function minimize() {
 <style scoped>
 .messages-container {
   position: relative;
+  width: min(900px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 44px 0 68px;
+  color: #2d424c;
 }
+.messages-container.float { width: 100%; padding: 0; }
 
 .float-control {
   position: absolute;
@@ -334,18 +338,19 @@ function minimize() {
 
 :deep(.base-tabs-header) {
   display: flex;
-  border-bottom: 1px solid var(--normal-border-color);
+  border-bottom: 4px solid #009edb;
   margin-bottom: 16px;
 }
 
 :deep(.base-tabs-item) {
-  padding: 10px 20px;
+  min-height: 42px;
+  padding: 0 18px;
   cursor: pointer;
 }
 
 :deep(.base-tabs-item.selected) {
-  border-bottom: 2px solid var(--primary-color);
-  color: var(--primary-color);
+  color: #fff;
+  background: #0065a8;
 }
 
 .loading-message {
@@ -366,19 +371,14 @@ function minimize() {
 }
 
 .page-title {
-  padding: 12px;
-  display: none;
-  flex-direction: row;
-  gap: 10px;
+  display: block;
+  margin-bottom: 20px;
+  padding: 0 0 20px;
+  border-bottom: 1px solid #c7d1d5;
 }
-
-.page-title-text {
-  margin-left: 10px;
-}
-
-.page-title-text:hover {
-  text-decoration: underline;
-}
+.page-title p { margin: 0 0 6px; color: #176582; font-size: 11px; font-weight: 800; letter-spacing: .1em; }
+.page-title h1 { margin: 0 0 7px; font-family: Georgia, 'Times New Roman', serif; font-size: 38px; font-weight: 400; }
+.page-title span { color: #607078; font-size: 14px; }
 
 .messages-title {
   font-size: 28px;
@@ -413,15 +413,15 @@ function minimize() {
 .conversation-item {
   display: flex;
   align-items: center;
-  margin-left: 20px;
-  margin-right: 20px;
-  padding: 8px 10px;
+  margin: 0;
+  padding: 13px 12px;
+  border-bottom: 1px solid #d6dfe2;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .conversation-item:hover {
-  background-color: var(--normal-light-background-color);
+  background: #eef4f5;
 }
 
 .conversation-avatar {
@@ -490,12 +490,12 @@ function minimize() {
 }
 
 .unread-count-badge {
-  background-color: #f56c6c;
+  background: #0065a8;
   color: white;
   font-size: 12px;
   font-weight: bold;
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: 0;
   line-height: 1.5;
   flex-shrink: 0;
 }
@@ -525,6 +525,7 @@ function minimize() {
 }
 
 @media (max-width: 768px) {
+  .messages-container { width: min(100% - 28px, 900px); padding-top: 28px; }
   .conversation-item {
     margin-left: 10px;
     margin-right: 10px;
