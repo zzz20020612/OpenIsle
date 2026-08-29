@@ -1,6 +1,7 @@
 <template>
   <div class="new-post-page">
     <div class="new-post-form">
+      <div class="edit-eyebrow">DISCUSSION EDITOR</div>
       <input class="post-title-input" v-model="title" placeholder="Discussion title" />
       <div class="post-editor-container">
         <PostEditor v-model="content" :loading="isAiLoading" :disabled="!isLogin" />
@@ -209,32 +210,32 @@ const cancelEdit = () => {
 .new-post-page {
   display: flex;
   justify-content: center;
-  background-color: var(--background-color);
-  height: 100%;
-  padding-right: 20px;
-  padding-left: 20px;
+  min-height: 650px;
+  padding: 46px 20px 72px;
   overflow-y: auto;
 }
 
 .new-post-form {
-  width: 100%;
+  width: min(980px, 100%);
 }
+.edit-eyebrow { color: #176582; font-size: 11px; font-weight: 800; letter-spacing: .1em; }
 
 .post-title-input {
   border: none;
   outline: none;
-  padding-top: 20px;
-  padding-bottom: 20px;
+  box-sizing: border-box;
+  padding: 10px 0 18px;
+  border-bottom: 1px solid #bfcbd0;
   background-color: transparent;
-  font-size: 42px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 40px;
   width: 100%;
-  font-weight: bold;
-  color: var(--text-color);
+  font-weight: 400;
+  color: #2b414b;
 }
 
 .post-cancel {
-  color: var(--primary-color);
-  border-radius: 10px;
+  color: #0065a8;
   cursor: pointer;
 }
 
@@ -259,13 +260,16 @@ const cancelEdit = () => {
 
 .post-editor-container {
   position: relative;
+  margin-top: 22px;
+  border: 1px solid #c3cfd3;
+  border-top: 4px solid #009edb;
 }
 
 .post-submit {
-  background-color: var(--primary-color);
+  background: #0065a8;
   color: #fff;
   padding: 10px 20px;
-  border-radius: 10px;
+  border-radius: 0;
   width: fit-content;
   cursor: pointer;
 }
@@ -286,7 +290,7 @@ const cancelEdit = () => {
   color: white;
   background-color: var(--primary-color-disabled);
   padding: 10px 20px;
-  border-radius: 10px;
+  border-radius: 0;
   width: fit-content;
   cursor: not-allowed;
 }

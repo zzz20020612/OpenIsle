@@ -23,7 +23,8 @@
     <div v-else class="post-page-main-container" ref="mainContainer">
       <div class="article-title-container">
         <div class="article-title-container-left">
-          <div class="article-title">{{ title }}</div>
+          <div class="article-eyebrow">SCHOLARLY DISCUSSION</div>
+          <h1 class="article-title">{{ title }}</h1>
           <div class="article-info-container">
             <ArticleCategory :category="category" />
             <ArticleTags :tags="tags" />
@@ -124,6 +125,11 @@
       </div>
 
       <div v-if="closed" class="post-close-container">This discussion is closed and remains available for reading.</div>
+
+      <header class="discussion-heading">
+        <p>COMMUNITY REVIEW</p>
+        <h2>Discussion</h2>
+      </header>
 
       <ClientOnly>
         <CommentEditor
@@ -1000,9 +1006,8 @@ onMounted(async () => {
 
 <style>
 .post-page-container {
-  background-color: var(--background-color);
   display: block;
-  flex-direction: row;
+  color: #2c424d;
 }
 
 .loading-container {
@@ -1016,8 +1021,9 @@ onMounted(async () => {
 .post-page-main-container {
   position: relative;
   scrollbar-width: none;
-  padding: 20px;
-  width: calc(100% - 40px);
+  width: min(980px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 46px 0 72px;
 }
 
 .info-content-text p code {
@@ -1037,7 +1043,9 @@ onMounted(async () => {
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 10px;
+  justify-content: flex-end;
+  padding: 12px 0;
+  border-bottom: 1px solid #cbd5d9;
 }
 
 .comment-sort-container {
@@ -1048,15 +1056,15 @@ onMounted(async () => {
 }
 
 .post-close-container {
-  padding: 40px;
+  padding: 18px 20px;
   margin-top: 15px;
   text-align: center;
   font-size: 12px;
   color: var(--text-color);
-  background-color: var(--background-color);
-  border: 1px dashed var(--normal-border-color);
-  border-radius: 10px;
-  opacity: 0.5;
+  color: #5d6e76;
+  background: #f2f5f5;
+  border: 1px solid #c3d0d5;
+  border-left: 4px solid #607d8a;
 }
 
 .scroller {
@@ -1175,6 +1183,9 @@ onMounted(async () => {
   flex-direction: row;
   width: 100%;
   justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #c7d2d6;
 }
 
 .article-title-container-left {
@@ -1187,13 +1198,16 @@ onMounted(async () => {
   flex-direction: row;
   gap: 10px;
   align-items: center;
+  align-self: flex-start;
+  flex-wrap: wrap;
 }
 
 .article-subscribe-button {
-  background-color: var(--primary-color);
+  min-height: 38px;
+  background: #0065a8;
   color: white;
   padding: 5px 10px;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
   cursor: pointer;
   display: flex;
@@ -1214,11 +1228,12 @@ onMounted(async () => {
 }
 
 .article-unsubscribe-button {
-  background-color: var(--background-color);
-  color: var(--primary-color);
-  border: 1px solid var(--primary-color);
+  min-height: 38px;
+  background: #fff;
+  color: #0065a8;
+  border: 1px solid #0065a8;
   padding: 5px 10px;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
   cursor: pointer;
 
@@ -1229,45 +1244,50 @@ onMounted(async () => {
 }
 
 .article-pending-button {
-  background-color: var(--background-color);
-  color: orange;
-  border: 1px solid orange;
+  background: #fff7e3;
+  color: #7b5600;
+  border: 1px solid #b78513;
   padding: 5px 10px;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
 }
 
 .article-block-button {
-  background-color: var(--background-color);
-  color: red;
-  border: 1px solid red;
+  background: #f8eded;
+  color: #8e2e2a;
+  border: 1px solid #a84a46;
   padding: 5px 10px;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
 }
 
 .article-featured-button {
-  background-color: var(--background-color);
-  color: var(--featured-color);
-  border: 1px solid var(--featured-color);
+  background: #e7f2f5;
+  color: #185a72;
+  border: 1px solid #397f98;
   padding: 5px 10px;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
 }
 
 .article-gray-button {
-  background-color: var(--background-color);
-  color: gray;
-  border: 1px solid gray;
+  background: #f0f3f4;
+  color: #52666f;
+  border: 1px solid #8799a0;
   padding: 5px 10px;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
 }
 
 .article-title {
-  font-size: 30px;
-  font-weight: bold;
+  max-width: 760px;
+  margin: 7px 0 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(32px, 5vw, 46px);
+  font-weight: 400;
+  line-height: 1.15;
 }
+.article-eyebrow { color: #176582; font-size: 11px; font-weight: 800; letter-spacing: .1em; }
 
 .article-arrow-button {
   background-color: green;
@@ -1307,9 +1327,12 @@ onMounted(async () => {
 .info-content-container {
   display: flex;
   flex-direction: row;
-  gap: 10px;
-  padding: 0px;
-  border-bottom: 1px solid var(--normal-border-color);
+  gap: 16px;
+  margin-top: 22px;
+  padding: 22px 24px;
+  border: 1px solid #c9d4d8;
+  border-top: 4px solid #009edb;
+  background: #fff;
 }
 
 .user-avatar-container {
@@ -1369,7 +1392,8 @@ onMounted(async () => {
 
 .info-content-text {
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.7;
+  color: #354b55;
 }
 
 .article-footer-container {
@@ -1400,7 +1424,7 @@ onMounted(async () => {
   cursor: pointer;
   padding: 4px 10px;
   opacity: 0.6;
-  border-radius: 10px;
+  border-radius: 0;
   font-size: 20px;
   display: flex;
   align-items: center;
@@ -1432,6 +1456,10 @@ onMounted(async () => {
 .comment-editor-wrapper {
   position: relative;
 }
+.discussion-heading { margin-top: 34px; padding-bottom: 12px; border-bottom: 4px solid #009edb; }
+.discussion-heading p { margin: 0 0 5px; color: #176582; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.discussion-heading h2 { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 25px; font-weight: 400; }
+@media(max-width:720px){.post-page-main-container{width:min(100% - 28px,980px);padding-top:28px}.article-title-container{flex-direction:column}.info-content-container{padding:18px}.article-title{font-size:32px}}
 
 /* ======== 权限锁定状态 ======== */
 .is-blurred {
