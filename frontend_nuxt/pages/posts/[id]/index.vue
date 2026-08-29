@@ -78,13 +78,6 @@
           <div v-if="isMobile" class="info-content-header">
             <div class="user-name">
               {{ author.username }}
-              <medal-one class="medal-icon" />
-              <NuxtLink
-                v-if="author.displayMedal"
-                class="user-medal"
-                :to="`/users/${author.id}?tab=achievements`"
-                >{{ getMedalTitle(author.displayMedal) }}</NuxtLink
-              >
             </div>
             <div class="post-time">{{ postTime }}</div>
           </div>
@@ -94,13 +87,6 @@
           <div v-if="!isMobile" class="info-content-header">
             <div class="user-name">
               {{ author.username }}
-              <medal-one class="medal-icon" />
-              <NuxtLink
-                v-if="author.displayMedal"
-                class="user-medal"
-                :to="`/users/${author.id}?tab=achievements`"
-                >{{ getMedalTitle(author.displayMedal) }}</NuxtLink
-              >
             </div>
             <div class="post-time">{{ postTime }}</div>
           </div>
@@ -118,7 +104,6 @@
                 content-type="post"
                 :content-id="postId"
               />
-              <DonateGroup :post-id="postId" :author-id="author.id" :is-author="isAuthor" />
             </div>
             <div class="article-footer-actions">
               <div
@@ -138,10 +123,6 @@
         </div>
       </div>
 
-      <PostLottery v-if="lottery" :lottery="lottery" :post-id="postId" @refresh="refreshPost" />
-      <ClientOnly>
-        <PostPoll v-if="poll" :poll="poll" :post-id="postId" @refresh="refreshPost" />
-      </ClientOnly>
       <div v-if="closed" class="post-close-container">This discussion is closed and remains available for reading.</div>
 
       <ClientOnly>
@@ -221,13 +202,9 @@ import InfiniteLoadMore from '~/components/InfiniteLoadMore.vue'
 import ArticleTags from '~/components/ArticleTags.vue'
 import ArticleCategory from '~/components/ArticleCategory.vue'
 import ReactionsGroup from '~/components/ReactionsGroup.vue'
-import DonateGroup from '~/components/DonateGroup.vue'
 import DropdownMenu from '~/components/DropdownMenu.vue'
-import PostLottery from '~/components/PostLottery.vue'
-import PostPoll from '~/components/PostPoll.vue'
 import BaseUserAvatar from '~/components/BaseUserAvatar.vue'
 import { renderMarkdown, handleMarkdownClick, stripMarkdownLength } from '~/utils/markdown'
-import { getMedalTitle } from '~/utils/medal'
 import { toast } from '~/main'
 import { getToken, authState } from '~/utils/auth'
 import TimeManager from '~/utils/time'
@@ -316,8 +293,6 @@ const lightboxImgs = ref([])
 const loggedIn = computed(() => authState.loggedIn)
 const isAdmin = computed(() => authState.role === 'ADMIN')
 const isAuthor = computed(() => authState.username === author.value.username)
-const lottery = ref(null)
-const poll = ref(null)
 const articleMenuItems = computed(() => {
   const items = []
   if (isAuthor.value || isAdmin.value) {
@@ -569,8 +544,6 @@ watchEffect(() => {
   pinnedAt.value = data.pinnedAt
   rssExcluded.value = data.rssExcluded
   postTime.value = TimeManager.format(data.createdAt)
-  lottery.value = data.lottery || null
-  poll.value = data.poll || null
 })
 
 // 404 客户端跳转
