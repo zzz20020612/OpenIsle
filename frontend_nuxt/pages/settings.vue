@@ -10,7 +10,11 @@
       <l-hatch size="28" stroke="4" speed="3.5" color="var(--primary-color)"></l-hatch>
     </div>
     <div v-else>
-      <div class="settings-title">个人资料设置</div>
+      <header class="settings-header">
+        <p>ACCOUNT</p>
+        <h1>Profile settings</h1>
+        <span>Manage the identity shown on manuscripts, comments and scholarly discussions.</span>
+      </header>
       <div class="profile-section">
         <div class="avatar-row">
           <!-- label 充当点击区域，内部隐藏 input -->
@@ -23,7 +27,7 @@
               :disable-link="true"
             />
             <!-- 半透明蒙层：hover 时出现 -->
-            <div class="avatar-overlay">更换头像</div>
+            <div class="avatar-overlay">Change photo</div>
             <input type="file" class="avatar-input" accept="image/*" @change="onAvatarChange" />
           </label>
         </div>
@@ -32,43 +36,43 @@
             icon="user-icon"
             v-model="username"
             @input="usernameError = ''"
-            placeholder="用户名"
+            placeholder="Username"
           />
-          <div class="setting-description">用户名是你在社区的唯一标识</div>
+          <div class="setting-description">Your username uniquely identifies you across OpenIsle.</div>
           <div v-if="usernameError" class="error-message">{{ usernameError }}</div>
         </div>
         <div class="form-row introduction-row">
-          <div class="setting-title">自我介绍</div>
-          <BaseInput v-model="introduction" textarea rows="3" placeholder="说些什么..." />
-          <div class="setting-description">自我介绍会出现在你的个人主页，可以简要介绍自己</div>
+          <div class="setting-title">Research profile</div>
+          <BaseInput v-model="introduction" textarea rows="4" placeholder="Describe your research interests, methods or affiliation." />
+          <div class="setting-description">This introduction appears on your public researcher profile.</div>
         </div>
         <div class="form-row switch-row">
-          <div class="setting-title">毛玻璃效果</div>
+          <div><div class="setting-title">Translucent interface</div><div class="setting-description">Use softened translucent surfaces where supported.</div></div>
           <BaseSwitch v-model="frosted" />
         </div>
       </div>
       <div v-if="role === 'ADMIN'" class="admin-section">
-        <h3>管理员设置</h3>
+        <h2>Administration defaults</h2>
+        <p class="admin-description">Platform-wide account and publishing rules. Changes apply to all users.</p>
         <div class="form-row dropdown-row">
-          <div class="setting-title">发布规则</div>
+          <div class="setting-title">Community post publishing</div>
           <Dropdown v-model="publishMode" :fetch-options="fetchPublishModes" />
         </div>
         <div class="form-row dropdown-row">
-          <div class="setting-title">密码强度</div>
+          <div class="setting-title">Password policy</div>
           <Dropdown v-model="passwordStrength" :fetch-options="fetchPasswordStrengths" />
         </div>
         <div class="form-row dropdown-row">
-          <div class="setting-title">AI 优化次数</div>
+          <div class="setting-title">AI formatting limit</div>
           <Dropdown v-model="aiFormatLimit" :fetch-options="fetchAiLimits" />
         </div>
         <div class="form-row dropdown-row">
-          <div class="setting-title">注册模式</div>
+          <div class="setting-title">Account registration</div>
           <Dropdown v-model="registerMode" :fetch-options="fetchRegisterModes" />
         </div>
       </div>
       <div class="buttons">
-        <div v-if="isSaving" class="save-button disabled">保存中...</div>
-        <div v-else @click="save" class="save-button">保存</div>
+        <button type="button" class="save-button" :disabled="isSaving" @click="save">{{ isSaving ? 'Saving…' : 'Save changes' }}</button>
       </div>
     </div>
   </div>
@@ -117,7 +121,7 @@ onMounted(async () => {
       loadAdminConfig()
     }
   } else {
-    toast.error('请先登录')
+    toast.error('Please sign in to manage your profile.')
     navigateTo('/login', { replace: true })
   }
   isLoadingPage.value = false
@@ -142,29 +146,29 @@ const onCropped = ({ file, url }) => {
 }
 const fetchPublishModes = () => {
   return Promise.resolve([
-    { id: 'DIRECT', name: '直接发布', icon: 'send-icon' },
-    { id: 'REVIEW', name: '审核后发布', icon: 'search-icon' },
+    { id: 'DIRECT', name: 'Publish directly', icon: 'send-icon' },
+    { id: 'REVIEW', name: 'Require moderation', icon: 'search-icon' },
   ])
 }
 const fetchPasswordStrengths = () => {
   return Promise.resolve([
-    { id: 'LOW', name: '低', icon: 'unlock' },
-    { id: 'MEDIUM', name: '中', icon: 'lock-one' },
-    { id: 'HIGH', name: '高', icon: 'lock' },
+    { id: 'LOW', name: 'Basic', icon: 'unlock' },
+    { id: 'MEDIUM', name: 'Standard', icon: 'lock-one' },
+    { id: 'HIGH', name: 'Strong', icon: 'lock' },
   ])
 }
 const fetchAiLimits = () => {
   return Promise.resolve([
-    { id: 3, name: '3次' },
-    { id: 5, name: '5次' },
-    { id: 10, name: '10次' },
-    { id: -1, name: '无限' },
+    { id: 3, name: '3 uses' },
+    { id: 5, name: '5 uses' },
+    { id: 10, name: '10 uses' },
+    { id: -1, name: 'Unlimited' },
   ])
 }
 const fetchRegisterModes = () => {
   return Promise.resolve([
-    { id: 'DIRECT', name: '直接注册', icon: 'send-icon' },
-    { id: 'WHITELIST', name: '白名单邀请制', icon: 'search-icon' },
+    { id: 'DIRECT', name: 'Open registration', icon: 'send-icon' },
+    { id: 'WHITELIST', name: 'Application review', icon: 'search-icon' },
   ])
 }
 const loadAdminConfig = async () => {
@@ -191,7 +195,7 @@ const save = async () => {
     let token = getToken()
     usernameError.value = ''
     if (!username.value) {
-      usernameError.value = '用户名不能为空'
+      usernameError.value = 'Username is required.'
     }
     if (usernameError.value) {
       toast.error(usernameError.value)
@@ -209,7 +213,7 @@ const save = async () => {
       if (res.ok) {
         avatar.value = data.url
       } else {
-        toast.error(data.error || '上传失败')
+        toast.error(data.error || 'The profile image could not be uploaded.')
         break
       }
     }
@@ -221,7 +225,7 @@ const save = async () => {
 
     const data = await res.json()
     if (!res.ok) {
-      toast.error(data.error || '保存失败')
+      toast.error(data.error || 'Profile changes could not be saved.')
       break
     }
     if (data.token) {
@@ -240,7 +244,7 @@ const save = async () => {
         }),
       })
     }
-    toast.success('保存成功')
+    toast.success('Profile settings saved.')
   } while (!isSaving.value)
 
   isSaving.value = false
@@ -257,17 +261,17 @@ const save = async () => {
 }
 
 .settings-page {
-  background-color: var(--background-color);
-  padding: 40px;
-  height: calc(100% - 80px);
-  overflow-y: auto;
+  width: min(920px, calc(100% - 40px));
+  min-height: 620px;
+  margin: 46px auto 70px;
+  color: #2b3e47;
 }
 
-.settings-title {
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 20px;
-}
+.settings-header { margin-bottom: 26px; padding-bottom: 22px; border-bottom: 1px solid #ccd6da; }
+.settings-header p { margin: 0 0 7px; color: #176582; font-size: 12px; font-weight: 800; letter-spacing: .1em; }
+.settings-header h1 { margin: 0 0 9px; font-family: Georgia, 'Times New Roman', serif; font-size: 38px; font-weight: 400; }
+.settings-header span { color: #5d6d75; font-size: 14px; }
+.profile-section, .admin-section { padding: 28px 32px; border: 1px solid #cad5d9; border-top: 4px solid #009edb; background: #fff; }
 
 .avatar-row {
   display: flex;
@@ -289,19 +293,21 @@ const save = async () => {
 }
 
 .form-row {
-  margin-bottom: 15px;
+  margin-bottom: 22px;
   display: flex;
   flex-direction: column;
 }
 
 .username-row {
-  max-width: 300px;
+  max-width: 420px;
 }
 
 .admin-section {
-  margin-top: 30px;
-  padding-top: 10px;
+  margin-top: 24px;
+  border-top-color: #0065a8;
 }
+.admin-section h2 { margin: 0 0 6px; font-family: Georgia, 'Times New Roman', serif; font-size: 25px; font-weight: 400; }
+.admin-description { margin: 0 0 24px; color: #66767d; font-size: 13px; }
 
 .setting-title {
   font-size: 14px;
@@ -311,23 +317,25 @@ const save = async () => {
 
 .setting-description {
   font-size: 12px;
-  color: #666;
+  line-height: 1.5;
+  color: #66767d;
   margin-top: 5px;
 }
 
 .introduction-row {
-  max-width: 500px;
+  max-width: 650px;
 }
 
 .dropdown-row {
-  max-width: 200px;
+  max-width: 360px;
 }
 
 .switch-row {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  max-width: 200px;
+  max-width: 460px;
+  padding-top: 8px;
 }
 
 .profile-section {
@@ -382,12 +390,13 @@ const save = async () => {
 }
 
 .save-button {
-  margin-top: 40px;
-  background-color: var(--primary-color);
+  border: 0;
+  background: #0065a8;
   color: white;
-  padding: 10px 20px;
+  min-height: 44px;
+  padding: 10px 22px;
   font-size: 14px;
-  border-radius: 10px;
+  font-weight: 750;
   cursor: pointer;
   transition: background-color 0.2s ease-in-out;
 }
@@ -396,13 +405,10 @@ const save = async () => {
   background-color: var(--primary-color-hover);
 }
 
-.save-button.disabled:hover {
-  background-color: var(--primary-color-disabled);
-  cursor: not-allowed;
-}
-
-.save-button.disabled {
-  background-color: var(--primary-color-disabled);
-  cursor: not-allowed;
+.save-button:disabled { background: #8a9aa2; cursor: wait; }
+@media (max-width: 640px) {
+  .settings-page { width: min(100% - 28px, 920px); margin-top: 28px; }
+  .profile-section, .admin-section { padding: 22px 20px; }
+  .settings-header h1 { font-size: 32px; }
 }
 </style>
