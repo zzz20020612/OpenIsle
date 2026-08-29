@@ -46,20 +46,6 @@
               Message
             </button>
           </div>
-          <LevelProgress
-            :exp="levelInfo.exp"
-            :current-level="levelInfo.currentLevel"
-            :next-exp="levelInfo.nextExp"
-          />
-          <div class="profile-level-target">
-            Target Lv.{{ levelInfo.currentLevel + 1 }}
-            <ToolTip
-              content="Experience is earned through publishing, discussion, and other platform activity."
-              placement="bottom"
-            >
-              <info-icon class="profile-exp-info" />
-            </ToolTip>
-          </div>
         </div>
       </header>
 
@@ -263,9 +249,6 @@
             <BasePlaceholder v-else text="No followed records yet." icon="inbox" />
           </section>
 
-          <section v-else-if="selectedTab === 'achievements'" class="achievements-container">
-            <AchievementList :medals="medals" :can-select="isMine" />
-          </section>
         </template>
       </BaseTabs>
     </div>
@@ -274,11 +257,9 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import AchievementList from '~/components/AchievementList.vue'
 import BasePlaceholder from '~/components/BasePlaceholder.vue'
 import BaseTimeline from '~/components/BaseTimeline.vue'
 import BaseTabs from '~/components/BaseTabs.vue'
-import LevelProgress from '~/components/LevelProgress.vue'
 import TimelineCommentGroup from '~/components/TimelineCommentGroup.vue'
 import TimelinePostItem from '~/components/TimelinePostItem.vue'
 import TimelineReadItem from '~/components/TimelineReadItem.vue'
@@ -287,7 +268,6 @@ import BaseUserAvatar from '~/components/BaseUserAvatar.vue'
 import UserList from '~/components/UserList.vue'
 import { toast } from '~/main'
 import { authState, getToken } from '~/utils/auth'
-import { prevLevelExp } from '~/utils/level'
 import { stripMarkdown, stripMarkdownLength } from '~/utils/markdown'
 import TimeManager from '~/utils/time'
 
@@ -316,13 +296,12 @@ const readPosts = ref([])
 const timelineFilter = ref('all')
 const followers = ref([])
 const followings = ref([])
-const medals = ref([])
 const subscribed = ref(false)
 const isLoading = ref(true)
 const tabLoading = ref(false)
 const followTab = ref('followers')
 const selectedTab = ref(
-  ['summary', 'timeline', 'following', 'favorites', 'achievements'].includes(route.query.tab)
+  ['summary', 'timeline', 'following', 'favorites'].includes(route.query.tab)
     ? route.query.tab
     : 'summary',
 )
@@ -332,7 +311,6 @@ const tabs = [
   { key: 'timeline', label: 'Timeline', icon: 'alarm-clock' },
   { key: 'following', label: 'Network', icon: 'add-user' },
   { key: 'favorites', label: 'Following', icon: 'bookmark' },
-  { key: 'achievements', label: 'Badges', icon: 'medal-one' },
 ]
 
 const requestController = new AbortController()
@@ -364,17 +342,6 @@ const filteredTimelineItems = computed(() => {
   }
   if (timelineFilter.value === 'reads') return []
   return timelineItems.value
-})
-
-const levelInfo = computed(() => {
-  const exp = user.value.experience || 0
-  const currentLevel = user.value.currentLevel || 0
-  const nextExp = user.value.nextLevelExp || 0
-  const prevExp = prevLevelExp(currentLevel)
-  const total = nextExp - prevExp
-  const ratio = total > 0 ? (exp - prevExp) / total : 1
-  const percent = Math.max(0, Math.min(1, ratio)) * 100
-  return { exp, currentLevel, nextExp, percent }
 })
 
 const isMine = computed(
@@ -513,16 +480,6 @@ const fetchFavorites = async () => {
   favoritePosts.value = res?.ok ? (await res.json()).map((post) => ({ icon: 'bookmark', post })) : []
 }
 
-const fetchAchievements = async () => {
-  const res = await profileFetch(`/api/medals?userId=${user.value.id}`)
-  if (res?.ok) {
-    medals.value = await res.json()
-  } else {
-    medals.value = []
-    toast.error('Unable to load badges.')
-  }
-}
-
 const withTabLoading = async (fn) => {
   tabLoading.value = true
   try {
@@ -592,7 +549,6 @@ const loadInitialTab = async () => {
   else if (selectedTab.value === 'timeline') await withTabLoading(fetchTimeline)
   else if (selectedTab.value === 'following') await withTabLoading(fetchFollowUsers)
   else if (selectedTab.value === 'favorites') await withTabLoading(fetchFavorites)
-  else if (selectedTab.value === 'achievements') await withTabLoading(fetchAchievements)
 }
 
 const init = async () => {
@@ -617,8 +573,6 @@ watch(selectedTab, async (tab) => {
     await withTabLoading(fetchFollowUsers)
   } else if (tab === 'favorites' && favoritePosts.value.length === 0) {
     await withTabLoading(fetchFavorites)
-  } else if (tab === 'achievements' && medals.value.length === 0) {
-    await withTabLoading(fetchAchievements)
   } else if (tab === 'summary' && hotPosts.value.length === 0 && hotReplies.value.length === 0) {
     await withTabLoading(fetchSummary)
   }
