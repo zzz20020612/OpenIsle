@@ -1,30 +1,32 @@
 <template>
   <div class="forgot-page">
-    <div class="forgot-content">
-      <div class="forgot-title">找回密码</div>
+    <main class="forgot-content" aria-labelledby="forgot-title">
+      <header class="forgot-header">
+        <span>ACCOUNT RECOVERY</span>
+        <h1 id="forgot-title">Reset your password</h1>
+        <p>{{ stepDescription }}</p>
+      </header>
 
       <div v-if="step === 0" class="step-content">
-        <BaseInput icon="mail" v-model="email" placeholder="邮箱" />
+        <BaseInput icon="mail" v-model="email" placeholder="Email address" />
         <div v-if="emailError" class="error-message">{{ emailError }}</div>
-        <div class="primary-button" @click="sendCode" v-if="!isSending">发送验证码</div>
-        <div class="primary-button disabled" v-else>发送中...</div>
+        <button class="primary-button" type="button" :disabled="isSending" @click="sendCode">{{ isSending ? 'Sending…' : 'Send verification code' }}</button>
       </div>
       <div v-else-if="step === 1" class="step-content">
-        <BaseInput icon="mail" v-model="code" placeholder="邮箱验证码" />
-        <div class="primary-button" @click="verifyCode" v-if="!isVerifying">验证</div>
-        <div class="primary-button disabled" v-else>验证中...</div>
+        <BaseInput icon="mail" v-model="code" placeholder="Verification code" />
+        <button class="primary-button" type="button" :disabled="isVerifying" @click="verifyCode">{{ isVerifying ? 'Verifying…' : 'Verify code' }}</button>
       </div>
       <div v-else class="step-content">
-        <BaseInput icon="lock" v-model="password" type="password" placeholder="新密码" />
+        <BaseInput icon="lock" v-model="password" type="password" placeholder="New password" />
         <div v-if="passwordError" class="error-message">{{ passwordError }}</div>
-        <div class="primary-button" @click="resetPassword" v-if="!isResetting">重置密码</div>
-        <div class="primary-button disabled" v-else>提交中...</div>
+        <button class="primary-button" type="button" :disabled="isResetting" @click="resetPassword">{{ isResetting ? 'Saving…' : 'Reset password' }}</button>
       </div>
       <div class="hint-message">
         <info-icon />
-        使用 Google 注册的用户可使用对应的邮箱进行找回密码
+        Accounts created with Google can be recovered using the same email address.
       </div>
-    </div>
+      <NuxtLink class="back-link" to="/login">Return to sign in</NuxtLink>
+    </main>
   </div>
 </template>
 
@@ -47,6 +49,11 @@ const isSending = ref(false)
 const isVerifying = ref(false)
 const isResetting = ref(false)
 const route = useRoute()
+const stepDescription = computed(() => [
+  'Enter the email address associated with your OpenIsle account.',
+  `Enter the verification code sent to ${email.value || 'your email address'}.`,
+  'Choose a new password for your account.',
+][step.value])
 
 onMounted(() => {
   if (route.query.email) {
@@ -55,7 +62,7 @@ onMounted(() => {
 })
 const sendCode = async () => {
   if (!email.value) {
-    emailError.value = '邮箱不能为空'
+    emailError.value = 'Email address is required.'
     return
   }
   try {
@@ -67,14 +74,14 @@ const sendCode = async () => {
     })
     isSending.value = false
     if (res.ok) {
-      toast.success('验证码已发送')
+      toast.success('A verification code has been sent to your email.')
       step.value = 1
     } else {
-      toast.error('请填写已注册邮箱')
+      toast.error('Enter an email address registered with OpenIsle.')
     }
   } catch (e) {
     isSending.value = false
-    toast.error('发送失败')
+    toast.error('The verification code could not be sent.')
   }
 }
 const verifyCode = async () => {
@@ -91,16 +98,16 @@ const verifyCode = async () => {
       token.value = data.token
       step.value = 2
     } else {
-      toast.error(data.error || '验证失败')
+      toast.error(data.error || 'The verification code is invalid or expired.')
     }
   } catch (e) {
     isVerifying.value = false
-    toast.error('验证失败')
+    toast.error('The verification code could not be verified.')
   }
 }
 const resetPassword = async () => {
   if (!password.value) {
-    passwordError.value = '密码不能为空'
+    passwordError.value = 'A new password is required.'
     return
   }
   try {
@@ -113,38 +120,40 @@ const resetPassword = async () => {
     isResetting.value = false
     const data = await res.json()
     if (res.ok) {
-      toast.success('密码已重置')
+      toast.success('Your password has been reset.')
       navigateTo('/login', { replace: true })
     } else if (data.field === 'password') {
       passwordError.value = data.error
     } else {
-      toast.error(data.error || '重置失败')
+      toast.error(data.error || 'The password could not be reset.')
     }
   } catch (e) {
     isResetting.value = false
-    toast.error('重置失败')
+    toast.error('The password could not be reset.')
   }
 }
 </script>
 
 <style scoped>
 .forgot-page {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: var(--background-color);
-  height: 100%;
+  min-height: 640px;
+  display: grid;
+  place-items: center;
+  padding: 52px 20px 72px;
+  background: #f4f6f6;
 }
 .forgot-content {
-  display: flex;
-  flex-direction: column;
+  width: min(500px, 100%);
+  display: grid;
   gap: 20px;
-  width: 400px;
+  padding: 38px 42px;
+  border: 1px solid #bdcbd0;
+  border-top: 5px solid #009edb;
+  background: #fff;
 }
-.forgot-title {
-  font-size: 24px;
-  font-weight: bold;
-}
+.forgot-header span { color: #176582; font-size: 12px; font-weight: 800; letter-spacing: .1em; }
+.forgot-header h1 { margin: 8px 0 9px; color: #24343d; font-family: Georgia, 'Times New Roman', serif; font-size: 34px; font-weight: 400; }
+.forgot-header p { margin: 0; color: #5d6d75; font-size: 14px; line-height: 1.6; }
 
 .forgot-content .hint-message {
   display: flex;
@@ -166,27 +175,28 @@ const resetPassword = async () => {
   gap: 20px;
 }
 .primary-button {
-  background-color: var(--primary-color);
+  border: 0;
+  background: #0065a8;
   color: white;
   padding: 10px 20px;
-  border-radius: 10px;
+  min-height: 46px;
+  border-radius: 0;
+  font-size: 14px;
+  font-weight: 750;
   text-align: center;
   cursor: pointer;
 }
 .primary-button:hover {
   background-color: var(--primary-color-hover);
 }
-.primary-button.disabled {
-  background-color: var(--primary-color-disabled);
-  cursor: not-allowed;
-}
+.primary-button:disabled { background: #8a9aa2; cursor: wait; }
 .error-message {
-  color: red;
-  font-size: 14px;
+  color: #a3312d;
+  font-size: 13px;
 }
+.back-link { color: #176582; font-size: 13px; font-weight: 700; }
 @media (max-width: 768px) {
-  .forgot-content {
-    width: calc(100vw - 40px);
-  }
+  .forgot-page { padding: 28px 14px 50px; }
+  .forgot-content { padding: 30px 24px; }
 }
 </style>

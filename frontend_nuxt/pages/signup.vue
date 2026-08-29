@@ -8,14 +8,14 @@
       </header>
 
       <div v-if="emailStep === 0" class="email-signup-page-content">
-        <BaseInput icon="mail" v-model="email" @input="emailError = ''" placeholder="邮箱" />
+        <BaseInput icon="mail" v-model="email" @input="emailError = ''" placeholder="Email address" />
         <div v-if="emailError" class="error-message">{{ emailError }}</div>
 
         <BaseInput
           icon="user-icon"
           v-model="username"
           @input="usernameError = ''"
-          placeholder="用户名"
+          placeholder="Username"
         />
         <div v-if="usernameError" class="error-message">{{ usernameError }}</div>
 
@@ -24,7 +24,7 @@
           v-model="password"
           @input="passwordError = ''"
           type="password"
-          placeholder="密码"
+          placeholder="Password"
         />
         <div v-if="passwordError" class="error-message">{{ passwordError }}</div>
 
@@ -49,7 +49,7 @@
       </div>
 
       <div v-if="emailStep === 1" class="email-signup-page-content">
-        <BaseInput icon="mail" v-model="code" placeholder="邮箱验证码" />
+        <BaseInput icon="mail" v-model="code" placeholder="Email verification code" />
         <button
           v-if="!isWaitingForEmailVerified"
           class="signup-page-button-primary"
@@ -121,13 +121,13 @@ const sendVerification = async () => {
   clearErrors()
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(email.value)) {
-    emailError.value = '邮箱格式不正确'
+    emailError.value = 'Enter a valid email address.'
   }
   if (!password.value || password.value.length < 6) {
-    passwordError.value = '密码至少6位'
+    passwordError.value = 'Password must contain at least 6 characters.'
   }
   if (!username.value) {
-    usernameError.value = '用户名不能为空'
+    usernameError.value = 'Username is required.'
   }
   if (emailError.value || passwordError.value || usernameError.value) {
     return
@@ -147,18 +147,18 @@ const sendVerification = async () => {
     const data = await res.json().catch(() => ({}))
     if (res.ok) {
       emailStep.value = 1
-      toast.success('验证码已发送，请查看邮箱')
+      toast.success('A verification code has been sent to your email.')
     } else if (data.field) {
       if (data.field === 'username') usernameError.value = data.error
       if (data.field === 'email') emailError.value = data.error
       if (data.field === 'password') passwordError.value = data.error
     } else {
-      const msg = data.error || data.message || res.statusText || '发送失败'
+      const msg = data.error || data.message || res.statusText || 'The verification email could not be sent.'
       const reason = data.reason_code ? ` (${data.reason_code})` : ''
       toast.error(`${res.status} ${msg}${reason}`)
     }
   } catch (e) {
-    toast.error(`发送失败: ${e.message}`)
+    toast.error(`The verification email could not be sent: ${e.message}`)
   } finally {
     isWaitingForEmailSent.value = false
   }
@@ -178,22 +178,22 @@ const verifyCode = async () => {
     const data = await res.json()
     if (res.ok) {
       if (data.reason_code === 'VERIFIED_AND_APPROVED') {
-        toast.success('注册成功')
+        toast.success('Your OpenIsle account is ready.')
         await setToken(data.token)
         await navigateTo('/', { replace: true })
       } else if (data.reason_code === 'VERIFIED') {
         if (registerMode.value === 'WHITELIST') {
           navigateTo(`/signup-reason?token=${data.token}`, { replace: true })
         } else {
-          toast.success('注册成功，请登录')
+          toast.success('Registration complete. Please sign in.')
           navigateTo('/login', { replace: true })
         }
       }
     } else {
-      toast.error(data.error || '注册失败')
+      toast.error(data.error || 'Registration could not be completed.')
     }
   } catch (e) {
-    toast.error('注册失败')
+    toast.error('Registration could not be completed.')
   } finally {
     isWaitingForEmailVerified.value = false
   }
