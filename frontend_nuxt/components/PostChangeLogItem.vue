@@ -1,5 +1,5 @@
 <template>
-  <div :id="`change-log-${log.id}`" class="change-log-container">
+  <div v-if="isVisible" :id="`change-log-${log.id}`" class="change-log-container">
     <div class="change-log-text">
       <BaseUserAvatar
         v-if="log.userAvatar"
@@ -10,45 +10,36 @@
         :disable-link="!log.username"
       />
       <span v-if="log.username" class="change-log-user">{{ log.username }}</span>
-      <span v-if="log.type === 'CONTENT'" class="change-log-content">变更了文章内容</span>
-      <span v-else-if="log.type === 'TITLE'" class="change-log-content">变更了文章标题</span>
+      <span v-if="log.type === 'CONTENT'" class="change-log-content">updated the discussion content</span>
+      <span v-else-if="log.type === 'TITLE'" class="change-log-content">updated the discussion title</span>
       <template v-else-if="log.type === 'CATEGORY'">
-        <div class="change-log-category-text">变更了文章分类, 从</div>
+        <div class="change-log-category-text">changed the category from</div>
         <ArticleCategory :category="log.oldCategory" />
-        <div class="change-log-category-text">修改为</div>
+        <div class="change-log-category-text">to</div>
         <ArticleCategory :category="log.newCategory" />
       </template>
       <template v-else-if="log.type === 'TAG'">
-        <div class="change-log-category-text">变更了文章标签, 从</div>
+        <div class="change-log-category-text">changed the tags from</div>
         <ArticleTags :tags="log.oldTags" />
-        <div class="change-log-category-text">修改为</div>
+        <div class="change-log-category-text">to</div>
         <ArticleTags :tags="log.newTags" />
       </template>
       <span v-else-if="log.type === 'CLOSED'" class="change-log-content">
-        <template v-if="log.newClosed">关闭了文章</template>
-        <template v-else>重新打开了文章</template>
+        <template v-if="log.newClosed">closed the discussion</template>
+        <template v-else>reopened the discussion</template>
       </span>
       <span v-else-if="log.type === 'PINNED'" class="change-log-content">
-        <template v-if="log.newPinnedAt">置顶了文章</template>
-        <template v-else>取消置顶文章</template>
+        <template v-if="log.newPinnedAt">pinned the discussion</template>
+        <template v-else>unpinned the discussion</template>
       </span>
       <span v-else-if="log.type === 'FEATURED'" class="change-log-content">
-        <template v-if="log.newFeatured">将文章设为精选</template>
-        <template v-else>取消精选文章</template>
+        <template v-if="log.newFeatured">featured the discussion</template>
+        <template v-else>removed the discussion from featured records</template>
       </span>
       <span v-else-if="log.type === 'VISIBLE_SCOPE'" class="change-log-content">
-        变更了文章可见范围, 从 {{ formatVisibleScope(log.oldVisibleScope) }} 修改为
+        changed visibility from {{ formatVisibleScope(log.oldVisibleScope) }} to
         {{ formatVisibleScope(log.newVisibleScope) }}
       </span>
-      <span v-else-if="log.type === 'VOTE_RESULT'" class="change-log-content"
-        >系统已计算投票结果</span
-      >
-      <span v-else-if="log.type === 'LOTTERY_RESULT'" class="change-log-content"
-        >系统已「精密计算」抽奖结果 (=ﾟωﾟ)ﾉ</span
-      >
-      <span v-else-if="log.type === 'DONATE'" class="change-log-content"
-        >为文章打赏了 {{ log.amount ?? 0 }} 积分</span
-      >
     </div>
     <div class="change-log-time">{{ log.time }}</div>
     <div
@@ -74,10 +65,12 @@ const props = defineProps({
 })
 
 const VISIBLE_SCOPE_LABELS = {
-  ALL: '全部可见',
-  ONLY_ME: '仅自己可见',
-  ONLY_REGISTER: '仅注册用户可见',
+  ALL: 'public',
+  ONLY_ME: 'private',
+  ONLY_REGISTER: 'registered users',
 }
+
+const isVisible = computed(() => !['VOTE_RESULT', 'LOTTERY_RESULT', 'DONATE'].includes(props.log.type))
 
 const formatVisibleScope = (scope) => {
   if (!scope) return VISIBLE_SCOPE_LABELS.ALL
