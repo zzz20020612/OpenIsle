@@ -43,7 +43,15 @@ public class SitemapController {
     body.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     body.append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
 
-    List<String> staticRoutes = List.of("/", "/about", "/activities", "/login", "/signup");
+    List<String> staticRoutes = List.of(
+      "/",
+      "/papers",
+      "/literature",
+      "/papers/rankings",
+      "/about",
+      "/login",
+      "/signup"
+    );
 
     for (String path : staticRoutes) {
       body.append("  <url><loc>").append(websiteUrl).append(path).append("</loc></url>\n");
