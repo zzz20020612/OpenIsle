@@ -5,8 +5,8 @@
         <img ref="image" :src="src" alt="to crop" />
       </div>
       <div class="cropper-actions">
-        <button class="cropper-btn" @click="$emit('close')">取消</button>
-        <button class="cropper-btn primary" @click="onConfirm">确定</button>
+        <button class="cropper-btn" type="button" @click="$emit('close')">Cancel</button>
+        <button class="cropper-btn primary" type="button" @click="onConfirm">Apply photo</button>
       </div>
     </div>
   </div>
@@ -92,9 +92,10 @@ export default {
 }
 
 .cropper-body {
-  background: var(--background-color);
-  padding: 10px;
-  border-radius: 6px;
+  background: #fff;
+  padding: 18px;
+  border: 1px solid #9eafb7;
+  border-top: 5px solid #009edb;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -112,22 +113,26 @@ export default {
 }
 
 .cropper-actions {
-  margin-top: 10px;
+  width: 100%;
+  justify-content: flex-end;
+  margin-top: 14px;
   display: flex;
   gap: 10px;
 }
 
 .cropper-btn {
   padding: 6px 12px;
-  border-radius: 10px;
-  color: var(--primary-color);
-  border: none;
-  background: transparent;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 0;
+  color: #0065a8;
+  border: 1px solid #0065a8;
+  background: #fff;
   cursor: pointer;
 }
 
 .cropper-btn.primary {
-  background: var(--primary-color);
+  background: #0065a8;
   color: #ffff;
   border-color: var(--primary-color);
 }

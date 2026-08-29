@@ -60,13 +60,13 @@
     >
       <div v-if="showSearch" class="dropdown-search">
         <search-icon class="search-icon" />
-        <input type="text" v-model="search" placeholder="搜索" />
+        <input type="text" v-model="search" placeholder="Search options" />
       </div>
       <div v-if="loading" class="dropdown-loading">
         <l-hatch size="20" stroke="4" speed="3.5" color="var(--primary-color)"></l-hatch>
       </div>
       <template v-else>
-        <div v-if="filteredOptions.length === 0" class="dropdown-empty">没有搜索结果</div>
+        <div v-if="filteredOptions.length === 0" class="dropdown-empty">No matching options</div>
         <template v-else>
           <div
             v-for="o in filteredOptions"
@@ -100,13 +100,13 @@
         <div class="dropdown-mobile-menu" ref="mobileMenuRef">
           <div v-if="showSearch" class="dropdown-search">
             <search-icon class="search-icon" />
-            <input type="text" v-model="search" placeholder="搜索" />
+            <input type="text" v-model="search" placeholder="Search options" />
           </div>
           <div v-if="loading" class="dropdown-loading">
             <l-hatch size="20" stroke="4" speed="3.5" color="var(--primary-color)"></l-hatch>
           </div>
           <template v-else>
-            <div v-if="filteredOptions.length === 0" class="dropdown-empty">没有搜索结果</div>
+            <div v-if="filteredOptions.length === 0" class="dropdown-empty">No matching options</div>
             <template v-else>
               <div
                 v-for="o in filteredOptions"
@@ -144,7 +144,7 @@ export default {
   name: 'BaseDropdown',
   props: {
     modelValue: { type: [Array, String, Number], default: () => [] },
-    placeholder: { type: String, default: '返回' },
+    placeholder: { type: String, default: 'Select an option' },
     multiple: { type: Boolean, default: false },
     fetchOptions: { type: Function, required: true },
     remote: { type: Boolean, default: false },
@@ -315,15 +315,19 @@ export default {
 }
 
 .dropdown-display {
-  border: 1px solid var(--normal-border-color);
-  border-radius: 5px;
-  padding: 5px 10px;
+  min-height: 42px;
+  box-sizing: border-box;
+  border: 1px solid #aebdc3;
+  border-radius: 0;
+  padding: 8px 11px;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
   min-width: 100px;
 }
+.dropdown-display:hover { border-color: #39758d; }
+.dropdown-display:focus-within { outline: 3px solid rgba(0,101,168,.16); outline-offset: 1px; border-color: #0065a8; }
 
 .placeholder {
   color: gray;
@@ -334,9 +338,11 @@ export default {
   top: 100%;
   left: 0;
   right: 0;
-  background: var(--background-color);
-  border: 1px solid var(--normal-border-color);
-  border-radius: 5px;
+  background: #fff;
+  border: 1px solid #9eb0b8;
+  border-top: 4px solid #009edb;
+  border-radius: 0;
+  box-shadow: 0 10px 24px rgba(34,57,68,.12);
   z-index: 10000;
   max-height: 300px;
   min-width: 350px;
@@ -358,8 +364,8 @@ export default {
 .dropdown-search {
   display: flex;
   align-items: center;
-  padding: 5px;
-  border-bottom: 1px solid var(--normal-border-color);
+  padding: 10px 12px;
+  border-bottom: 1px solid #ced7da;
 }
 
 .dropdown-search input {
@@ -367,8 +373,9 @@ export default {
   border: none;
   outline: none;
   margin-left: 5px;
-  background-color: var(--app-menu-background-color);
-  color: var(--text-color);
+  background: transparent;
+  color: #2d424c;
+  font-size: 13px;
 }
 
 .search-icon {
@@ -378,17 +385,19 @@ export default {
 .dropdown-option {
   display: flex;
   align-items: center;
-  padding: 10px 20px;
+  min-height: 40px;
+  padding: 9px 14px;
   gap: 5px;
   cursor: pointer;
 }
 
 .dropdown-option.selected {
-  background-color: var(--menu-selected-background-color);
+  background: #e5f1f5;
+  color: #184f68;
 }
 
 .dropdown-option:hover {
-  background-color: var(--menu-selected-background-color);
+  background: #eef4f5;
 }
 
 .option-icon {

@@ -2,7 +2,7 @@
   <Dropdown
     v-model="selected"
     :fetch-options="fetchCategories"
-    placeholder="选择分类"
+    placeholder="Select a category"
     :initial-options="providedOptions"
   >
     <template #option="{ option }">
@@ -51,7 +51,7 @@ const fetchCategories = async () => {
   const res = await fetch(`${API_BASE_URL}/api/categories`)
   if (!res.ok) return []
   const data = await res.json()
-  return [{ id: '', name: '无分类' }, ...data]
+  return [{ id: '', name: 'No category' }, ...data]
 }
 
 const isImageIcon = (icon) => {

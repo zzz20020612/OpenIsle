@@ -1,6 +1,6 @@
 <template>
   <div class="user-list">
-    <BasePlaceholder v-if="users.length === 0" text="暂无用户" icon="inbox" />
+    <BasePlaceholder v-if="users.length === 0" text="No researchers found" icon="inbox" />
     <div v-for="u in users" :key="u.id" class="user-item">
       <BaseUserAvatar :src="u.avatar" :user-id="u.id" alt="avatar" class="user-avatar" />
       <div class="user-info">

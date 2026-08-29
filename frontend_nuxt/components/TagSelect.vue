@@ -4,7 +4,7 @@
     v-model="selected"
     :fetch-options="fetchTags"
     multiple
-    placeholder="选择标签"
+    placeholder="Select tags"
     remote
     :initial-options="mergedOptions"
   >
@@ -34,7 +34,7 @@
           :class="{ disabled: loadMoreRequested }"
           @click.prevent="loadMoreRemoteTags"
         >
-          {{ loadMoreRequested ? '加载中...' : '查看更多' }}
+          {{ loadMoreRequested ? 'Loading…' : 'Load more' }}
         </a>
       </div>
     </template>
@@ -107,7 +107,7 @@ const fetchRemoteTags = async (kw = '', page = 0) => {
     throw new Error('failed to fetch tags')
   } catch (e) {
     console.error('Failed to fetch tags', e)
-    toast.error('获取标签失败')
+    toast.error('Tags could not be loaded.')
     throw e
   }
 }
@@ -118,7 +118,7 @@ const combineOptions = (remoteOptions = []) => {
 }
 
 const fetchTags = async (kw = '') => {
-  const defaultOption = { id: 0, name: '无标签' }
+  const defaultOption = { id: 0, name: 'No tags' }
 
   if (kw !== remoteState.keyword) {
     remoteState.keyword = kw
@@ -151,7 +151,7 @@ const fetchTags = async (kw = '') => {
   let options = combineOptions(remoteState.options)
 
   if (props.creatable && kw && !options.some((t) => t.name.toLowerCase() === kw.toLowerCase())) {
-    options.push({ id: `__create__:${kw}`, name: `创建"${kw}"` })
+    options.push({ id: `__create__:${kw}`, name: `Create “${kw}”` })
   }
 
   return [defaultOption, ...options]
@@ -181,7 +181,7 @@ const selected = computed({
         return
       }
       if (v.length > 2) {
-        toast.error('最多选择两个标签')
+        toast.error('Select no more than two tags.')
         return
       }
       v = v.map((id) => {

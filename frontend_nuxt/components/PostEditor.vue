@@ -98,7 +98,7 @@ export default {
     onMounted(() => {
       emit('update:loading', true)
       vditorInstance.value = createVditor(editorId.value, {
-        placeholder: '请输入正文...',
+        placeholder: 'Write the discussion content…',
         input(value) {
           emit('update:modelValue', value)
         },

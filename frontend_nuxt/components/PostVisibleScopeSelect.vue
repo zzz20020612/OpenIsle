@@ -2,7 +2,7 @@
   <Dropdown
     v-model="selected"
     :fetch-options="fetchTypes"
-    placeholder="选择帖子可见范围"
+    placeholder="Select discussion visibility"
   />
 </template>
 
@@ -22,9 +22,9 @@ export default {
 
     const fetchTypes = async () => {
       return [
-        { id: 'ALL', name: '全部可见', icon: 'communication' },
-        { id: 'ONLY_ME', name: '仅自己可见', icon: 'user-icon' },
-        { id: 'ONLY_REGISTER', name: '仅注册用户可见', icon: 'peoples-two' },
+        { id: 'ALL', name: 'Public', icon: 'communication' },
+        { id: 'ONLY_ME', name: 'Private', icon: 'user-icon' },
+        { id: 'ONLY_REGISTER', name: 'Registered users', icon: 'peoples-two' },
       ]
     }
 
