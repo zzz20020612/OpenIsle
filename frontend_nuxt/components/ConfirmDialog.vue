@@ -4,8 +4,8 @@
       <h3 class="confirm-title">{{ title }}</h3>
       <p class="confirm-message">{{ message }}</p>
       <div class="confirm-actions">
-        <div class="cancel-button" @click="onCancel">取消</div>
-        <div class="confirm-button" @click="onConfirm">确认</div>
+        <button class="cancel-button" type="button" @click="onCancel">Cancel</button>
+        <button class="confirm-button" type="button" @click="onConfirm">Confirm</button>
       </div>
     </div>
   </BasePopup>

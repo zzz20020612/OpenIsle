@@ -5,9 +5,9 @@
     </div>
     <slot name="actions">
       <div v-if="!item.read" class="mark-read-button" @click="markRead(item.id)">
-        {{ isMobile ? 'OK' : '标记为已读' }}
+        {{ isMobile ? 'OK' : 'Mark as read' }}
       </div>
-      <div v-else class="has-read-button">已读</div>
+      <div v-else class="has-read-button">Read</div>
     </slot>
   </div>
 </template>

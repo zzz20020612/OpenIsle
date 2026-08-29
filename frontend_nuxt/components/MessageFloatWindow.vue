@@ -3,10 +3,10 @@
     <iframe :src="iframeSrc" frameborder="0" ref="iframeRef" @load="injectBaseTag"></iframe>
 
     <div class="float-actions">
-      <down v-if="floatHeight !== MINI_HEIGHT" title="收起至 100px" @click="collapseToMini" />
-      <up v-if="floatHeight !== DEFAULT_HEIGHT" title="回弹至 60vh" @click="reboundToDefault" />
-      <expand-up title="在页面中打开" @click="expand" />
-      <close-icon title="关闭" @click="close" />
+      <down v-if="floatHeight !== MINI_HEIGHT" title="Minimise message window" @click="collapseToMini" />
+      <up v-if="floatHeight !== DEFAULT_HEIGHT" title="Restore message window" @click="reboundToDefault" />
+      <expand-up title="Open on full page" @click="expand" />
+      <close-icon title="Close" @click="close" />
     </div>
   </div>
 </template>
