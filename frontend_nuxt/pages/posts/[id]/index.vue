@@ -2,16 +2,16 @@
   <div v-if="isRestricted" class="restricted-content">
     <template v-if="visibleScope === 'ONLY_ME'">
       <LoginOverlay
-        text="这是一篇私密文章，仅作者本人及管理员可见"
-        button-text="返回首页"
+        text="This discussion is private and visible only to its author and administrators."
+        button-text="Return to papers"
         button-link="/"
       />
     </template>
 
     <template v-else-if="visibleScope === 'ONLY_REGISTER'">
       <LoginOverlay
-        text="这是一篇仅登录用户可见的文章，请先登录"
-        button-text="登录"
+        text="Sign in to view this registered-user discussion."
+        button-text="Sign in"
         button-link="/login"
       />
     </template>
@@ -30,12 +30,12 @@
           </div>
         </div>
         <div class="article-title-container-right">
-          <div v-if="status === 'PENDING'" class="article-pending-button">审核中</div>
-          <div v-if="status === 'REJECTED'" class="article-block-button">已拒绝</div>
-          <div v-if="!rssExcluded" class="article-featured-button">精品</div>
-          <div v-if="closed" class="article-gray-button">已关闭</div>
-          <div v-if="visibleScope === 'ONLY_ME'" class="article-gray-button">仅自己可见</div>
-          <div v-if="visibleScope === 'ONLY_REGISTER'" class="article-gray-button">仅登录可见</div>
+          <div v-if="status === 'PENDING'" class="article-pending-button">Pending review</div>
+          <div v-if="status === 'REJECTED'" class="article-block-button">Rejected</div>
+          <div v-if="!rssExcluded" class="article-featured-button">Featured</div>
+          <div v-if="closed" class="article-gray-button">Closed</div>
+          <div v-if="visibleScope === 'ONLY_ME'" class="article-gray-button">Private</div>
+          <div v-if="visibleScope === 'ONLY_REGISTER'" class="article-gray-button">Registered users</div>
           <div
             v-if="!closed && loggedIn && !isAuthor && !subscribed"
             class="article-subscribe-button"
@@ -43,7 +43,7 @@
           >
             <people-plus />
             <div class="article-subscribe-button-text">
-              {{ isMobile ? '订阅' : '订阅文章' }}
+              {{ isMobile ? 'Follow' : 'Follow discussion' }}
             </div>
           </div>
           <div
@@ -53,7 +53,7 @@
           >
             <people-minus-one />
             <div class="article-unsubscribe-button-text">
-              {{ isMobile ? '退订' : '取消订阅' }}
+              {{ isMobile ? 'Unfollow' : 'Unfollow discussion' }}
             </div>
           </div>
           <DropdownMenu v-if="articleMenuItems.length > 0" :items="articleMenuItems">
@@ -142,7 +142,7 @@
       <ClientOnly>
         <PostPoll v-if="poll" :poll="poll" :post-id="postId" @refresh="refreshPost" />
       </ClientOnly>
-      <div v-if="closed" class="post-close-container">该帖子已关闭，内容仅供阅读，无法进行互动</div>
+      <div v-if="closed" class="post-close-container">This discussion is closed and remains available for reading.</div>
 
       <ClientOnly>
         <CommentEditor
@@ -165,7 +165,7 @@
         <l-hatch size="28" stroke="4" speed="3.5" color="var(--primary-color)"></l-hatch>
       </div>
       <div v-else class="comments-container">
-        <BasePlaceholder v-if="timelineItems.length === 0" text="暂无评论" icon="inbox" />
+        <BasePlaceholder v-if="timelineItems.length === 0" text="No comments yet" icon="inbox" />
         <BaseTimeline v-else :items="timelineItems">
           <template #item="{ item }">
             <CommentItem
@@ -321,29 +321,29 @@ const poll = ref(null)
 const articleMenuItems = computed(() => {
   const items = []
   if (isAuthor.value || isAdmin.value) {
-    items.push({ text: '编辑文章', onClick: () => editPost() })
-    items.push({ text: '删除文章', color: 'red', onClick: deletePost })
+    items.push({ text: 'Edit discussion', onClick: () => editPost() })
+    items.push({ text: 'Delete discussion', color: 'red', onClick: deletePost })
     if (closed.value) {
-      items.push({ text: '重新打开帖子', onClick: () => reopenPost() })
+      items.push({ text: 'Reopen discussion', onClick: () => reopenPost() })
     } else {
-      items.push({ text: '关闭帖子', onClick: () => closePost() })
+      items.push({ text: 'Close discussion', onClick: () => closePost() })
     }
   }
   if (isAdmin.value) {
     if (pinnedAt.value) {
-      items.push({ text: '取消置顶', onClick: () => unpinPost() })
+      items.push({ text: 'Unpin', onClick: () => unpinPost() })
     } else {
-      items.push({ text: '置顶', onClick: () => pinPost() })
+      items.push({ text: 'Pin discussion', onClick: () => pinPost() })
     }
     if (rssExcluded.value) {
-      items.push({ text: 'rss推荐', onClick: () => includeRss() })
+      items.push({ text: 'Include in research feed', onClick: () => includeRss() })
     } else {
-      items.push({ text: '取消rss推荐', onClick: () => excludeRss() })
+      items.push({ text: 'Remove from research feed', onClick: () => excludeRss() })
     }
   }
   if (isAdmin.value && status.value === 'PENDING') {
-    items.push({ text: '通过审核', onClick: () => approvePost() })
-    items.push({ text: '驳回', color: 'red', onClick: () => rejectPost() })
+    items.push({ text: 'Approve discussion', onClick: () => approvePost() })
+    items.push({ text: 'Reject discussion', color: 'red', onClick: () => rejectPost() })
   }
   return items
 })
@@ -628,14 +628,14 @@ const onSliderInput = (e) => {
 const postComment = async (parentUserName, text, clear) => {
   if (!text.trim()) return
   if (closed.value) {
-    toast.error('帖子已关闭')
+    toast.error('This discussion is closed.')
     return
   }
   console.debug('Posting comment', { postId, text })
   isWaitingPostingComment.value = true
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please sign in to comment.')
     isWaitingPostingComment.value = false
     return
   }
@@ -652,18 +652,18 @@ const postComment = async (parentUserName, text, clear) => {
       await fetchTimeline()
       clear()
       if (data.reward && data.reward > 0) {
-        toast.success(`评论成功，获得 ${data.reward} 经验值`)
+        toast.success(`Comment published. You received ${data.reward} contribution points.`)
       } else {
-        toast.success('评论成功')
+        toast.success('Comment published.')
       }
     } else if (res.status === 429) {
-      toast.error('评论过于频繁，请稍后再试')
+      toast.error('You are commenting too frequently. Please wait and try again.')
     } else {
-      toast.error(`评论失败: ${res.status} ${res.statusText}`)
+      toast.error(`The comment could not be published: ${res.status} ${res.statusText}`)
     }
   } catch (e) {
     console.debug('Post comment error', e)
-    toast.error(`评论失败: ${e.message}`)
+    toast.error(`The comment could not be published: ${e.message}`)
   } finally {
     isWaitingPostingComment.value = false
   }
@@ -671,14 +671,14 @@ const postComment = async (parentUserName, text, clear) => {
 
 const copyPostLink = () => {
   navigator.clipboard.writeText(location.href.split('#')[0]).then(() => {
-    toast.success('已复制')
+    toast.success('Link copied.')
   })
 }
 
 const subscribePost = async () => {
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please sign in to follow this discussion.')
     return
   }
   const res = await fetch(`${API_BASE_URL}/api/subscriptions/posts/${postId}`, {
@@ -687,9 +687,9 @@ const subscribePost = async () => {
   })
   if (res.ok) {
     subscribed.value = true
-    toast.success('已订阅')
+    toast.success('Discussion followed.')
   } else {
-    toast.error('操作失败')
+    toast.error('The operation could not be completed.')
   }
 }
 
@@ -702,11 +702,11 @@ const approvePost = async () => {
   })
   if (res.ok) {
     status.value = 'PUBLISHED'
-    toast.success('已通过审核')
+    toast.success('Discussion approved.')
     await refreshPost()
     await fetchTimeline()
   } else {
-    toast.error('操作失败')
+    toast.error('The operation could not be completed.')
   }
 }
 
@@ -718,11 +718,11 @@ const pinPost = async () => {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (res.ok) {
-    toast.success('已置顶')
+    toast.success('Discussion pinned.')
     await refreshPost()
     await fetchTimeline()
   } else {
-    toast.error('操作失败')
+    toast.error('The operation could not be completed.')
   }
 }
 
@@ -734,11 +734,11 @@ const unpinPost = async () => {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (res.ok) {
-    toast.success('已取消置顶')
+    toast.success('Discussion unpinned.')
     await refreshPost()
     await fetchTimeline()
   } else {
-    toast.error('操作失败')
+    toast.error('The operation could not be completed.')
   }
 }
 
@@ -751,10 +751,10 @@ const excludeRss = async () => {
   })
   if (res.ok) {
     rssExcluded.value = true
-    toast.success('已标记为rss不推荐')
+    toast.success('Removed from the research feed.')
     await fetchTimeline()
   } else {
-    toast.error('操作失败')
+    toast.error('The operation could not be completed.')
   }
 }
 
@@ -767,11 +767,11 @@ const includeRss = async () => {
   })
   if (res.ok) {
     rssExcluded.value = false
-    toast.success('已标记为rss推荐')
+    toast.success('Included in the research feed.')
     await refreshPost()
     await fetchTimeline()
   } else {
-    toast.error('操作失败')
+    toast.error('The operation could not be completed.')
   }
 }
 
@@ -784,11 +784,11 @@ const closePost = async () => {
   })
   if (res.ok) {
     closed.value = true
-    toast.success('已关闭')
+    toast.success('Discussion closed.')
     await refreshPost()
     await fetchTimeline()
   } else {
-    toast.error('操作失败')
+    toast.error('The operation could not be completed.')
   }
 }
 
@@ -801,11 +801,11 @@ const reopenPost = async () => {
   })
   if (res.ok) {
     closed.value = false
-    toast.success('已重新打开')
+    toast.success('Discussion reopened.')
     await refreshPost()
     await fetchTimeline()
   } else {
-    toast.error('操作失败')
+    toast.error('The operation could not be completed.')
   }
 }
 
@@ -815,11 +815,11 @@ const editPost = () => {
 
 const deletePost = async () => {
   try {
-    const ok = await confirm('删除帖子', '此操作不可恢复，确认要删除吗？')
+    const ok = await confirm('Delete discussion', 'This action cannot be undone. Delete this discussion?')
     if (!ok) return
     const token = getToken()
     if (!token) {
-      toast.error('请先登录')
+      toast.error('Please sign in to continue.')
       return
     }
     const res = await fetch(`${API_BASE_URL}/api/posts/${postId}`, {
@@ -827,13 +827,13 @@ const deletePost = async () => {
       headers: { Authorization: `Bearer ${token}` },
     })
     if (res.ok) {
-      toast.success('已删除')
+      toast.success('Discussion deleted.')
       navigateTo('/', { replace: true })
     } else {
-      toast.error('操作失败')
+      toast.error('The operation could not be completed.')
     }
   } catch (e) {
-    toast.error('操作失败')
+    toast.error('The operation could not be completed.')
   }
 }
 
@@ -846,17 +846,17 @@ const rejectPost = async () => {
   })
   if (res.ok) {
     status.value = 'REJECTED'
-    toast.success('已驳回')
+    toast.success('Discussion rejected.')
     await refreshPost()
     await fetchTimeline()
   } else {
-    toast.error('操作失败')
+    toast.error('The operation could not be completed.')
   }
 }
 const unsubscribePost = async () => {
   const token = getToken()
   if (!token) {
-    toast.error('请先登录')
+    toast.error('Please sign in to continue.')
     return
   }
 
@@ -866,16 +866,16 @@ const unsubscribePost = async () => {
   })
   if (res.ok) {
     subscribed.value = false
-    toast.success('已取消订阅')
+    toast.success('Discussion unfollowed.')
   } else {
-    toast.error('操作失败')
+    toast.error('The operation could not be completed.')
   }
 }
 
 const fetchCommentSorts = () => {
   return Promise.resolve([
-    { id: 'NEWEST', name: '最新', icon: 'lightning' },
-    { id: 'OLDEST', name: '最旧', icon: 'history-icon' },
+    { id: 'NEWEST', name: 'Newest first', icon: 'lightning' },
+    { id: 'OLDEST', name: 'Oldest first', icon: 'history-icon' },
     // { id: 'MOST_INTERACTIONS', name: '最多互动', icon: 'fas fa-fire' }
   ])
 }

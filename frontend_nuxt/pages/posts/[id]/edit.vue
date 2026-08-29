@@ -1,7 +1,7 @@
 <template>
   <div class="new-post-page">
     <div class="new-post-form">
-      <input class="post-title-input" v-model="title" placeholder="标题" />
+      <input class="post-title-input" v-model="title" placeholder="Discussion title" />
       <div class="post-editor-container">
         <PostEditor v-model="content" :loading="isAiLoading" :disabled="!isLogin" />
         <LoginOverlay v-if="!isLogin" />
@@ -13,22 +13,22 @@
           <PostVisibleScopeSelect v-model="selectedVisibleScope"/>
         </div>
         <div class="post-options-right">
-          <div class="post-clear" @click="clearPost"><clear-icon /> 清空</div>
+          <div class="post-clear" @click="clearPost"><clear-icon /> Clear</div>
           <div class="ai-generate" @click="aiGenerate">
             <smart-optimization />
-            MD 格式优化
+            Improve Markdown
           </div>
-          <div class="post-cancel" @click="cancelEdit">取消</div>
+          <div class="post-cancel" @click="cancelEdit">Cancel</div>
           <div
             v-if="!isWaitingPosting"
             class="post-submit"
             :class="{ disabled: !isLogin }"
             @click="submitPost"
           >
-            更新
+            Update discussion
           </div>
           <div v-else class="post-submit-loading">
-            <loading-four class="loading-icon" /> 更新中...
+            <loading-four class="loading-icon" /> Updating…
           </div>
         </div>
       </div>
@@ -76,7 +76,7 @@ const loadPost = async () => {
       selectedVisibleScope.value = data.visibleScope
     }
   } catch (e) {
-    toast.error('加载失败')
+    toast.error('The discussion could not be loaded.')
   }
 }
 
@@ -113,7 +113,7 @@ const ensureTags = async (token) => {
         } catch (e) {
           data = null
         }
-        toast.error((data && data.error) || '创建标签失败')
+        toast.error((data && data.error) || 'The new tag could not be created.')
         throw new Error('create tag failed')
       }
     }
@@ -122,12 +122,12 @@ const ensureTags = async (token) => {
 
 const aiGenerate = async () => {
   if (!content.value.trim()) {
-    toast.error('内容为空，无法优化')
+    toast.error('Add content before using Markdown formatting.')
     return
   }
   isAiLoading.value = true
   try {
-    toast.info('AI 优化中...')
+    toast.info('Improving Markdown formatting…')
     const token = getToken()
     const res = await fetch(`${API_BASE_URL}/api/ai/format`, {
       method: 'POST',
@@ -141,12 +141,12 @@ const aiGenerate = async () => {
       const data = await res.json()
       content.value = data.content || ''
     } else if (res.status === 429) {
-      toast.error('今日AI优化次数已用尽')
+      toast.error('Your daily AI formatting allowance has been used.')
     } else {
-      toast.error('AI 优化失败')
+      toast.error('AI formatting could not be completed.')
     }
   } catch (e) {
-    toast.error('AI 优化失败')
+    toast.error('AI formatting could not be completed.')
   } finally {
     isAiLoading.value = false
   }
@@ -154,19 +154,19 @@ const aiGenerate = async () => {
 
 const submitPost = async () => {
   if (!title.value.trim()) {
-    toast.error('标题不能为空')
+    toast.error('Discussion title is required.')
     return
   }
   if (!content.value.trim()) {
-    toast.error('内容不能为空')
+    toast.error('Discussion content is required.')
     return
   }
   if (!selectedCategory.value) {
-    toast.error('请选择分类')
+    toast.error('Select a category.')
     return
   }
   if (selectedTags.value.length === 0) {
-    toast.error('请选择标签')
+    toast.error('Select at least one tag.')
     return
   }
   try {
@@ -189,13 +189,13 @@ const submitPost = async () => {
     })
     const data = await res.json()
     if (res.ok) {
-      toast.success('更新成功')
+      toast.success('Discussion updated.')
       window.location.href = `/posts/${postId}`
     } else {
-      toast.error(data.error || '更新失败')
+      toast.error(data.error || 'The discussion could not be updated.')
     }
   } catch (e) {
-    toast.error('更新失败')
+    toast.error('The discussion could not be updated.')
   } finally {
     isWaitingPosting.value = false
   }
