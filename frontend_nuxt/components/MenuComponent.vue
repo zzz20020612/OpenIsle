@@ -41,13 +41,6 @@
           </template>
         </ClientOnly>
 
-        <div class="menu-section">
-          <div class="section-label">Coming Next</div>
-          <div class="menu-item disabled">
-            <peoples-two class="menu-item-icon" />
-            <span class="menu-item-text">Experts</span>
-          </div>
-        </div>
       </div>
 
       <ClientOnly v-if="!isMobile">
@@ -221,15 +214,6 @@ const handleItemClick = () => {
 .menu-item.selected {
   font-weight: 800;
   background-color: var(--menu-selected-background-color);
-}
-
-.menu-item.disabled {
-  cursor: default;
-  opacity: 0.48;
-}
-
-.menu-item.disabled:hover {
-  background-color: transparent;
 }
 
 .menu-item-text {
