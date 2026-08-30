@@ -26,7 +26,7 @@ export async function twitterAuthorize(inviteToken = '') {
   const WEBSITE_BASE_URL = config.public.websiteBaseUrl
   const TWITTER_CLIENT_ID = config.public.twitterClientId
   if (!TWITTER_CLIENT_ID) {
-    toast.error('Twitter 登录不可用')
+    toast.error('X sign-in is unavailable.')
     return
   }
 
@@ -79,7 +79,7 @@ export async function twitterExchange(code, state, reason) {
 
     // 简单 CSRF 校验（存在才校验，避免误杀老会话）
     if (savedCsrf && parsedCsrf && savedCsrf !== parsedCsrf) {
-      toast.error('登录状态校验失败，请重试')
+      toast.error('The sign-in session could not be verified. Please try again.')
       return { success: false, needReason: false, error: 'state mismatch' }
     }
 
@@ -103,18 +103,18 @@ export async function twitterExchange(code, state, reason) {
       registerPush()
       return { success: true, needReason: false }
     } else if (data.reason_code === 'NOT_APPROVED') {
-      toast.info('当前为注册审核模式，请填写注册理由')
+      toast.info('Registration review is enabled. Please provide a reason for joining.')
       return { success: false, needReason: true, token: data.token }
     } else if (data.reason_code === 'IS_APPROVING') {
-      toast.info('您的注册理由正在审批中')
+      toast.info('Your registration request is under review.')
       return { success: true, needReason: false }
     } else {
-      toast.error(data.error || '登录失败')
-      return { success: false, needReason: false, error: data.error || '登录失败' }
+      toast.error(data.error || 'Sign-in failed.')
+      return { success: false, needReason: false, error: data.error || 'Sign-in failed.' }
     }
   } catch (e) {
     console.error(e)
-    toast.error('登录失败')
-    return { success: false, needReason: false, error: '登录失败' }
+    toast.error('Sign-in failed.')
+    return { success: false, needReason: false, error: 'Sign-in failed.' }
   }
 }

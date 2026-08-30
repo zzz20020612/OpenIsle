@@ -177,11 +177,11 @@ export function cycleTheme(event) {
   const index = modes.indexOf(themeState.mode)
   const next = modes[(index + 1) % modes.length]
   if (next === ThemeMode.SYSTEM) {
-    toast.success('💻 已经切换到系统主题')
+    toast.success('Using the system theme.')
   } else if (next === ThemeMode.LIGHT) {
-    toast.success('🌞 已经切换到明亮主题')
+    toast.success('Light theme enabled.')
   } else {
-    toast.success('🌙 已经切换到暗色主题')
+    toast.success('Dark theme enabled.')
   }
   // 获取当前真实主题
   const currentTheme = themeState.mode === ThemeMode.SYSTEM ? getSystemTheme() : themeState.mode

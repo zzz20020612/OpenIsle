@@ -239,7 +239,7 @@ export function handleMarkdownClick(e) {
     const codeEl = pre && pre.querySelector('code')
     if (codeEl) {
       navigator.clipboard.writeText(codeEl.innerText).then(() => {
-        toast.success('已复制')
+        toast.success('Copied to clipboard.')
       })
     }
   }

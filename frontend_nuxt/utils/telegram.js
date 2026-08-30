@@ -7,7 +7,7 @@ export function telegramAuthorize(inviteToken = '') {
   const WEBSITE_BASE_URL = config.public.websiteBaseUrl
   const TELEGRAM_BOT_ID = config.public.telegramBotId
   if (!TELEGRAM_BOT_ID) {
-    toast.error('Telegram 登录不可用')
+    toast.error('Telegram sign-in is unavailable.')
     return
   }
   const redirectUri = `${WEBSITE_BASE_URL}/telegram-callback${inviteToken ? `?invite_token=${encodeURIComponent(inviteToken)}` : ''}`
@@ -38,18 +38,18 @@ export async function telegramExchange(authData, inviteToken = '', reason = '') 
       registerPush?.()
       return { success: true, needReason: false }
     } else if (data.reason_code === 'NOT_APPROVED') {
-      toast.info('当前为注册审核模式，请填写注册理由')
+      toast.info('Registration review is enabled. Please provide a reason for joining.')
       return { success: false, needReason: true, token: data.token }
     } else if (data.reason_code === 'IS_APPROVING') {
-      toast.info('您的注册理由正在审批中')
+      toast.info('Your registration request is under review.')
       return { success: true, needReason: false }
     } else {
-      toast.error(data.error || '登录失败')
-      return { success: false, needReason: false, error: data.error || '登录失败' }
+      toast.error(data.error || 'Sign-in failed.')
+      return { success: false, needReason: false, error: data.error || 'Sign-in failed.' }
     }
   } catch (e) {
     console.error(e)
-    toast.error('登录失败')
-    return { success: false, needReason: false, error: '登录失败' }
+    toast.error('Sign-in failed.')
+    return { success: false, needReason: false, error: 'Sign-in failed.' }
   }
 }

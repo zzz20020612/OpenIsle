@@ -127,7 +127,7 @@
       <div v-if="closed" class="post-close-container">This discussion is closed and remains available for reading.</div>
 
       <header class="discussion-heading">
-        <p>COMMUNITY REVIEW</p>
+        <p>PEER DISCUSSION</p>
         <h2>Discussion</h2>
       </header>
 
@@ -417,12 +417,6 @@ const changeLogIcon = (l) => {
     } else {
       return 'communication'
     }
-  } else if (l.type === 'VOTE_RESULT') {
-    return 'check-one'
-  } else if (l.type === 'LOTTERY_RESULT') {
-    return 'gift'
-  } else if (l.type === 'DONATE') {
-    return 'financing'
   } else {
     return 'info'
   }

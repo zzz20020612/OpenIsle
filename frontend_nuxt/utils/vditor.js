@@ -99,19 +99,19 @@ export function createVditor(editorId, options = {}) {
         const sizeCheck = checkFileSize(file)
         if (!sizeCheck.isValid) {
           console.log(
-            '文件大小不能超过',
+            'File size limit:',
             formatFileSize(sizeCheck.maxSize),
-            '，当前文件',
+            'Current file:',
             formatFileSize(sizeCheck.actualSize),
           )
           vditor.tip(
-            `文件大小不能超过 ${formatFileSize(sizeCheck.maxSize)}，当前文件 ${formatFileSize(sizeCheck.actualSize)}`,
+            `The file must be smaller than ${formatFileSize(sizeCheck.maxSize)}. Current size: ${formatFileSize(sizeCheck.actualSize)}.`,
             3000,
           )
-          return '文件过大'
+          return 'File is too large.'
         }
 
-        vditor.tip('文件上传中', 0)
+        vditor.tip('Uploading file…', 0)
         vditor.disabled()
         const res = await fetch(
           `${API_BASE_URL}/api/upload/presign?filename=${encodeURIComponent(file.name)}`,
@@ -119,15 +119,15 @@ export function createVditor(editorId, options = {}) {
         )
         if (!res.ok) {
           vditor.enable()
-          vditor.tip('获取上传地址失败')
-          return '获取上传地址失败'
+          vditor.tip('Could not prepare the upload.')
+          return 'Could not prepare the upload.'
         }
         const info = await res.json()
         const put = await fetch(info.uploadUrl, { method: 'PUT', body: file })
         if (!put.ok) {
           vditor.enable()
-          vditor.tip('上传失败')
-          return '上传失败'
+          vditor.tip('Upload failed.')
+          return 'Upload failed.'
         }
 
         const imageExts = [
@@ -152,13 +152,13 @@ export function createVditor(editorId, options = {}) {
         } else if (audioExts.includes(ext)) {
           md = `<audio controls="controls" src="${info.fileUrl}"></audio>`
         } else if (videoExts.includes(ext)) {
-          md = `<video width="600" controls>\n  <source src="${info.fileUrl}" type="video/${ext}">\n  你的浏览器不支持 video 标签。\n</video>`
+          md = `<video width="600" controls>\n  <source src="${info.fileUrl}" type="video/${ext}">\n  Your browser does not support embedded video.\n</video>`
         } else {
           md = `[${file.name}](${info.fileUrl})`
         }
         vditor.insertValue(md + '\n')
         vditor.enable()
-        vditor.tip('上传成功')
+        vditor.tip('Upload complete.')
         return null
       },
     },

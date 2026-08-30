@@ -8,7 +8,7 @@ export async function googleGetIdToken() {
 
   return new Promise((resolve, reject) => {
     if (!window.google || !GOOGLE_CLIENT_ID) {
-      toast.error('Google 登录不可用, 请检查网络设置与VPN')
+      toast.error('Google sign-in is unavailable. Check your network connection.')
       reject()
       return
     }
@@ -27,7 +27,7 @@ export function googleAuthorize(inviteToken = '') {
   const WEBSITE_BASE_URL = config.public.websiteBaseUrl
 
   if (!GOOGLE_CLIENT_ID) {
-    toast.error('Google 登录不可用, 请检查网络设置与VPN')
+    toast.error('Google sign-in is unavailable. Check your network connection.')
     return
   }
 
@@ -57,7 +57,7 @@ export async function googleAuthWithToken(
 ) {
   try {
     if (!idToken) {
-      toast.error('缺少 id_token')
+      toast.error('Google did not return an identity token.')
       return
     }
 
@@ -86,20 +86,20 @@ export async function googleAuthWithToken(
     }
 
     if (data && data.reason_code === 'NOT_APPROVED') {
-      toast.info('当前为注册审核模式，请填写注册理由')
+      toast.info('Registration review is enabled. Please provide a reason for joining.')
       if (typeof redirect_not_approved === 'function') redirect_not_approved(data.token)
       return
     }
 
     if (data && data.reason_code === 'IS_APPROVING') {
-      toast.info('您的注册理由正在审批中')
+      toast.info('Your registration request is under review.')
       if (typeof redirect_success === 'function') redirect_success()
       return
     }
-    toast.error(data?.message || '登录失败')
+    toast.error(data?.message || 'Sign-in failed.')
   } catch (e) {
     console.error(e)
-    toast.error('登录失败')
+    toast.error('Sign-in failed.')
   }
 }
 

@@ -7,7 +7,7 @@ export function discordAuthorize(inviteToken = '') {
   const WEBSITE_BASE_URL = config.public.websiteBaseUrl
   const DISCORD_CLIENT_ID = config.public.discordClientId
   if (!DISCORD_CLIENT_ID) {
-    toast.error('Discord 登录不可用')
+    toast.error('Discord sign-in is unavailable.')
     return
   }
 
@@ -51,18 +51,18 @@ export async function discordExchange(code, inviteToken = '', reason = '') {
       registerPush?.()
       return { success: true, needReason: false }
     } else if (data.reason_code === 'NOT_APPROVED') {
-      toast.info('当前为注册审核模式，请填写注册理由')
+      toast.info('Registration review is enabled. Please provide a reason for joining.')
       return { success: false, needReason: true, token: data.token }
     } else if (data.reason_code === 'IS_APPROVING') {
-      toast.info('您的注册理由正在审批中')
+      toast.info('Your registration request is under review.')
       return { success: true, needReason: false }
     } else {
-      toast.error(data.error || '登录失败')
-      return { success: false, needReason: false, error: data.error || '登录失败' }
+      toast.error(data.error || 'Sign-in failed.')
+      return { success: false, needReason: false, error: data.error || 'Sign-in failed.' }
     }
   } catch (e) {
     console.error(e)
-    toast.error('登录失败')
-    return { success: false, needReason: false, error: '登录失败' }
+    toast.error('Sign-in failed.')
+    return { success: false, needReason: false, error: 'Sign-in failed.' }
   }
 }
