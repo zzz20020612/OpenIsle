@@ -385,6 +385,7 @@ import { authState, getToken } from '~/utils/auth'
 import TimeManager from '~/utils/time'
 import PaperArticleRenderer from '~/components/paper-article/PaperArticleRenderer.vue'
 import { normalizeReaderArticle } from '~/utils/paperArticleReader'
+import { repairMojibakeDeep } from '~/utils/textEncoding'
 import { toast } from '~/main'
 
 const route = useRoute()
@@ -418,7 +419,7 @@ onMounted(async () => {
   ])
 })
 
-const paper = computed(() => paperData.value || {})
+const paper = computed(() => repairMojibakeDeep(paperData.value || {}))
 const { data: articleData, refresh: refreshArticle } = await useAsyncData(
   `paper-article:${paperId.value}`,
   () => getPaperArticle(paperId.value).catch(() => ({ sections: [] })),
@@ -601,7 +602,7 @@ const mapComment = (comment, parentUserName = '', parentUserAvatar = '', parentU
   userId: comment.author?.id,
   time: TimeManager.format(comment.createdAt),
   avatar: comment.author?.avatar,
-  text: comment.content,
+  text: repairMojibakeDeep(comment.content),
   reactions: comment.reactions || [],
   pinned: Boolean(comment.pinned ?? comment.pinnedAt ?? comment.pinned_at),
   isBot: Boolean(comment.author?.bot),

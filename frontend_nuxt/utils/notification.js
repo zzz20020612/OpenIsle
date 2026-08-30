@@ -9,6 +9,33 @@ export const notificationState = reactive({
   unreadCount: 0,
 })
 
+export const LEGACY_NOTIFICATION_TYPES = new Set([
+  'ACTIVITY_REDEEM',
+  'POINT_REDEEM',
+  'DONATION',
+  'LOTTERY_WIN',
+  'LOTTERY_DRAW',
+  'POLL_VOTE',
+  'POLL_RESULT_OWNER',
+  'POLL_RESULT_PARTICIPANT',
+  'CATEGORY_PROPOSAL_RESULT_OWNER',
+  'CATEGORY_PROPOSAL_RESULT_PARTICIPANT',
+])
+
+const ADMIN_NOTIFICATION_TYPES = new Set([
+  'POST_REVIEW_REQUEST',
+  'REGISTER_REQUEST',
+])
+
+const hiddenNotificationTypes = () => [
+  ...LEGACY_NOTIFICATION_TYPES,
+  ...(authState.role === 'ADMIN' ? [] : ADMIN_NOTIFICATION_TYPES),
+]
+
+export const isVisibleNotificationType = (type) =>
+  !LEGACY_NOTIFICATION_TYPES.has(type) &&
+  (authState.role === 'ADMIN' || !ADMIN_NOTIFICATION_TYPES.has(type))
+
 const iconMap = {
   POST_VIEWED: 'HistoryIcon',
   COMMENT_REPLY: 'MessageOne',
@@ -22,19 +49,9 @@ const iconMap = {
   POST_SUBSCRIBED: 'Bookmark',
   POST_UNSUBSCRIBED: 'Bookmark',
   REGISTER_REQUEST: 'AlarmClock',
-  ACTIVITY_REDEEM: 'PaperMoneyTwo',
-  POINT_REDEEM: 'Gift',
-  LOTTERY_WIN: 'MedalOne',
-  LOTTERY_DRAW: 'Fireworks',
-  POLL_VOTE: 'ChartHistogram',
-  POLL_RESULT_OWNER: 'RankingList',
-  POLL_RESULT_PARTICIPANT: 'ChartLine',
-  CATEGORY_PROPOSAL_RESULT_OWNER: 'TagOne',
-  CATEGORY_PROPOSAL_RESULT_PARTICIPANT: 'TagOne',
   MENTION: 'HashtagKey',
   POST_DELETED: 'ClearIcon',
   POST_FEATURED: 'Star',
-  DONATION: 'PaperMoneyTwo',
 }
 
 export async function fetchUnreadCount() {
@@ -46,16 +63,9 @@ export async function fetchUnreadCount() {
       notificationState.unreadCount = 0
       return 0
     }
-    const res = await fetch(`${API_BASE_URL}/api/notifications/unread-count`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (!res.ok) {
-      notificationState.unreadCount = 0
-      return 0
-    }
-    const data = await res.json()
-    notificationState.unreadCount = data.count
-    return data.count
+    const ids = await collectUnreadNotificationIds(hiddenNotificationTypes())
+    notificationState.unreadCount = ids.length
+    return ids.length
   } catch (e) {
     notificationState.unreadCount = 0
     return 0
@@ -144,7 +154,8 @@ export async function fetchNotificationPreferences() {
       headers: { Authorization: `Bearer ${token}` },
     })
     if (!res.ok) return []
-    return await res.json()
+    const preferences = await res.json()
+    return preferences.filter((preference) => isVisibleNotificationType(preference.type))
   } catch (e) {
     return []
   }
@@ -181,7 +192,8 @@ export async function fetchEmailNotificationPreferences() {
       headers: { Authorization: `Bearer ${token}` },
     })
     if (!res.ok) return []
-    return await res.json()
+    const preferences = await res.json()
+    return preferences.filter((preference) => isVisibleNotificationType(preference.type))
   } catch (e) {
     return []
   }
@@ -207,10 +219,7 @@ export async function updateEmailNotificationPreference(type, enabled) {
   }
 }
 
-/**
- * 处理信息的高阶函�?
- * @returns
- */
+/** Build the shared notification loader and read-state operations. */
 function createFetchNotifications() {
   const notifications = ref([])
   const isLoadingMessage = ref(false)
@@ -227,7 +236,7 @@ function createFetchNotifications() {
     try {
       const token = getToken()
       if (!token) {
-        toast.error('请先登录')
+        toast.error('Please sign in to view notifications.')
         return
       }
       if (!append) notifications.value = []
@@ -242,14 +251,16 @@ function createFetchNotifications() {
       )
       isLoadingMessage.value = false
       if (!res.ok) {
-        toast.error('获取通知失败')
+        toast.error('Unable to load notifications.')
         return
       }
       const data = await res.json()
       const arr = []
 
       for (const n of data) {
-        if (n.type === 'COMMENT_REPLY') {
+        if (!isVisibleNotificationType(n.type)) continue
+        try {
+          if (n.type === 'COMMENT_REPLY' && n.comment?.author) {
           arr.push({
             ...n,
             src: n.comment.author.avatar,
@@ -293,35 +304,7 @@ function createFetchNotifications() {
               }
             },
           })
-        } else if (n.type === 'LOTTERY_WIN' || n.type === 'LOTTERY_DRAW') {
-          arr.push({
-            ...n,
-            icon: iconMap[n.type],
-            iconClick: () => {
-              if (n.post) {
-                markNotificationRead(n.id)
-                navigateTo(resolveContentPath(n.post))
-              }
-            },
-          })
-        } else if (
-          n.type === 'POLL_VOTE' ||
-          n.type === 'POLL_RESULT_OWNER' ||
-          n.type === 'POLL_RESULT_PARTICIPANT' ||
-          n.type === 'CATEGORY_PROPOSAL_RESULT_OWNER' ||
-          n.type === 'CATEGORY_PROPOSAL_RESULT_PARTICIPANT'
-        ) {
-          arr.push({
-            ...n,
-            icon: iconMap[n.type],
-            iconClick: () => {
-              if (n.post) {
-                markNotificationRead(n.id)
-                navigateTo(resolveContentPath(n.post))
-              }
-            },
-          })
-        } else if (n.type === 'POST_UPDATED' || n.type === 'USER_ACTIVITY') {
+        } else if ((n.type === 'POST_UPDATED' || n.type === 'USER_ACTIVITY') && n.comment?.author) {
           arr.push({
             ...n,
             src: n.comment.author.avatar,
@@ -390,18 +373,6 @@ function createFetchNotifications() {
               }
             },
           })
-        } else if (n.type === 'DONATION') {
-          arr.push({
-            ...n,
-            src: n.fromUser ? n.fromUser.avatar : null,
-            icon: n.fromUser ? undefined : iconMap[n.type],
-            iconClick: () => {
-              if (n.post) {
-                markNotificationRead(n.id)
-                navigateTo(resolveContentPath(n.post), { replace: true })
-              }
-            },
-          })
         } else if (n.type === 'REGISTER_REQUEST') {
           arr.push({
             ...n,
@@ -413,6 +384,10 @@ function createFetchNotifications() {
             ...n,
             icon: iconMap[n.type],
           })
+        }
+        } catch (error) {
+          console.warn('Notification rendered with limited context.', n?.id, n?.type, error)
+          arr.push({ ...n, icon: iconMap[n.type] })
         }
       }
 
@@ -441,7 +416,7 @@ function createFetchNotifications() {
   }
 
   const markAllRead = async () => {
-    // 为了覆盖分页中的全部未读，先从后端分页拉取全部未�?ID（排�?REGISTER_REQUEST）�?
+    // Fetch every unread page so read-all covers notifications outside the current viewport.
     const localIdsToMark = notifications.value
       .filter((n) => n.type !== 'REGISTER_REQUEST' && !n.read)
       .map((n) => n.id)
@@ -452,7 +427,10 @@ function createFetchNotifications() {
     notificationState.unreadCount = notifications.value.filter((n) => !n.read).length
 
     try {
-      const idsToMark = await collectUnreadNotificationIds(['REGISTER_REQUEST'])
+      const idsToMark = await collectUnreadNotificationIds([
+        ...hiddenNotificationTypes(),
+        ...(authState.role === 'ADMIN' ? ['REGISTER_REQUEST'] : []),
+      ])
       if (idsToMark.length > 0) {
         const ok = await markNotificationsReadInChunks(idsToMark)
         if (!ok) throw new Error('MARK_READ_FAILED')
@@ -469,7 +447,7 @@ function createFetchNotifications() {
         if (localIdsToMark.includes(n.id)) n.read = false
       })
       await fetchUnreadCount()
-      toast.error('已读操作失败，请稍后重试')
+      toast.error('Unable to mark notifications as read. Please try again.')
       return
     }
   }

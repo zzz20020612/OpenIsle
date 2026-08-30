@@ -51,13 +51,14 @@
 <script setup>
 import BaseImage from '~/components/BaseImage.vue'
 import SearchDropdown from '~/components/SearchDropdown.vue'
-import { authState, clearToken } from '~/utils/auth'
+import { authState, clearToken, loadCurrentUser } from '~/utils/auth'
 import { notificationState, fetchUnreadCount as fetchNotificationUnreadCount } from '~/utils/notification'
 import { useUnreadCount } from '~/composables/useUnreadCount'
 import { useIsMobile } from '~/utils/screen'
 import { cycleTheme } from '~/utils/theme'
 
-const isLogin = computed(() => authState.loggedIn)
+const hydrated = ref(false)
+const isLogin = computed(() => hydrated.value && authState.loggedIn)
 const isMobile = useIsMobile()
 const mobileOpen = ref(false)
 const { count: unreadMessageCount, fetchUnreadCount } = useUnreadCount()
@@ -66,18 +67,22 @@ const navItems = computed(() => [
   { to: '/papers', label: 'Papers' },
   { to: '/literature', label: 'Knowledge Base' },
   { to: '/papers/rankings', label: 'Rankings' },
-  ...(authState.loggedIn ? [
+  ...(isLogin.value ? [
     { to: '/papers/review-tasks', label: 'Reviews' },
     { to: '/papers/submissions', label: 'My Submissions' },
   ] : []),
-  ...(authState.role === 'ADMIN' ? [
+  ...(isLogin.value && authState.role === 'ADMIN' ? [
     { to: '/literature/workflow', label: 'Literature Processing' },
     { to: '/admin/papers', label: 'Administration' },
   ] : []),
 ])
 const logout = () => { clearToken(); navigateTo('/login') }
-onMounted(() => {
-  if (authState.loggedIn) Promise.allSettled([fetchUnreadCount(), fetchNotificationUnreadCount()])
+onMounted(async () => {
+  if (authState.loggedIn && !authState.role) await loadCurrentUser()
+  hydrated.value = true
+  if (authState.loggedIn) {
+    await Promise.allSettled([fetchUnreadCount(), fetchNotificationUnreadCount()])
+  }
 })
 </script>
 

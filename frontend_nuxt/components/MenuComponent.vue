@@ -56,7 +56,7 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
-import { authState } from '~/utils/auth'
+import { authState, loadCurrentUser } from '~/utils/auth'
 import {
   fetchUnreadCount as fetchNotificationUnreadCount,
   notificationState,
@@ -135,6 +135,7 @@ const iconClass = computed(() => {
 
 onMounted(async () => {
   if (authState.loggedIn) {
+    if (!authState.role) await loadCurrentUser()
     await Promise.all([
       fetchNotificationUnreadCount(),
       fetchMessageUnreadCount(),

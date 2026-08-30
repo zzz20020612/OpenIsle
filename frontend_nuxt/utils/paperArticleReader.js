@@ -8,7 +8,11 @@ const isDuplicateAbstractCover = (section = {}) => {
     normalizedHeading(blocks[0]?.text) === 'abstract'
 }
 
-export const normalizeReaderArticle = (article = {}) => ({
-  ...article,
-  sections: (article.sections || []).filter((section) => !isDuplicateAbstractCover(section)),
-})
+export const normalizeReaderArticle = (article = {}) => {
+  const repaired = repairMojibakeDeep(article)
+  return {
+    ...repaired,
+    sections: (repaired.sections || []).filter((section) => !isDuplicateAbstractCover(section)),
+  }
+}
+import { repairMojibakeDeep } from './textEncoding.js'

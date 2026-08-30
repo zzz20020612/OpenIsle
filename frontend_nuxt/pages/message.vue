@@ -8,10 +8,10 @@
     <BaseTabs v-model="selectedTab" :tabs="tabs">
       <template #right>
         <div class="message-page-header-right">
-          <div class="message-page-header-right-item" @click="markAllRead">
-            <check-correct class="message-page-header-right-item-button-icon" />
+          <button class="message-page-header-right-item" type="button" @click="markAllRead">
+            <span class="message-page-header-right-item-button-icon" aria-hidden="true">✓</span>
             <span class="message-page-header-right-item-button-text"> Mark all as read </span>
-          </div>
+          </button>
         </div>
       </template>
 
@@ -517,7 +517,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onActivated } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import BasePlaceholder from '~/components/BasePlaceholder.vue'
 import BaseTimeline from '~/components/BaseTimeline.vue'
 import NotificationContainer from '~/components/NotificationContainer.vue'
@@ -528,7 +528,7 @@ import { authState, getToken } from '~/utils/auth'
 import { stripMarkdownWithTiebaMoji } from '~/utils/markdown'
 import { resolveCommentPath, resolveContentPath } from '~/utils/contentRoutes'
 import {
-  fetchNotifications as fetchNotificationsRaw,
+  fetchNotifications,
   fetchUnreadCount,
   isLoadingMessage,
   markNotificationRead,
@@ -559,30 +559,6 @@ const emailPrefs = ref([])
 const page = ref(0)
 const pageSize = 30
 
-const legacyNotificationTypes = new Set([
-  'ACTIVITY_REDEEM',
-  'POINT_REDEEM',
-  'DONATION',
-  'LOTTERY_WIN',
-  'LOTTERY_DRAW',
-  'POLL_VOTE',
-  'POLL_RESULT_OWNER',
-  'POLL_RESULT_PARTICIPANT',
-  'CATEGORY_PROPOSAL_RESULT_OWNER',
-  'CATEGORY_PROPOSAL_RESULT_PARTICIPANT',
-])
-
-const removeLegacyNotifications = () => {
-  notifications.value = notifications.value.filter(
-    (notification) => !legacyNotificationTypes.has(notification.type),
-  )
-}
-
-const fetchNotifications = async (options) => {
-  await fetchNotificationsRaw(options)
-  removeLegacyNotifications()
-}
-
 const loadMore = async () => {
   if (!hasMore.value) return true
   page.value++
@@ -601,15 +577,11 @@ watch(selectedTab, async (tab) => {
 })
 
 const fetchPrefs = async () => {
-  notificationPrefs.value = (await fetchNotificationPreferences()).filter(
-    (pref) => !legacyNotificationTypes.has(pref.type),
-  )
+  notificationPrefs.value = await fetchNotificationPreferences()
 }
 
 const fetchEmailPrefs = async () => {
-  emailPrefs.value = (await fetchEmailNotificationPreferences()).filter(
-    (pref) => !legacyNotificationTypes.has(pref.type),
-  )
+  emailPrefs.value = await fetchEmailNotificationPreferences()
 }
 
 const togglePref = async (pref, value) => {
@@ -724,7 +696,7 @@ const canShowNotification = (type) => {
   return !needAdminSet.has(type) || isAdmin.value
 }
 
-onActivated(async () => {
+onMounted(async () => {
   page.value = 0
   await fetchNotifications({ page: 0, size: pageSize, unread: selectedTab.value === 'unread' })
   fetchPrefs()
@@ -770,6 +742,8 @@ onActivated(async () => {
   padding: 8px 10px;
   border: 1px solid #0065a8;
   gap: 5px;
+  background: #fff;
+  font: inherit;
 }
 
 .message-page-header-right-item-button-icon {
