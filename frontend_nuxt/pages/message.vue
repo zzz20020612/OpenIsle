@@ -107,7 +107,7 @@
                         :to="`/users/${item.comment.author.id}`"
                         >{{ item.comment.author.username }}
                       </NuxtLink>
-                      replied to my post
+                      replied to my discussion
                       <span>
                         <NuxtLink
                           class="notif-content-text"
@@ -133,7 +133,7 @@
                   </template>
                   <template v-else-if="item.type === 'REACTION' && item.post && !item.comment">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      <span class="notif-user">{{ item.fromUser.username }} </span> reacted to my post
+                      <span class="notif-user">{{ item.fromUser.username }} </span> reacted to my discussion
                       <span>
                         <NuxtLink
                           class="notif-content-text"
@@ -178,7 +178,7 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      viewed your post
+                      viewed your discussion
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
@@ -190,7 +190,7 @@
                   </template>
                   <template v-else-if="item.type === 'POST_UPDATED'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      A post you follow
+                      A discussion you follow
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
@@ -339,7 +339,7 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      published a post
+                      published a discussion
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
@@ -358,7 +358,7 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      subscribed to your post
+                      subscribed to your discussion
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
@@ -377,7 +377,7 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      unsubscribed from your post
+                      unsubscribed from your discussion
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
@@ -396,7 +396,7 @@
                       >
                         {{ item.fromUser.username }}
                       </NuxtLink>
-                      published a post
+                      published a discussion
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
@@ -409,7 +409,7 @@
                   </template>
                   <template v-else-if="item.type === 'POST_REVIEW_REQUEST'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      Your post
+                      Your discussion
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
@@ -444,7 +444,7 @@
                   </template>
                   <template v-else-if="item.type === 'POST_REVIEWED' && item.approved">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      Your post
+                      Your discussion
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
@@ -457,7 +457,7 @@
                   </template>
                   <template v-else-if="item.type === 'POST_REVIEWED' && item.approved === false">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      Your post
+                      Your discussion
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
@@ -470,7 +470,7 @@
                   </template>
                   <template v-else-if="item.type === 'POST_FEATURED'">
                     <NotificationContainer :item="item" :markRead="markRead">
-                      Your post
+                      Your discussion
                       <NuxtLink
                         class="notif-content-text"
                         @click="markRead(item.id)"
@@ -493,7 +493,7 @@
                           {{ item.fromUser.username }}
                         </NuxtLink>
                       </template>
-                      deleted your post
+                      deleted your discussion
                       <span class="notif-content-text">
                         <span v-html="stripMarkdownWithTiebaMoji(item.content, 500)"></span>
                       </span>
@@ -649,23 +649,23 @@ const reject = async (id, nid) => {
 const formatType = (t) => {
   switch (t) {
     case 'POST_VIEWED':
-      return 'Post viewed'
+      return 'Discussion viewed'
     case 'COMMENT_REPLY':
       return 'Someone replied to you'
     case 'REACTION':
       return 'New reaction'
     case 'POST_REVIEW_REQUEST':
-      return 'Post pending review'
+      return 'Discussion pending review'
     case 'POST_REVIEWED':
-      return 'Post review result'
+      return 'Discussion review result'
     case 'POST_UPDATED':
-      return 'New comment on followed post'
+      return 'New comment on a followed discussion'
     case 'FOLLOWED_POST':
-      return 'Followed user published a post'
+      return 'Followed user published a discussion'
     case 'POST_SUBSCRIBED':
-      return 'New post subscription'
+      return 'New discussion subscription'
     case 'POST_UNSUBSCRIBED':
-      return 'Post subscription canceled'
+      return 'Discussion subscription canceled'
     case 'USER_FOLLOWED':
       return 'New follower'
     case 'USER_UNFOLLOWED':
@@ -677,9 +677,9 @@ const formatType = (t) => {
     case 'REGISTER_REQUEST':
       return 'Membership request'
     case 'POST_DELETED':
-      return 'Post deleted'
+      return 'Discussion deleted'
     case 'POST_FEATURED':
-      return 'Post featured'
+      return 'Discussion featured'
     default:
       return t
   }
