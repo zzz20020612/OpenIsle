@@ -5,7 +5,7 @@
         <NuxtLink to="/papers">Papers</NuxtLink>
         <nav>
           <NuxtLink to="/papers/rankings">Rankings</NuxtLink>
-          <NuxtLink to="/experts">Experts</NuxtLink>
+          <NuxtLink to="/literature/explore?mode=authors">Scholars</NuxtLink>
         </nav>
       </header>
 
@@ -22,7 +22,10 @@
             :key="author.id || `${author.displayName || author}-${index}`"
             class="paper-citation-author"
           >
-            <NuxtLink v-if="author.expertProfileId" :to="`/experts/${author.expertProfileId}`">
+            <NuxtLink
+              v-if="author.expertProfileId"
+              :to="{ path: '/literature/explore', query: { mode: 'authors', q: author.displayName || '' } }"
+            >
               {{ author.displayName || `Author ${index + 1}` }}
             </NuxtLink>
             <NuxtLink v-else-if="author.userId" :to="`/users/${author.userId}`">

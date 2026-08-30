@@ -58,6 +58,9 @@ export function createVditor(editorId, options = {}) {
 
   let vditor
   vditor = new Vditor(editorId, {
+    // Keep editor controls consistent with OpenIsle's English application UI,
+    // regardless of the browser or operating-system locale.
+    lang: 'en_US',
     placeholder,
     height: 'auto',
     theme: getEditorTheme(),

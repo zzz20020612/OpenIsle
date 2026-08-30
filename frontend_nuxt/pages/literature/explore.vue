@@ -72,7 +72,7 @@ const modes = [
 ]
 const validModes = new Set(modes.map(item => item.id))
 const initialMode = validModes.has(String(route.query.mode || '')) ? String(route.query.mode) : 'knowledge'
-const mode=ref(initialMode),query=ref(''),metric=ref(''),yearFrom=ref(''),yearTo=ref(''),pending=ref(false),error=ref(''),notice=ref(''),payload=ref(null)
+const mode=ref(initialMode),query=ref(String(route.query.q || '')),metric=ref(''),yearFrom=ref(''),yearTo=ref(''),pending=ref(false),error=ref(''),notice=ref(''),payload=ref(null)
 const current=computed(()=>modes.find(item=>item.id===mode.value)||modes[0])
 const searchModes = computed(() => ['papers', 'semantic', 'vector'].includes(mode.value)
   ? modes.filter(item => ['papers', 'semantic', 'vector'].includes(item.id))
