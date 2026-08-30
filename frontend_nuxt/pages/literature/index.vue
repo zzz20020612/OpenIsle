@@ -19,6 +19,23 @@
 
       <LiteratureKnowledgeNav />
 
+      <nav class="knowledge-tabs" aria-label="Knowledge base record types">
+        <NuxtLink class="active" to="/literature">Papers</NuxtLink>
+        <NuxtLink to="/literature/explore?mode=data">Data points</NuxtLink>
+        <NuxtLink to="/literature/explore?mode=knowledge">Knowledge</NuxtLink>
+        <NuxtLink to="/literature/explore?mode=methods">Methods</NuxtLink>
+      </nav>
+
+      <section class="paper-panel advanced-search">
+        <div class="advanced-heading"><div><strong>Advanced field search</strong><span>The original system supports up to six field rows.</span></div><button type="button" @click="advancedOpen=!advancedOpen">{{ advancedOpen?'Collapse':'Expand' }}</button></div>
+        <div v-if="advancedOpen" class="advanced-body">
+          <div v-for="(row,index) in fieldRows" :key="index" class="field-row"><select v-model="row.field"><option v-for="field in searchFields" :key="field.id" :value="field.id">{{ field.label }}</option></select><input v-model="row.value" :placeholder="row.field==='year'?'e.g. 2020-2024':`Enter ${searchFields.find(item=>item.id===row.field)?.label.toLowerCase()}`" @keydown.enter.prevent="applyAdvancedSearch" /><button type="button" :disabled="fieldRows.length===1" aria-label="Remove field" @click="removeField(index)">×</button></div>
+          <div class="advanced-controls"><label>Search mode<select v-model="searchMode"><option value="keyword">Keyword</option><option value="phrase">Phrase</option><option value="fuzzy">Fuzzy</option><option value="vector">Vector</option><option value="hybrid">Hybrid</option></select></label><button class="paper-button" type="button" :disabled="fieldRows.length>=6" @click="fieldRows.push({field:'all',value:''})">Add field</button><button class="paper-button primary" type="button" @click="applyAdvancedSearch">Search</button><button class="paper-button" type="button" @click="clearAdvanced">Clear</button></div>
+          <div class="tier-row"><span>Journal tier</span><label v-for="tier in tiers" :key="tier.id"><input v-model="journalTiers" type="checkbox" :value="tier.id" /> {{ tier.label }}</label></div>
+          <p v-if="['vector','hybrid'].includes(searchMode)" class="vector-hint">Vector and hybrid modes use the original embedding service. They require indexed vectors and an Embedding API key.</p>
+        </div>
+      </section>
+
       <form class="literature-search paper-panel" @submit.prevent="applySearch">
         <label>
           <span>Search title, abstract, or journal</span>
@@ -117,6 +134,14 @@ const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const searchInput = ref(query.value)
 const sort = ref(typeof route.query.sort === 'string' ? route.query.sort : 'year_desc')
 const stateFilter = ref(typeof route.query.state === 'string' ? route.query.state : '')
+const advancedOpen = ref(false)
+const searchMode = ref('keyword')
+const fieldRows = ref([{ field: 'all', value: query.value }])
+const journalTiers = ref([])
+const searchFields = [
+  { id:'all',label:'All fields' },{ id:'title',label:'Title' },{ id:'abstract',label:'Abstract' },{ id:'keywords',label:'Keywords' },{ id:'author',label:'Author' },{ id:'journal',label:'Journal' },{ id:'doi',label:'DOI' },{ id:'year',label:'Year' },{ id:'fulltext',label:'Full text' },
+]
+const tiers=[{id:'tier1',label:'T1'},{id:'tier2',label:'T2'},{id:'tier3',label:'T3'},{id:'other',label:'Unrated'}]
 const requestParams = computed(() => ({ q: query.value, sort: sort.value, limit: 50, offset: 0 }))
 
 const { data, pending, error, refresh } = await useAsyncData(
@@ -140,6 +165,18 @@ async function applySearch() {
   query.value = searchInput.value.trim()
   await updateRoute()
 }
+
+async function applyAdvancedSearch() {
+  const all = fieldRows.value.find(row => row.field === 'all' && row.value.trim())
+  const fallback = fieldRows.value.find(row => row.value.trim())
+  searchInput.value = (all || fallback)?.value?.trim() || ''
+  query.value = searchInput.value
+  if (searchMode.value === 'vector') return router.push({ path:'/literature/vector', query:{ q:query.value, mode:'vector' } })
+  if (searchMode.value === 'hybrid') return router.push({ path:'/literature/vector', query:{ q:query.value, mode:'hybrid' } })
+  await updateRoute()
+}
+function removeField(index){if(fieldRows.value.length>1)fieldRows.value.splice(index,1)}
+function clearAdvanced(){fieldRows.value=[{field:'all',value:''}];journalTiers.value=[];searchMode.value='keyword';searchInput.value='';query.value=''}
 
 async function updateRoute() {
   await router.replace({
@@ -193,6 +230,7 @@ function formatAuthors(value) {
   padding: 16px;
   margin-bottom: 18px;
 }
+.knowledge-tabs{display:flex;gap:1px;margin-bottom:12px;border:1px solid var(--paper-line);background:var(--paper-line)}.knowledge-tabs a{flex:1;padding:11px 15px;background:#fff;color:var(--paper-muted);font-size:12px;font-weight:800;text-align:center;text-decoration:none}.knowledge-tabs a.active{background:var(--paper-teal);color:#fff}.advanced-search{overflow:hidden;margin-bottom:12px}.advanced-heading{display:flex;justify-content:space-between;align-items:center;padding:12px 15px}.advanced-heading div{display:grid;gap:3px}.advanced-heading span{color:var(--paper-muted);font-size:10px}.advanced-heading button{border:0;background:none;color:var(--paper-teal);font-weight:750;cursor:pointer}.advanced-body{display:grid;gap:9px;padding:14px 15px;border-top:1px solid var(--paper-line)}.field-row{display:grid;grid-template-columns:140px 1fr 38px;gap:7px}.field-row select,.field-row input,.advanced-controls select{min-height:38px;border:1px solid var(--paper-line);background:#fff;padding:7px 9px}.field-row button{border:1px solid var(--paper-line);background:#fff;color:var(--paper-muted);font-size:18px}.advanced-controls{display:flex;align-items:end;gap:8px;flex-wrap:wrap}.advanced-controls label{display:grid;gap:4px;color:var(--paper-muted);font-size:10px}.tier-row{display:flex;align-items:center;gap:15px;padding-top:8px;border-top:1px solid var(--paper-line);color:var(--paper-muted);font-size:11px}.tier-row label{display:flex;align-items:center;gap:5px}.vector-hint{margin:0;padding:9px 11px;background:#fff8e6;color:#71510b;font-size:11px}
 
 .literature-search label {
   display: grid;

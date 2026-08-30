@@ -16,27 +16,39 @@
 const route = useRoute()
 
 const items = [
-  { id: 'papers', label: 'Papers', description: 'Corpus', to: '/literature' },
-  { id: 'knowledge', label: 'Knowledge', description: 'Claims', to: '/literature/explore?mode=knowledge' },
-  { id: 'methods', label: 'Methods', description: 'Workflows', to: '/literature/explore?mode=methods' },
-  { id: 'data', label: 'Data', description: 'Metrics', to: '/literature/explore?mode=data' },
-  { id: 'timeline', label: 'Timeline', description: 'Trends', to: '/literature/explore?mode=timeline' },
-  { id: 'graph', label: 'Network', description: 'Relations', to: '/literature/explore?mode=graph' },
-  { id: 'compare', label: 'Compare', description: 'Evidence', to: '/literature/explore?mode=compare' },
-  { id: 'authors', label: 'Scholars', description: 'Profiles', to: '/literature/explore?mode=authors' },
-  { id: 'institutions', label: 'Institutions', description: 'Collaboration', to: '/literature/explore?mode=institutions' },
+  { id: 'dashboard', label: 'Dashboard', description: 'Corpus status', to: '/literature/dashboard' },
+  { id: 'search', label: 'Search & KB', description: 'Papers and evidence', to: '/literature' },
+  { id: 'timeline', label: 'Timeline', description: 'Publication trends', to: '/literature/timeline' },
+  { id: 'graph', label: 'Network', description: 'Relations', to: '/literature/network' },
+  { id: 'compare', label: 'Compare', description: 'Cross-paper metrics', to: '/literature/compare' },
+  { id: 'vector', label: 'Vector DB', description: 'Embeddings', to: '/literature/vector' },
+  { id: 'authors', label: 'Authors', description: 'Scholar profiles', to: '/literature/authors' },
+  { id: 'institutions', label: 'Institutions', description: 'Collaboration', to: '/literature/institutions' },
+  { id: 'workflow', label: 'Workflow', description: 'Processing pipeline', to: '/literature/workflow' },
+  { id: 'quality', label: 'Quality', description: 'Extraction checks', to: '/literature/workflow/quality' },
+  { id: 'settings', label: 'Settings', description: 'Sources and models', to: '/literature/workflow/settings' },
 ]
 
 const activeItem = computed(() => {
-  if (route.path === '/literature') return 'papers'
-  return String(route.query.mode || 'knowledge')
+  if (route.path === '/literature') return 'search'
+  if (route.path === '/literature/dashboard') return 'dashboard'
+  if (route.path === '/literature/timeline') return 'timeline'
+  if (route.path === '/literature/compare') return 'compare'
+  if (route.path === '/literature/vector') return 'vector'
+  if (route.path === '/literature/network') return 'graph'
+  if (route.path.startsWith('/literature/authors')) return 'authors'
+  if (route.path === '/literature/institutions') return 'institutions'
+  if (route.path === '/literature/workflow/quality') return 'quality'
+  if (route.path === '/literature/workflow/settings') return 'settings'
+  if (route.path.startsWith('/literature/workflow')) return 'workflow'
+  return 'search'
 })
 </script>
 
 <style scoped>
 .literature-knowledge-nav {
   display: grid;
-  grid-template-columns: repeat(9, minmax(108px, 1fr));
+  grid-template-columns: repeat(11, minmax(112px, 1fr));
   gap: 1px;
   overflow-x: auto;
   margin: 0 0 18px;
@@ -59,6 +71,6 @@ const activeItem = computed(() => {
 .literature-knowledge-nav a:hover small,
 .literature-knowledge-nav a.active small { color: rgba(255, 255, 255, .76); }
 @media (max-width: 760px) {
-  .literature-knowledge-nav { grid-template-columns: repeat(9, 120px); }
+  .literature-knowledge-nav { grid-template-columns: repeat(11, 126px); }
 }
 </style>
