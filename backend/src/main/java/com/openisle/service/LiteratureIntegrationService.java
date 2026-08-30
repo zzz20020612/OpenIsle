@@ -42,7 +42,7 @@ public class LiteratureIntegrationService {
   private static final Set<String> PUBLIC_PATHS = Set.of(
     "/search", "/aggregate", "/vector/search", "/vector/stats", "/hybrid/search",
     "/graph", "/papers/list", "/data_points/list", "/knowledge/list", "/methods/list",
-    "/timeline", "/compare/metric", "/authors/list", "/institution/network"
+    "/timeline", "/compare/metric", "/authors/list", "/institution/network", "/stats"
   );
 
   private static final Set<String> ADMIN_PATHS = Set.of(
@@ -190,6 +190,14 @@ public class LiteratureIntegrationService {
     boolean authorPath = safePath.matches("/author/[1-9][0-9]*(?:/(?:papers|network))?");
     if (!PUBLIC_PATHS.contains(safePath) && !paperPath && !authorPath) {
       return error(HttpStatus.NOT_FOUND, "LITERATURE_ROUTE_NOT_FOUND", "This literature function is not available on the public API.");
+    }
+    if ("/stats".equals(safePath)) {
+      if (internalToken.isBlank()) {
+        return error(HttpStatus.SERVICE_UNAVAILABLE, "LITERATURE_STATS_NOT_CONFIGURED", "Literature statistics are not configured.");
+      }
+      HttpHeaders headers = new HttpHeaders();
+      headers.set("X-OpenIsle-Internal-Token", internalToken);
+      return exchange(withQuery(baseUrl + safePath, rawQuery), HttpMethod.GET, new HttpEntity<>(headers));
     }
     return getAbsolute(withQuery(baseUrl + safePath, rawQuery));
   }

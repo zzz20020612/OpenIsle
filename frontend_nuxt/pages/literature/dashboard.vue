@@ -23,7 +23,7 @@ const statItems=computed(()=>[
 ].map(([label,key])=>({label,value:key==='coverage'?`${stats.value[key]||0}%`:stats.value[key]||0})))
 const jobs=computed(()=>Array.isArray(stats.value.parse_jobs)?stats.value.parse_jobs:[])
 const format=value=>typeof value==='number'?value.toLocaleString():value
-const load=async()=>{pending.value=true;error.value='';try{stats.value=await $fetch(`${config.public.apiBaseUrl}/api/literature/admin/stats`,{credentials:'include'})}catch(cause){error.value=cause?.data?.message||cause?.message||'Administrator login is required to view processing statistics.'}finally{pending.value=false}}
+const load=async()=>{pending.value=true;error.value='';try{stats.value=await $fetch(`${config.public.apiBaseUrl}/api/literature/explore/stats`)}catch(cause){error.value=cause?.data?.message||cause?.message||'Unable to load literature statistics.'}finally{pending.value=false}}
 onMounted(load)
 </script>
 

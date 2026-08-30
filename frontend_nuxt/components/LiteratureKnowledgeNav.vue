@@ -7,7 +7,6 @@
       :class="{ active: activeItem === item.id }"
     >
       <span>{{ item.label }}</span>
-      <small>{{ item.description }}</small>
     </NuxtLink>
   </nav>
 </template>
@@ -56,20 +55,18 @@ const activeItem = computed(() => {
   background: var(--paper-line);
 }
 .literature-knowledge-nav a {
-  display: grid;
-  gap: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-width: 108px;
-  padding: 12px 13px;
+  padding: 13px 10px;
   background: var(--paper-panel);
   color: var(--paper-ink);
   text-decoration: none;
 }
 .literature-knowledge-nav span { font-size: 12px; font-weight: 800; }
-.literature-knowledge-nav small { color: var(--paper-muted); font-size: 10px; }
 .literature-knowledge-nav a:hover,
 .literature-knowledge-nav a.active { background: var(--paper-teal); color: #fff; }
-.literature-knowledge-nav a:hover small,
-.literature-knowledge-nav a.active small { color: rgba(255, 255, 255, .76); }
 @media (max-width: 760px) {
   .literature-knowledge-nav { grid-template-columns: repeat(11, 126px); }
 }

@@ -2,6 +2,7 @@ package com.openisle.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,5 +55,27 @@ class LiteratureIntegrationServiceTest {
 
     assertThat(response.status()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
     assertThat(response.body().path("code").asText()).isEqualTo("LITERATURE_SERVICE_UNAVAILABLE");
+  }
+
+  @Test
+  void publicStatsUsesTheInternalEngineCredential() {
+    RestTemplate restTemplate = new RestTemplate();
+    MockRestServiceServer server = MockRestServiceServer.createServer(restTemplate);
+    LiteratureIntegrationService service = new LiteratureIntegrationService(
+      "http://literature.test",
+      restTemplate,
+      objectMapper,
+      "internal-test-token"
+    );
+
+    server.expect(requestTo("http://literature.test/stats"))
+      .andExpect(header("X-OpenIsle-Internal-Token", "internal-test-token"))
+      .andRespond(withSuccess("{\"total_papers\":75}", MediaType.APPLICATION_JSON));
+
+    var response = service.publicGet("/stats", null);
+
+    assertThat(response.status()).isEqualTo(HttpStatus.OK);
+    assertThat(response.body().path("total_papers").asInt()).isEqualTo(75);
+    server.verify();
   }
 }
