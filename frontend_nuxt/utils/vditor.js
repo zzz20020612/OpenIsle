@@ -1,7 +1,6 @@
 import Vditor from 'vditor'
 import { getToken, authState } from './auth'
 import { searchUsers, fetchFollowings, fetchAdmins } from './user'
-import { tiebaEmoji } from './tiebaEmoji'
 import vditorPostCitation from './vditorPostCitation.js'
 import { checkFileSize, formatFileSize } from './videoCompressor.js'
 
@@ -38,9 +37,8 @@ export function createVditor(editorId, options = {}) {
 
   const isMobile = window.innerWidth <= 768
   const toolbar = isMobile
-    ? ['emoji', 'upload']
+    ? ['upload']
     : [
-        'emoji',
         'bold',
         'italic',
         'strike',
@@ -70,7 +68,6 @@ export function createVditor(editorId, options = {}) {
       preview,
     ),
     hint: {
-      emoji: tiebaEmoji,
       extend: [
         {
           key: '@',
