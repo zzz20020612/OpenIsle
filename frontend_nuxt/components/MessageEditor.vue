@@ -6,10 +6,10 @@
     <div class="message-bottom-container">
       <div class="message-submit" :class="{ disabled: isDisabled }" @click="submit">
         <template v-if="!loading">
-          发送
+          Send
           <span class="shortcut-icon" v-if="!isMobile"> {{ isMac ? '⌘' : 'Ctrl' }} ⏎ </span>
         </template>
-        <template v-else> <loading-four class="loading-icon" /> 发送中... </template>
+        <template v-else> <loading-four class="loading-icon" /> Sending... </template>
       </div>
     </div>
   </div>
@@ -75,7 +75,7 @@ export default {
 
     onMounted(() => {
       vditorInstance.value = createVditor(editorId.value, {
-        placeholder: '输入消息...',
+        placeholder: 'Write a message...',
         preview: {
           actions: [],
           markdown: { toc: false },

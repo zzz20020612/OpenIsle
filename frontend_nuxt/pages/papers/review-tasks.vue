@@ -3,7 +3,7 @@
     <div class="paper-container review-workspace">
       <header class="paper-workspace-header">
         <div>
-          <div class="paper-page-eyebrow">Scholar衡 reviewer workspace</div>
+          <div class="paper-page-eyebrow">ScholarHeng reviewer workspace</div>
           <h1 class="paper-page-title">Review Tasks</h1>
           <p class="paper-page-description">Claim a complete literature record, declare conflicts, and finish its six-dimensional evaluation within seven days.</p>
         </div>
@@ -13,7 +13,7 @@
       <section class="review-profile" aria-label="Reviewer profile">
         <div><span>Reviewer level</span><strong>{{ profile.level || 'B' }}</strong><small>{{ profile.eligible === false ? 'Qualification paused' : 'Eligible to review' }}</small></div>
         <div><span>Points</span><strong>{{ profile.points || 0 }}</strong><small>Earned from completed tasks</small></div>
-        <div><span>Credit</span><strong>{{ Number(profile.creditScore || 75).toFixed(0) }}</strong><small>Scholar衡 credit score</small></div>
+        <div><span>Credit</span><strong>{{ Number(profile.creditScore || 75).toFixed(0) }}</strong><small>ScholarHeng credit score</small></div>
         <div><span>Completed</span><strong>{{ profile.completedTasks || 0 }}</strong><small>{{ profile.onTimeRate || 0 }}% on time</small></div>
       </section>
 

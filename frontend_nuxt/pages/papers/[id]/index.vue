@@ -300,7 +300,7 @@
           <section class="paper-card paper-evaluation-card">
             <div class="paper-card-heading">
               <h3 class="paper-section-title">Human Evaluation</h3>
-              <span class="paper-mini-label">Scholar衡 integration</span>
+              <span class="paper-mini-label">ScholarHeng integration</span>
             </div>
             <p class="paper-section-note">
               The previous submission-paper rating form is paused. Six-dimensional human evaluation now

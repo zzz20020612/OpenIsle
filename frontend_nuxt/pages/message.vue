@@ -131,18 +131,6 @@
                       </span>
                     </NotificationContainer>
                   </template>
-                  <template v-else-if="item.type === 'ACTIVITY_REDEEM' && !item.parentComment">
-                    <NotificationContainer :item="item" :markRead="markRead">
-                      <span class="notif-user">{{ item.fromUser.username }} </span>
-                      requested a reward redemption. Contact: {{ item.content }}
-                    </NotificationContainer>
-                  </template>
-                  <template v-else-if="item.type === 'POINT_REDEEM' && !item.parentComment">
-                    <NotificationContainer :item="item" :markRead="markRead">
-                      <span class="notif-user">{{ item.fromUser.username }} </span>
-                      requested a points redemption. Contact: {{ item.content }}
-                    </NotificationContainer>
-                  </template>
                   <template v-else-if="item.type === 'REACTION' && item.post && !item.comment">
                     <NotificationContainer :item="item" :markRead="markRead">
                       <span class="notif-user">{{ item.fromUser.username }} </span> reacted to my post
@@ -198,102 +186,6 @@
                       >
                         {{ stripMarkdownLength(item.post.title, 100) }}
                       </NuxtLink>
-                    </NotificationContainer>
-                  </template>
-                  <template v-else-if="item.type === 'LOTTERY_WIN'">
-                    <NotificationContainer :item="item" :markRead="markRead">
-                      Congratulations, you won in
-                      <NuxtLink
-                        class="notif-content-text"
-                        @click="markRead(item.id)"
-                        :to="resolveContentPath(item.post)"
-                      >
-                        {{ stripMarkdownLength(item.post.title, 100) }}
-                      </NuxtLink>
-
-                    </NotificationContainer>
-                  </template>
-                  <template v-else-if="item.type === 'LOTTERY_DRAW'">
-                    <NotificationContainer :item="item" :markRead="markRead">
-                      Your lottery post
-                      <NuxtLink
-                        class="notif-content-text"
-                        @click="markRead(item.id)"
-                        :to="resolveContentPath(item.post)"
-                      >
-                        {{ stripMarkdownLength(item.post.title, 100) }}
-                      </NuxtLink>
-                      has been drawn
-                    </NotificationContainer>
-                  </template>
-                  <template v-else-if="item.type === 'POLL_VOTE'">
-                    <NotificationContainer :item="item" :markRead="markRead">
-                      Someone voted in your poll
-                      <NuxtLink
-                        class="notif-content-text"
-                        @click="markRead(item.id)"
-                        :to="resolveContentPath(item.post)"
-                      >
-                        {{ stripMarkdownLength(item.post.title, 100) }}
-                      </NuxtLink>
-                    </NotificationContainer>
-                  </template>
-                  <template v-else-if="item.type === 'POLL_RESULT_OWNER'">
-                    <NotificationContainer :item="item" :markRead="markRead">
-                      Your poll
-                      <NuxtLink
-                        class="notif-content-text"
-                        @click="markRead(item.id)"
-                        :to="resolveContentPath(item.post)"
-                      >
-                        {{ stripMarkdownLength(item.post.title, 100) }}
-                      </NuxtLink>
-                      has results
-                    </NotificationContainer>
-                  </template>
-                  <template v-else-if="item.type === 'POLL_RESULT_PARTICIPANT'">
-                    <NotificationContainer :item="item" :markRead="markRead">
-                      A poll you joined
-                      <NuxtLink
-                        class="notif-content-text"
-                        @click="markRead(item.id)"
-                        :to="resolveContentPath(item.post)"
-                      >
-                        {{ stripMarkdownLength(item.post.title, 100) }}
-                      </NuxtLink>
-                      has results
-                    </NotificationContainer>
-                  </template>
-                  <template v-else-if="item.type === 'CATEGORY_PROPOSAL_RESULT_OWNER'">
-                    <NotificationContainer :item="item" :markRead="markRead">
-                      Your category proposal
-                      <NuxtLink
-                        class="notif-content-text"
-                        @click="markRead(item.id)"
-                        :to="resolveContentPath(item.post)"
-                      >
-                        {{ stripMarkdownLength(item.post.title, 100) }}
-                      </NuxtLink>
-                      <span v-if="item.approved">was approved</span>
-                      <span v-else>
-                        was rejected<span v-if="item.content">. Reason: {{ item.content }}</span>
-                      </span>
-                    </NotificationContainer>
-                  </template>
-                  <template v-else-if="item.type === 'CATEGORY_PROPOSAL_RESULT_PARTICIPANT'">
-                    <NotificationContainer :item="item" :markRead="markRead">
-                      A category proposal you joined
-                      <NuxtLink
-                        class="notif-content-text"
-                        @click="markRead(item.id)"
-                        :to="resolveContentPath(item.post)"
-                      >
-                        {{ stripMarkdownLength(item.post.title, 100) }}
-                      </NuxtLink>
-                      <span v-if="item.approved">was approved</span>
-                      <span v-else>
-                        was rejected<span v-if="item.content">. Reason: {{ item.content }}</span>
-                      </span>
                     </NotificationContainer>
                   </template>
                   <template v-else-if="item.type === 'POST_UPDATED'">
@@ -589,27 +481,6 @@
                       was featured
                     </NotificationContainer>
                   </template>
-                  <template v-else-if="item.type === 'DONATION'">
-                    <NotificationContainer :item="item" :markRead="markRead">
-                      <NuxtLink
-                        class="notif-content-text"
-                        @click="markRead(item.id)"
-                        :to="`/users/${item.fromUser.id}`"
-                      >
-                        {{ item.fromUser.username }}
-                      </NuxtLink>
-                      donated to you on
-                      <NuxtLink
-                        class="notif-content-text"
-                        @click="markRead(item.id)"
-                        :to="resolveContentPath(item.post)"
-                      >
-                        {{ stripMarkdownLength(item.post.title, 100) }}
-                      </NuxtLink>
-
-                      <template v-if="item.content">. You received {{ item.content }} points.</template>
-                    </NotificationContainer>
-                  </template>
                   <template v-else-if="item.type === 'POST_DELETED'">
                     <NotificationContainer :item="item" :markRead="markRead">
                       An administrator
@@ -657,7 +528,7 @@ import { authState, getToken } from '~/utils/auth'
 import { stripMarkdownWithTiebaMoji } from '~/utils/markdown'
 import { resolveCommentPath, resolveContentPath } from '~/utils/contentRoutes'
 import {
-  fetchNotifications,
+  fetchNotifications as fetchNotificationsRaw,
   fetchUnreadCount,
   isLoadingMessage,
   markNotificationRead,
@@ -688,6 +559,30 @@ const emailPrefs = ref([])
 const page = ref(0)
 const pageSize = 30
 
+const legacyNotificationTypes = new Set([
+  'ACTIVITY_REDEEM',
+  'POINT_REDEEM',
+  'DONATION',
+  'LOTTERY_WIN',
+  'LOTTERY_DRAW',
+  'POLL_VOTE',
+  'POLL_RESULT_OWNER',
+  'POLL_RESULT_PARTICIPANT',
+  'CATEGORY_PROPOSAL_RESULT_OWNER',
+  'CATEGORY_PROPOSAL_RESULT_PARTICIPANT',
+])
+
+const removeLegacyNotifications = () => {
+  notifications.value = notifications.value.filter(
+    (notification) => !legacyNotificationTypes.has(notification.type),
+  )
+}
+
+const fetchNotifications = async (options) => {
+  await fetchNotificationsRaw(options)
+  removeLegacyNotifications()
+}
+
 const loadMore = async () => {
   if (!hasMore.value) return true
   page.value++
@@ -706,11 +601,15 @@ watch(selectedTab, async (tab) => {
 })
 
 const fetchPrefs = async () => {
-  notificationPrefs.value = await fetchNotificationPreferences()
+  notificationPrefs.value = (await fetchNotificationPreferences()).filter(
+    (pref) => !legacyNotificationTypes.has(pref.type),
+  )
 }
 
 const fetchEmailPrefs = async () => {
-  emailPrefs.value = await fetchEmailNotificationPreferences()
+  emailPrefs.value = (await fetchEmailNotificationPreferences()).filter(
+    (pref) => !legacyNotificationTypes.has(pref.type),
+  )
 }
 
 const togglePref = async (pref, value) => {
@@ -805,30 +704,10 @@ const formatType = (t) => {
       return 'Mention'
     case 'REGISTER_REQUEST':
       return 'Membership request'
-    case 'ACTIVITY_REDEEM':
-      return 'Reward redemption request'
-    case 'POINT_REDEEM':
-      return 'Points redemption request'
-    case 'DONATION':
-      return 'Donation received'
-    case 'LOTTERY_WIN':
-      return 'Lottery win'
-    case 'LOTTERY_DRAW':
-      return 'Lottery result'
     case 'POST_DELETED':
       return 'Post deleted'
     case 'POST_FEATURED':
       return 'Post featured'
-    case 'POLL_VOTE':
-      return 'Poll participation'
-    case 'POLL_RESULT_OWNER':
-      return 'Your poll result published'
-    case 'POLL_RESULT_PARTICIPANT':
-      return 'Joined poll result published'
-    case 'CATEGORY_PROPOSAL_RESULT_OWNER':
-      return 'Category proposal result'
-    case 'CATEGORY_PROPOSAL_RESULT_PARTICIPANT':
-      return 'Joined category proposal result'
     default:
       return t
   }
@@ -839,8 +718,6 @@ const isAdmin = computed(() => authState.role === 'ADMIN')
 const needAdminSet = new Set([
   'POST_REVIEW_REQUEST',
   'REGISTER_REQUEST',
-  'POINT_REDEEM',
-  'ACTIVITY_REDEEM',
 ])
 
 const canShowNotification = (type) => {

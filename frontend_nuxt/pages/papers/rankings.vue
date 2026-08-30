@@ -4,9 +4,9 @@
       <header class="paper-workspace-header">
         <div>
           <div class="paper-page-eyebrow">Rankings</div>
-          <h1 class="paper-page-title">Scholar衡 evaluation rankings</h1>
+          <h1 class="paper-page-title">ScholarHeng evaluation rankings</h1>
           <p class="paper-page-description">
-            Formal Scholar衡 rankings use weighted six-dimensional evaluations. Papers remain outside
+            Formal ScholarHeng rankings use weighted six-dimensional evaluations. Papers remain outside
             this table until the minimum reviewer, effective-sample, and institution-diversity thresholds are met.
           </p>
         </div>

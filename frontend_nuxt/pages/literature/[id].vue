@@ -27,8 +27,8 @@
             <span v-if="paper.citation_count != null" class="paper-pill">
               {{ paper.citation_count }} citations
             </span>
-            <a v-if="paper.doi" class="paper-pill literature-doi" :href="doiUrl" target="_blank" rel="noopener">
-              DOI {{ paper.doi }}
+            <a v-if="normalizedDoi" class="paper-pill literature-doi" :href="doiUrl" target="_blank" rel="noopener">
+              DOI {{ normalizedDoi }}
             </a>
             <a v-if="paper.pdf_available" class="paper-pill literature-doi" :href="pdfViewUrl" target="_blank" rel="noopener">View open PDF</a>
             <button v-if="paper.pdf_available && clientReady && authState.loggedIn" class="paper-pill literature-doi" type="button" @click="downloadPdf">Download PDF</button>
@@ -382,7 +382,12 @@ const completenessExplanation = computed(() => ({
   incomplete: 'Some required content is missing or too short for a reliable demonstration.',
   terminal: 'The source cannot currently be processed automatically, for example because no open PDF is available.',
 })[paper.value?.completeness?.state] || 'The completeness audit has not run for this record.')
-const doiUrl = computed(() => `https://doi.org/${paper.value?.doi || ''}`)
+const normalizedDoi = computed(() => {
+  const value = String(paper.value?.doi || '').trim()
+  if (!/^10\.\d{4,9}\/\S+$/i.test(value)) return ''
+  return value
+})
+const doiUrl = computed(() => normalizedDoi.value ? `https://doi.org/${normalizedDoi.value}` : '')
 const pdfViewUrl = computed(() => `${runtimeConfig.public.apiBaseUrl}/api/literature/papers/${paperId.value}/pdf`)
 const downloadPdf = async () => {
   const response = await fetch(`${runtimeConfig.public.apiBaseUrl}/api/literature/papers/${paperId.value}/pdf/download`, { headers: { Authorization: `Bearer ${getToken()}` } })
