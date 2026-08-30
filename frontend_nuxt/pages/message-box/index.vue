@@ -132,6 +132,8 @@ import BasePlaceholder from '~/components/BasePlaceholder.vue'
 import BaseTabs from '~/components/BaseTabs.vue'
 import BaseUserAvatar from '~/components/BaseUserAvatar.vue'
 
+useHead({ title: 'Messages - OpenIsle' })
+
 const config = useRuntimeConfig()
 const conversations = ref([])
 const loading = ref(true)

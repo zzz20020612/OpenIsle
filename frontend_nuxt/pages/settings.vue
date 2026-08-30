@@ -80,6 +80,9 @@ import BaseUserAvatar from '~/components/BaseUserAvatar.vue'
 import { toast } from '~/main'
 import { fetchCurrentUser, getToken, setToken } from '~/utils/auth'
 import { frostedState, setFrosted } from '~/utils/frosted'
+
+useHead({ title: 'Settings - OpenIsle' })
+
 const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
 const username = ref('')

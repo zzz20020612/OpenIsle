@@ -541,6 +541,8 @@ import {
   updateEmailNotificationPreference,
 } from '~/utils/notification'
 import TimeManager from '~/utils/time'
+
+useHead({ title: 'Notifications - OpenIsle' })
 import BaseSwitch from '~/components/BaseSwitch.vue'
 
 const config = useRuntimeConfig()
