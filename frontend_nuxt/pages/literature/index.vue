@@ -17,6 +17,8 @@
         </div>
       </header>
 
+      <LiteratureKnowledgeNav />
+
       <form class="literature-search paper-panel" @submit.prevent="applySearch">
         <label>
           <span>Search title, abstract, or journal</span>
@@ -103,6 +105,7 @@
 
 <script setup>
 import '~/assets/paper-platform.css'
+import LiteratureKnowledgeNav from '~/components/LiteratureKnowledgeNav.vue'
 
 const route = useRoute()
 const router = useRouter()

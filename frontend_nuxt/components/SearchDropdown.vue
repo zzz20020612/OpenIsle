@@ -17,7 +17,7 @@
           <input
             class="text-input"
             v-model="keyword"
-            placeholder="Search papers, posts, people... Press /"
+            placeholder="Search papers, literature, and scholars… Press /"
             ref="searchInput"
             @input="setSearch(keyword)"
           />
