@@ -239,8 +239,8 @@
               <div>
                 <h2 class="paper-block-title">Reader Discussion</h2>
                 <p class="paper-section-note">
-                  Comments, replies, reactions, and notifications are powered by this paper's
-                  linked OpenIsle post.
+                  Comments, replies, reactions, and notifications are stored in this paper's
+                  OpenIsle discussion record.
                 </p>
               </div>
               <div class="paper-discussion-actions">

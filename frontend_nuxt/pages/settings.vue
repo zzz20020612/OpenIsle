@@ -55,7 +55,7 @@
         <h2>Administration defaults</h2>
         <p class="admin-description">Platform-wide account and publishing rules. Changes apply to all users.</p>
         <div class="form-row dropdown-row">
-          <div class="setting-title">Community post publishing</div>
+          <div class="setting-title">Research discussion publishing</div>
           <Dropdown v-model="publishMode" :fetch-options="fetchPublishModes" />
         </div>
         <div class="form-row dropdown-row">

@@ -361,7 +361,7 @@ const scoreStatusLabel = computed(() => ({
   INITIAL: 'Initial distribution',
   PROVISIONAL: 'Provisional score',
   FORMAL: 'Formal score',
-})[score.value.rankingStatus] || 'Community evaluation')
+})[score.value.rankingStatus] || 'Research evaluation')
 const publicationYear = computed(() => {
   const date = paper.value?.published_date
   return date ? String(date).slice(0, 4) : ''

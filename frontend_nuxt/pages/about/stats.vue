@@ -1,7 +1,7 @@
 <template>
   <main class="site-stats-page">
     <header class="stats-header">
-      <div><p>ADMINISTRATION</p><h1>Platform activity</h1><span>Thirty-day operational overview for the OpenIsle trial programme.</span></div>
+      <div><p>ADMINISTRATION</p><h1>Research platform activity</h1><span>Thirty-day operational overview for the OpenIsle trial programme.</span></div>
       <NuxtLink to="/admin/papers">Return to administration</NuxtLink>
     </header>
     <div v-if="isLoading" class="loading-message">
@@ -44,7 +44,7 @@ import { onMounted, ref } from 'vue'
 import { getToken } from '~/utils/auth'
 import { authState, loadCurrentUser } from '~/utils/auth'
 definePageMeta({ middleware: 'auth-client' })
-useHead({ title: 'Platform Activity - OpenIsle Administration' })
+useHead({ title: 'Research Platform Activity - OpenIsle Administration' })
 const config = useRuntimeConfig()
 const API_BASE_URL = config.public.apiBaseUrl
 
