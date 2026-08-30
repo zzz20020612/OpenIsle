@@ -4,7 +4,6 @@
   --primary-color-disabled: rgba(93, 152, 156, 0.5);
   --secondary-color: rgb(255, 255, 255);
   --secondary-color-hover: rgba(10, 111, 120, 0.079);
-  --new-post-icon-color: rgba(10, 111, 120, 0.598);
   --header-height: 189px;
   --header-background-color: white;
   --header-border-color: lightgray;
@@ -38,7 +37,6 @@
   --page-max-width-mobile: 900px;
   --article-info-background-color: #f0f0f0;
   --activity-card-background-color: #fafafa;
-  --poll-option-button-background-color: rgb(218, 218, 218);
   --telegram-bg: #caedff74;
   --telegram-bg-hover: #67a2c088;
   --twitter-bg: rgb(68, 68, 68);
@@ -54,7 +52,6 @@
   --primary-color: rgb(17, 182, 197);
   --primary-color-hover: rgb(13, 137, 151);
   --secondary-color-hover: rgba(17, 182, 197, 0.238);
-  --new-post-icon-color: rgba(10, 111, 120, 0.598);
   --header-text-color: white;
   --app-menu-background-color: #333;
   --background-color: #333;
@@ -75,7 +72,6 @@
   --blockquote-text-color: #999;
   --article-info-background-color: #747373;
   --activity-card-background-color: #585858;
-  --poll-option-button-background-color: #3a3a3a;
 }
 
 :root[data-frosted='off'] {

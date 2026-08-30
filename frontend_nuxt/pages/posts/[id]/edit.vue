@@ -4,7 +4,7 @@
       <div class="edit-eyebrow">DISCUSSION EDITOR</div>
       <input class="post-title-input" v-model="title" placeholder="Discussion title" />
       <div class="post-editor-container">
-        <PostEditor v-model="content" :loading="isAiLoading" :disabled="!isLogin" />
+        <PostEditor v-model="content" :disabled="!isLogin" />
         <LoginOverlay v-if="!isLogin" />
       </div>
       <div class="post-options">
@@ -15,10 +15,6 @@
         </div>
         <div class="post-options-right">
           <div class="post-clear" @click="clearPost"><clear-icon /> Clear</div>
-          <div class="ai-generate" @click="aiGenerate">
-            <smart-optimization />
-            Improve Markdown
-          </div>
           <div class="post-cancel" @click="cancelEdit">Cancel</div>
           <div
             v-if="!isWaitingPosting"
@@ -56,7 +52,6 @@ const selectedCategory = ref('')
 const selectedTags = ref([])
 const selectedVisibleScope = ref('ALL')
 const isWaitingPosting = ref(false)
-const isAiLoading = ref(false)
 const isLogin = computed(() => authState.loggedIn)
 
 const route = useRoute()
@@ -118,38 +113,6 @@ const ensureTags = async (token) => {
         throw new Error('create tag failed')
       }
     }
-  }
-}
-
-const aiGenerate = async () => {
-  if (!content.value.trim()) {
-    toast.error('Add content before using Markdown formatting.')
-    return
-  }
-  isAiLoading.value = true
-  try {
-    toast.info('Improving Markdown formatting…')
-    const token = getToken()
-    const res = await fetch(`${API_BASE_URL}/api/ai/format`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ text: content.value }),
-    })
-    if (res.ok) {
-      const data = await res.json()
-      content.value = data.content || ''
-    } else if (res.status === 429) {
-      toast.error('Your daily AI formatting allowance has been used.')
-    } else {
-      toast.error('AI formatting could not be completed.')
-    }
-  } catch (e) {
-    toast.error('AI formatting could not be completed.')
-  } finally {
-    isAiLoading.value = false
   }
 }
 
@@ -240,15 +203,6 @@ const cancelEdit = () => {
 }
 
 .post-cancel:hover {
-  text-decoration: underline;
-}
-
-.ai-generate {
-  color: var(--primary-color);
-  cursor: pointer;
-}
-
-.ai-generate:hover {
   text-decoration: underline;
 }
 

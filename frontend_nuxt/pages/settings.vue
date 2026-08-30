@@ -53,18 +53,10 @@
       </div>
       <div v-if="role === 'ADMIN'" class="admin-section">
         <h2>Administration defaults</h2>
-        <p class="admin-description">Platform-wide account and publishing rules. Changes apply to all users.</p>
-        <div class="form-row dropdown-row">
-          <div class="setting-title">Research discussion publishing</div>
-          <Dropdown v-model="publishMode" :fetch-options="fetchPublishModes" />
-        </div>
+        <p class="admin-description">Platform-wide identity and access rules. Changes apply to all users.</p>
         <div class="form-row dropdown-row">
           <div class="setting-title">Password policy</div>
           <Dropdown v-model="passwordStrength" :fetch-options="fetchPasswordStrengths" />
-        </div>
-        <div class="form-row dropdown-row">
-          <div class="setting-title">AI formatting limit</div>
-          <Dropdown v-model="aiFormatLimit" :fetch-options="fetchAiLimits" />
         </div>
         <div class="form-row dropdown-row">
           <div class="setting-title">Account registration</div>
@@ -144,25 +136,11 @@ const onCropped = ({ file, url }) => {
   avatarFile.value = file
   avatar.value = url
 }
-const fetchPublishModes = () => {
-  return Promise.resolve([
-    { id: 'DIRECT', name: 'Publish directly', icon: 'send-icon' },
-    { id: 'REVIEW', name: 'Require moderation', icon: 'search-icon' },
-  ])
-}
 const fetchPasswordStrengths = () => {
   return Promise.resolve([
     { id: 'LOW', name: 'Basic', icon: 'unlock' },
     { id: 'MEDIUM', name: 'Standard', icon: 'lock-one' },
     { id: 'HIGH', name: 'Strong', icon: 'lock' },
-  ])
-}
-const fetchAiLimits = () => {
-  return Promise.resolve([
-    { id: 3, name: '3 uses' },
-    { id: 5, name: '5 uses' },
-    { id: 10, name: '10 uses' },
-    { id: -1, name: 'Unlimited' },
   ])
 }
 const fetchRegisterModes = () => {
