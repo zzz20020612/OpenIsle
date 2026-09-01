@@ -117,7 +117,7 @@ const translations = {
 }
 
 const ensureGraphRenderer = async () => {
-  window.Utils = window.Utils || {
+  window.Utils = { ...(window.Utils || {}),
     truncate: (value, length) => String(value || '').length > length ? `${String(value || '').slice(0, length)}…` : String(value || ''),
     escapeHtml: (value) => String(value || '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]),
   }
