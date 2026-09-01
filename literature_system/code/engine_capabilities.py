@@ -86,8 +86,15 @@ def get_engine_capabilities() -> Dict[str, Any]:
         "scopus": {"configured": bool(config.SCOPUS_API_KEYS), "requires_key": True},
     }
 
-    missing_required = [name for name, available in dependencies.items() if not available]
+    # sqlite-vec only affects semantic/vector retrieval. The ordinary corpus,
+    # PDF, extraction, keyword-search and graph workflows remain operational
+    # through SQLite and the NumPy fallback, so it must not mark the complete
+    # non-vector runtime as unavailable.
+    core_dependencies = ("requests", "dotenv", "pymupdf", "numpy", "html2text")
+    missing_required = [name for name in core_dependencies if not dependencies[name]]
     missing_full_restore = list(missing_required)
+    if not dependencies["sqlite_vec"]:
+        missing_full_restore.append("sqlite_vec")
     if not parsers["mineru_api"]["configured"]:
         missing_full_restore.append("MINERU_API_KEY")
     if not models["llm"]["configured"]:

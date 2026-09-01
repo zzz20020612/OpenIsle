@@ -1,4 +1,158 @@
-<template><main class="paper-shell"><div class="paper-container admin-container"><header class="paper-workspace-header"><div><div class="paper-page-eyebrow">Knowledge Base / Administration</div><h1 class="paper-page-title">Author governance</h1><p class="paper-page-description">Find author records, compare likely duplicates, and merge them into one canonical identity.</p></div></header><LiteratureAdminNav/><p v-if="message" class="admin-notice" :class="{error}">{{message}}</p><section class="paper-panel admin-card"><h2>Find author records</h2><form class="author-search" @submit.prevent="search"><input v-model="query" placeholder="Author name"/><button class="admin-action">Search</button></form><div v-if="authors.length" class="table-wrap"><table><thead><tr><th></th><th>ID</th><th>Name</th><th>Affiliation</th><th>Papers</th></tr></thead><tbody><tr v-for="author in authors" :key="author.id"><td><input v-model="selected" type="checkbox" :value="Number(author.id)"/></td><td>{{author.id}}</td><td>{{author.full_name||author.name}}</td><td>{{author.affiliation||author.institution||'—'}}</td><td>{{author.paper_count??'—'}}</td></tr></tbody></table></div><div v-else class="empty">Search for the duplicate author records you want to compare.</div></section><section class="paper-panel admin-card"><h2>Merge selected records</h2><p>Select at least two authors. Choose the canonical record to retain; paper relationships are moved from the duplicate records.</p><label>Canonical author<select v-model.number="primary"><option :value="0">Select canonical record</option><option v-for="id in selected" :key="id" :value="id">Author {{id}}</option></select></label><button class="admin-action" :disabled="selected.length<2||!primary||busy" @click="merge">{{busy?'Merging…':'Merge duplicate authors'}}</button></section></div></main></template>
+<template>
+  <main class="paper-shell">
+    <div class="paper-container admin-container">
+      <header class="paper-workspace-header">
+        <div>
+          <div class="paper-page-eyebrow">Knowledge Base / Administration</div>
+          <h1 class="paper-page-title">Author governance</h1>
+          <p class="paper-page-description">
+            Find author records, compare likely duplicates, and merge them into one canonical
+            identity.
+          </p>
+        </div>
+      </header>
+      <LiteratureKnowledgeNav />
+      <LiteratureAdminNav />
+      <p v-if="message" class="admin-notice" :class="{ error }">{{ message }}</p>
+      <section class="paper-panel admin-card">
+        <h2>Find author records</h2>
+        <form class="author-search" @submit.prevent="search">
+          <input v-model="query" placeholder="Author name" /><button class="admin-action">
+            Search
+          </button>
+        </form>
+        <div v-if="authors.length" class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Affiliation</th>
+                <th>Papers</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="author in authors" :key="author.id">
+                <td><input v-model="selected" type="checkbox" :value="Number(author.id)" /></td>
+                <td>{{ author.id }}</td>
+                <td>{{ author.full_name || author.name }}</td>
+                <td>{{ author.affiliation || author.institution || '—' }}</td>
+                <td>{{ author.paper_count ?? '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div v-else class="empty">Search for the duplicate author records you want to compare.</div>
+      </section>
+      <section class="paper-panel admin-card">
+        <h2>Merge selected records</h2>
+        <p>
+          Select at least two authors. Choose the canonical record to retain; paper relationships
+          are moved from the duplicate records.
+        </p>
+        <label
+          >Canonical author<select v-model.number="primary">
+            <option :value="0">Select canonical record</option>
+            <option v-for="id in selected" :key="id" :value="id">Author {{ id }}</option>
+          </select></label
+        ><button
+          class="admin-action"
+          :disabled="selected.length < 2 || !primary || busy"
+          @click="merge"
+        >
+          {{ busy ? 'Merging…' : 'Merge duplicate authors' }}
+        </button>
+      </section>
+    </div>
+  </main>
+</template>
 <script setup>
-import '~/assets/paper-platform.css';import {authState,loadCurrentUser} from '~/utils/auth';definePageMeta({middleware:'auth-client'});useHead({title:'Author Governance - OpenIsle'});const config=useRuntimeConfig(),api=useLiteratureAdmin(),query=ref(''),authors=ref([]),selected=ref([]),primary=ref(0),busy=ref(false),message=ref(''),error=ref(false);const headers=()=>({Authorization:`Bearer ${localStorage.getItem('token')||''}`});const ensure=async()=>{if(!authState.role)await loadCurrentUser();if(authState.role!=='ADMIN')return navigateTo('/literature/workflow')};const search=async()=>{try{const result=await $fetch(`${config.public.apiBaseUrl}/api/literature/explore/authors/list`,{params:{q:query.value,limit:100}});authors.value=result.authors||result.items||[]}catch(e){error.value=true;message.value=e?.data?.message||e.message}};const merge=async()=>{busy.value=true;error.value=false;message.value='';try{const duplicate_ids=selected.value.filter(id=>id!==primary.value);const result=await api.post('/authors/merge',{primary_id:primary.value,duplicate_ids});message.value=`Author records merged. ${result.updated_links??result.merged??duplicate_ids.length} duplicate records processed.`;selected.value=[];primary.value=0;await search()}catch(e){error.value=true;message.value=e?.data?.message||e.message}finally{busy.value=false}};watch(selected,v=>{if(!v.includes(primary.value))primary.value=v[0]||0});onMounted(ensure)
-</script><style scoped src="~/assets/literature-admin.css"></style><style scoped>.author-search{display:flex;gap:10px}.author-search input,.admin-card select{min-height:39px;border:1px solid var(--paper-line);padding:8px;background:#fff}.author-search input{flex:1}.admin-card label{display:grid;gap:5px;max-width:400px;margin:15px 0;color:var(--paper-muted);font-size:12px;font-weight:750}</style>
+import '~/assets/paper-platform.css'
+import { authState, loadCurrentUser } from '~/utils/auth'
+definePageMeta({ middleware: 'auth-client' })
+useHead({ title: 'Author Governance - OpenIsle' })
+const config = useRuntimeConfig(),
+  api = useLiteratureAdmin(),
+  query = ref(''),
+  authors = ref([]),
+  selected = ref([]),
+  primary = ref(0),
+  busy = ref(false),
+  message = ref(''),
+  error = ref(false)
+const ensure = async () => {
+  if (!authState.role) await loadCurrentUser()
+  if (authState.role !== 'ADMIN') return navigateTo('/literature/workflow')
+}
+const search = async () => {
+  try {
+    const result = await $fetch(`${config.public.apiBaseUrl}/api/literature/explore/authors/list`, {
+      params: { q: query.value, limit: 100 },
+    })
+    authors.value = result.authors || result.items || []
+  } catch (e) {
+    error.value = true
+    message.value = e?.data?.message || e.message
+  }
+}
+const merge = async () => {
+  const duplicate_ids = selected.value.filter((id) => id !== primary.value)
+  if (!primary.value || !duplicate_ids.length) {
+    error.value = true
+    message.value = 'Select a primary author and at least one duplicate record.'
+    return
+  }
+  if (
+    !window.confirm(
+      `Merge ${duplicate_ids.length} duplicate record(s) into author ID ${primary.value}?\n\nPaper links will be transferred and duplicate records deleted. This cannot be undone.`,
+    )
+  )
+    return
+  busy.value = true
+  error.value = false
+  message.value = ''
+  try {
+    const result = await api.post('/authors/merge', { primary_id: primary.value, duplicate_ids })
+    message.value = `Author records merged. ${result.updated_links ?? result.merged ?? duplicate_ids.length} duplicate records processed.`
+    selected.value = []
+    primary.value = 0
+    await search()
+  } catch (e) {
+    error.value = true
+    message.value = e?.data?.message || e.message
+  } finally {
+    busy.value = false
+  }
+}
+watch(selected, (v) => {
+  if (!v.includes(primary.value)) primary.value = v[0] || 0
+})
+onMounted(ensure)
+</script>
+<style scoped src="~/assets/literature-admin.css"></style>
+<style scoped>
+.author-search {
+  display: flex;
+  gap: 10px;
+}
+.author-search input,
+.admin-card select {
+  min-height: 39px;
+  border: 1px solid var(--paper-line);
+  padding: 8px;
+  background: #fff;
+}
+.author-search input {
+  flex: 1;
+}
+.admin-card label {
+  display: grid;
+  gap: 5px;
+  max-width: 400px;
+  margin: 15px 0;
+  color: var(--paper-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+</style>

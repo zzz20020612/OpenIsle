@@ -1,10 +1,16 @@
 <template>
   <section v-if="hasValue" class="knowledge-field">
     <h3>{{ label }}</h3>
-    <ul v-if="Array.isArray(value)">
-      <li v-for="(item, index) in value" :key="index">{{ formatItem(item) }}</li>
+    <ul v-if="Array.isArray(normalizedValue)">
+      <li v-for="(item, index) in normalizedValue" :key="index">{{ formatItem(item) }}</li>
     </ul>
-    <p v-else>{{ formatItem(value) }}</p>
+    <dl v-else-if="isStructuredObject" class="knowledge-object">
+      <div v-for="([key, item]) in objectEntries" :key="key">
+        <dt>{{ formatLabel(key) }}</dt>
+        <dd>{{ formatItem(item) }}</dd>
+      </div>
+    </dl>
+    <p v-else>{{ formatItem(normalizedValue) }}</p>
   </section>
 </template>
 
@@ -14,15 +20,28 @@ const props = defineProps({
   value: { type: [String, Number, Array, Object], default: null },
 })
 
-const hasValue = computed(() => {
-  if (Array.isArray(props.value)) return props.value.length > 0
-  return props.value !== null && props.value !== undefined && props.value !== ''
+const normalizedValue = computed(() => {
+  if (typeof props.value !== 'string') return props.value
+  const text = props.value.trim()
+  if (!text || !['{', '['].includes(text[0])) return props.value
+  try { return JSON.parse(text) } catch { return props.value }
 })
+const hasValue = computed(() => {
+  if (Array.isArray(normalizedValue.value)) return normalizedValue.value.length > 0
+  if (normalizedValue.value && typeof normalizedValue.value === 'object') return Object.keys(normalizedValue.value).length > 0
+  return normalizedValue.value !== null && normalizedValue.value !== undefined && normalizedValue.value !== ''
+})
+const isStructuredObject = computed(() => normalizedValue.value && typeof normalizedValue.value === 'object' && !Array.isArray(normalizedValue.value))
+const objectEntries = computed(() => isStructuredObject.value ? Object.entries(normalizedValue.value) : [])
+
+function formatLabel(value) {
+  return String(value).replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase())
+}
 
 function formatItem(value) {
   if (value === null || value === undefined) return ''
   if (typeof value === 'object') {
-    return value.text || value.claim || value.description || JSON.stringify(value)
+    return value.text || value.claim || value.description || Object.entries(value).map(([key, item]) => `${formatLabel(key)}: ${formatItem(item)}`).join(' · ')
   }
   return String(value)
 }
@@ -53,7 +72,8 @@ function formatItem(value) {
 }
 
 .knowledge-field p,
-.knowledge-field ul {
+.knowledge-field ul,
+.knowledge-object {
   margin: 0;
   color: var(--paper-ink);
   font-family: var(--paper-font-title);
@@ -61,6 +81,29 @@ function formatItem(value) {
   line-height: 1.7;
   white-space: pre-line;
 }
+
+.knowledge-object {
+  display: grid;
+  gap: 8px;
+}
+
+.knowledge-object div {
+  display: grid;
+  grid-template-columns: minmax(130px, .35fr) 1fr;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--paper-line);
+}
+
+.knowledge-object dt {
+  color: var(--paper-soft);
+  font-family: var(--paper-font-ui);
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.knowledge-object dd { margin: 0; }
 
 .knowledge-field ul {
   display: grid;

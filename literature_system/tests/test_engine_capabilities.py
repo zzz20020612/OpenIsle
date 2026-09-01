@@ -24,3 +24,24 @@ def test_full_restore_requires_mineru_llm_and_embedding_configuration():
     assert "MINERU_API_KEY" in result["missing_full_restore"]
     assert "LLM_API_KEY" in result["missing_full_restore"]
     assert "EMBEDDING_API_KEY" in result["missing_full_restore"]
+
+
+def test_missing_sqlite_vec_only_degrades_vector_features():
+    available = {
+        "requests": True,
+        "dotenv": True,
+        "fitz": True,
+        "sqlite_vec": False,
+        "numpy": True,
+        "html2text": True,
+    }
+
+    with (
+        patch.object(engine_capabilities, "_module_available", side_effect=lambda name: available[name]),
+        patch.object(engine_capabilities.config, "LLM_API_KEY", "configured"),
+    ):
+        result = engine_capabilities.get_engine_capabilities()
+
+    assert result["runtime_ready"] is True
+    assert "sqlite_vec" not in result["missing_required"]
+    assert "sqlite_vec" in result["missing_full_restore"]

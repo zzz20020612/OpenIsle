@@ -314,6 +314,9 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                 settings["embedding_api_key_configured"] = bool(config.EMBEDDING_API_KEY)
                 settings["llm_api_key_configured"] = bool(config.LLM_API_KEY)
                 settings["mineru_api_key_configured"] = bool(config.MINERU_API_KEY)
+                settings["semantic_scholar_api_key_configured"] = bool(config.SEMANTIC_SCHOLAR_API_KEY)
+                settings["wos_api_key_configured"] = bool(config.WOS_API_KEY)
+                settings["scopus_api_keys_configured"] = bool(config.SCOPUS_API_KEYS)
                 self._send_json(200, settings)
                 return
 

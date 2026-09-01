@@ -1,18 +1,28 @@
 <template>
-  <nav class="literature-knowledge-nav" aria-label="Literature knowledge tools">
-    <NuxtLink
-      v-for="item in items"
-      :key="item.id"
-      :to="item.to"
-      :class="{ active: activeItem === item.id }"
-    >
-      <span>{{ item.label }}</span>
-    </NuxtLink>
-  </nav>
+  <div class="literature-navigation-shell">
+    <nav class="literature-knowledge-nav" aria-label="Literature knowledge tools">
+      <NuxtLink
+        v-for="item in items"
+        :key="item.id"
+        :to="item.to"
+        :class="{ active: activeItem === item.id }"
+      >
+        <span>{{ item.label }}</span>
+      </NuxtLink>
+    </nav>
+    <div class="engine-health" :class="healthState" :title="healthMessage" aria-live="polite">
+      <span aria-hidden="true" />
+      Literature engine {{ healthLabel }}
+    </div>
+  </div>
 </template>
 
 <script setup>
 const route = useRoute()
+const config = useRuntimeConfig()
+const healthState = ref('checking')
+const healthMessage = ref('Checking the literature processing engine.')
+let healthTimer
 
 const items = [
   { id: 'dashboard', label: 'Dashboard', description: 'Corpus status', to: '/literature/dashboard' },
@@ -42,18 +52,41 @@ const activeItem = computed(() => {
   if (route.path.startsWith('/literature/workflow')) return 'workflow'
   return 'search'
 })
+
+const healthLabel = computed(() => ({ online: 'online', offline: 'unavailable', checking: 'checking' }[healthState.value]))
+const checkHealth = async () => {
+  try {
+    await $fetch(`${config.public.apiBaseUrl}/api/literature/health`)
+    healthState.value = 'online'
+    healthMessage.value = 'The literature processing engine is responding normally.'
+  } catch (cause) {
+    healthState.value = 'offline'
+    healthMessage.value = cause?.data?.message || cause?.data?.error || cause?.message || 'The literature processing engine is unavailable.'
+  }
+}
+
+onMounted(() => {
+  checkHealth()
+  healthTimer = window.setInterval(checkHealth, 10000)
+})
+onBeforeUnmount(() => window.clearInterval(healthTimer))
 </script>
 
 <style scoped>
+.literature-navigation-shell { margin: 0 0 18px; }
 .literature-knowledge-nav {
   display: grid;
   grid-template-columns: repeat(11, minmax(112px, 1fr));
   gap: 1px;
   overflow-x: auto;
-  margin: 0 0 18px;
+  margin: 0;
   border: 1px solid var(--paper-line);
   background: var(--paper-line);
 }
+.engine-health { display:flex; align-items:center; justify-content:flex-end; gap:7px; min-height:28px; padding:5px 10px; border:1px solid var(--paper-line); border-top:0; background:var(--paper-panel-subtle); color:var(--paper-muted); font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
+.engine-health span { width:8px; height:8px; border-radius:50%; background:#b08a39; }
+.engine-health.online span { background:#34866a; }
+.engine-health.offline span { background:#a33d34; }
 .literature-knowledge-nav a {
   display: flex;
   align-items: center;

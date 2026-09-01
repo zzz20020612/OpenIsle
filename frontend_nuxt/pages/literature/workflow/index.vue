@@ -10,6 +10,7 @@
         <div class="workflow-actions"><NuxtLink class="paper-button" to="/literature">View knowledge base</NuxtLink><button v-if="!accessDenied" class="paper-button" @click="refresh">Refresh</button></div>
       </header>
 
+      <LiteratureKnowledgeNav />
       <LiteratureAdminNav v-if="!accessDenied" />
 
       <section v-if="accessDenied" class="paper-panel workflow-access-notice" role="alert">
@@ -59,7 +60,7 @@
           <div class="stage-actions">
             <button :disabled="busy" @click="run('/parse', { source: 'all', limit: 15, force: false })">Parse pending PDFs</button>
             <button :disabled="busy" @click="run('/extract', {})">Extract pending knowledge</button>
-            <button :disabled="busy" @click="run('/rebuild', {})">Rebuild search index</button>
+            <button :disabled="busy" @click="rebuildIndex">Rebuild search index</button>
           </div>
           <p class="readiness" :class="{ missing: !embeddingConfigured }"><strong>Semantic search:</strong> {{ embeddingConfigured ? 'ready' : 'waiting for EMBEDDING_API_KEY' }}</p>
           <p class="hint">Keyword search, metadata collection, PDF parsing, and LLM extraction work without the embedding key.</p>
@@ -75,10 +76,10 @@
       </section>
 
       <section v-if="!accessDenied" class="paper-panel jobs-panel">
-        <div class="panel-heading"><div><h2>Recent processing jobs</h2><p>{{ statsText }}</p></div><button :disabled="busy" @click="run('/jobs/archive', { days: 7, batch: 1000 })">Archive old jobs</button></div>
+        <div class="panel-heading"><div><h2>Recent processing jobs</h2><p>{{ statsText }}</p></div><button :disabled="busy" @click="archiveJobs">Archive old jobs</button></div>
         <div v-if="loading" class="empty">Loading jobs...</div>
         <div v-else-if="!jobs.length" class="empty">No processing jobs yet.</div>
-        <div v-else class="job-table-wrap"><table><thead><tr><th>Stage</th><th>Paper</th><th>Status</th><th>Started</th><th>Message</th><th></th></tr></thead><tbody><tr v-for="job in jobs" :key="job.id"><td>{{ job.stage || job.job_type || '—' }}</td><td>{{ job.paper_id || '—' }}</td><td><span class="status" :class="String(job.status).toLowerCase()">{{ job.status }}</span></td><td>{{ formatTime(job.started_at || job.created_at) }}</td><td>{{ job.error_message || job.message || '—' }}</td><td><button v-if="String(job.status).toLowerCase() === 'failed' && job.paper_id" @click="retry(job)">Retry</button></td></tr></tbody></table></div>
+        <div v-else class="job-table-wrap"><table><thead><tr><th>Stage</th><th>Paper</th><th>Status</th><th>Started</th><th>Message</th><th></th></tr></thead><tbody><tr v-for="job in jobs" :key="job.id"><td>{{ job.stage || job.job_type || '—' }}</td><td>{{ job.paper_id || '—' }}</td><td><span class="status" :class="String(job.status).toLowerCase()">{{ job.status }}</span></td><td>{{ formatTime(job.started_at || job.created_at) }}</td><td>{{ job.error_message || job.message || '—' }}</td><td><button v-if="['failed','permanent_failed'].includes(String(job.status).toLowerCase()) && job.paper_id && (job.stage || job.job_type)" @click="retry(job)">Retry</button></td></tr></tbody></table></div>
       </section>
     </div>
   </main>
@@ -184,12 +185,14 @@ const refresh = async () => {
 let pollGeneration = 0
 const delay = (milliseconds) => new Promise(resolve => setTimeout(resolve, milliseconds))
 const pollTask = async (taskId, generation) => {
+  const terminalStatuses = new Set(['done', 'completed', 'success', 'failed', 'permanent_failed', 'cancelled', 'canceled', 'skipped', 'superseded'])
+  const failedStatuses = new Set(['failed', 'permanent_failed', 'cancelled', 'canceled'])
   while (generation === pollGeneration) {
     const task = await request(`/progress/${encodeURIComponent(taskId)}`)
     activeTask.value = task
     const status = String(task.status || '').toLowerCase()
-    if (status === 'done') return task
-    if (status === 'failed') throw new Error(task.error || task.message || 'The processing task failed.')
+    if (failedStatuses.has(status)) throw new Error(task.error || task.error_message || task.message || 'The processing task failed.')
+    if (terminalStatuses.has(status)) return task
     await delay(1200)
   }
   throw new Error('Task monitoring was cancelled.')
@@ -220,6 +223,14 @@ const run = async (path, body) => {
   }
 }
 const retry = (job) => run('/retry', { paper_id: job.paper_id, stage: job.stage || job.job_type, job_id: job.id })
+const rebuildIndex = () => {
+  if (!window.confirm('Rebuild the complete literature search index now? Search results may be temporarily incomplete while this runs.')) return
+  run('/rebuild', {})
+}
+const archiveJobs = () => {
+  if (!window.confirm('Archive completed or failed processing jobs older than 7 days?')) return
+  run('/jobs/archive', { days: 7, batch: 1000 })
+}
 const formatTime = (value) => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(/Z|[+-]\d\d:?\d\d$/.test(value) ? value : `${value}Z`)) : '—'
 
 onMounted(async () => {

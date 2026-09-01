@@ -78,4 +78,25 @@ class LiteratureIntegrationServiceTest {
     assertThat(response.body().path("total_papers").asInt()).isEqualTo(75);
     server.verify();
   }
+
+  @Test
+  void graphDiagnosticsRemainAvailableToThePublicNetworkPage() {
+    RestTemplate restTemplate = new RestTemplate();
+    MockRestServiceServer server = MockRestServiceServer.createServer(restTemplate);
+    LiteratureIntegrationService service = new LiteratureIntegrationService(
+      "http://literature.test",
+      restTemplate,
+      objectMapper,
+      "internal-test-token"
+    );
+
+    server.expect(requestTo("http://literature.test/graph/diagnostics?max_nodes=80"))
+      .andRespond(withSuccess("{\"issue_count\":0,\"issues\":[]}", MediaType.APPLICATION_JSON));
+
+    var response = service.publicGet("/graph/diagnostics", "max_nodes=80");
+
+    assertThat(response.status()).isEqualTo(HttpStatus.OK);
+    assertThat(response.body().path("issue_count").asInt()).isZero();
+    server.verify();
+  }
 }

@@ -49,7 +49,7 @@
             <button class="diagnostic-status" :class="{ issue: diagnostics.issue_count > 0 }" :disabled="diagnostics.unavailable" @click="locateFirstIssue">
               {{ diagnosticLabel }}
             </button>
-            <p v-if="diagnostics.unavailable">Diagnostics require an administrator session.</p>
+            <p v-if="diagnostics.unavailable">Diagnostics are temporarily unavailable.</p>
             <p v-else-if="diagnosticSummary">{{ diagnosticSummary }}</p>
           </section>
 
@@ -75,6 +75,7 @@ import LiteratureKnowledgeNav from '~/components/LiteratureKnowledgeNav.vue'
 
 const config = useRuntimeConfig()
 const router = useRouter()
+const route = useRoute()
 useHead({ title: 'Literature Network - OpenIsle' })
 
 const graphElement = ref(null)
@@ -90,6 +91,11 @@ const nodeSearch = ref('')
 const entityTypes = reactive({ paper: true, author: true, keyword: true, data_point: true })
 const graphData = ref({ nodes: [], edges: [] })
 const diagnostics = ref({ issue_count: 0, issues: [], unavailable: true })
+const focusPaperId = computed(() => {
+  const value = Number.parseInt(String(route.query.focus_paper || ''), 10)
+  return Number.isFinite(value) ? value : null
+})
+const focusAuthor = computed(() => String(route.query.focus_author || '').trim())
 
 const nodeTypeOptions = [
   { id: 'paper', label: 'Papers' },
@@ -111,12 +117,13 @@ const translations = {
 }
 
 const ensureGraphRenderer = async () => {
-  if (window.OpenIsleLiteratureCharts?.forceGraph) return window.OpenIsleLiteratureCharts
   window.Utils = window.Utils || {
     truncate: (value, length) => String(value || '').length > length ? `${String(value || '').slice(0, length)}…` : String(value || ''),
     escapeHtml: (value) => String(value || '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]),
   }
-  window.I18n = window.I18n || { t: (key) => translations[key] || key }
+  const previousTranslate = window.I18n?.t?.bind(window.I18n)
+  window.I18n = { ...(window.I18n || {}), t: (key) => translations[key] || (previousTranslate ? previousTranslate(key) : key) }
+  if (window.OpenIsleLiteratureCharts?.forceGraph) return window.OpenIsleLiteratureCharts
   await new Promise((resolve, reject) => {
     const existing = document.querySelector('script[data-literature-graph-engine]')
     if (existing) {
@@ -144,7 +151,7 @@ const queryString = () => {
 
 const fetchDiagnostics = async (params) => {
   try {
-    diagnostics.value = await $fetch(`${config.public.apiBaseUrl}/api/literature/admin/graph/diagnostics?${params}`)
+    diagnostics.value = await $fetch(`${config.public.apiBaseUrl}/api/literature/explore/graph/diagnostics?${params}`)
   } catch {
     diagnostics.value = { issue_count: 0, issues: [], unavailable: true }
   }
@@ -181,6 +188,27 @@ const loadGraph = async (relayout = false) => {
     if (citationOnly.value) nodes = nodes.filter((node) => node.type === 'paper')
     const nodeIds = new Set(nodes.map((node) => node.id))
     edges = edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target) && (!citationOnly.value || edge.type === 'cites'))
+
+    // Original deep-link behaviour: show the target papers and their one-hop neighbours.
+    if (focusPaperId.value || focusAuthor.value) {
+      const targetIds = new Set()
+      if (focusPaperId.value) targetIds.add(`p${focusPaperId.value}`)
+      if (focusAuthor.value) {
+        const authorParams = new URLSearchParams({ q: '', author: focusAuthor.value, mode: 'keyword', limit: '50' })
+        const authorResults = await $fetch(`${config.public.apiBaseUrl}/api/literature/explore/search?${authorParams}`)
+        ;(authorResults?.results || []).forEach((paper) => {
+          if (paper.id) targetIds.add(`p${paper.id}`)
+        })
+      }
+      const neighbourIds = new Set(targetIds)
+      edges.forEach((edge) => {
+        if (targetIds.has(edge.source)) neighbourIds.add(edge.target)
+        if (targetIds.has(edge.target)) neighbourIds.add(edge.source)
+      })
+      nodes = nodes.filter((node) => neighbourIds.has(node.id))
+      const focusedNodeIds = new Set(nodes.map((node) => node.id))
+      edges = edges.filter((edge) => focusedNodeIds.has(edge.source) && focusedNodeIds.has(edge.target))
+    }
     graphData.value = { nodes, edges }
     await fetchDiagnostics(params)
     await renderGraph(relayout)
@@ -212,7 +240,10 @@ const locateFirstIssue = () => {
 
 const humanize = (value) => String(value || '').replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase())
 
-onMounted(() => loadGraph())
+onMounted(() => {
+  if (focusPaperId.value || focusAuthor.value) maxNodes.value = 120
+  loadGraph()
+})
 </script>
 
 <style scoped>

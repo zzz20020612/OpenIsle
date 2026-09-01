@@ -41,12 +41,12 @@ public class LiteratureIntegrationService {
 
   private static final Set<String> PUBLIC_PATHS = Set.of(
     "/search", "/aggregate", "/vector/search", "/vector/stats", "/hybrid/search",
-    "/graph", "/papers/list", "/data_points/list", "/knowledge/list", "/methods/list",
+    "/graph", "/graph/diagnostics", "/papers/list", "/data_points/list", "/knowledge/list", "/methods/list",
     "/timeline", "/compare/metric", "/authors/list", "/institution/network", "/stats"
   );
 
   private static final Set<String> ADMIN_PATHS = Set.of(
-    "/stats", "/graph/diagnostics", "/jobs", "/jobs/stats", "/workflow/settings",
+    "/stats", "/jobs", "/jobs/stats", "/workflow/settings",
     "/quality/stats", "/quality/low_quality", "/quality/prompt_compare", "/rebuild",
     "/sync", "/collect", "/parse", "/extract", "/jobs/archive", "/retry",
     "/quality/re_extract", "/authors/merge", "/test/connection", "/pipeline/run"

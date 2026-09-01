@@ -1,6 +1,7 @@
 <template>
   <main class="paper-shell">
     <div class="paper-container literature-detail-container">
+      <LiteratureKnowledgeNav />
       <div class="literature-page-links">
         <NuxtLink class="literature-back" to="/literature">← Back to Knowledge Base</NuxtLink>
         <NuxtLink class="literature-back" to="/papers/rankings">View evaluation rankings →</NuxtLink>
@@ -156,6 +157,14 @@
           </div>
 
           <aside class="paper-sidebar">
+            <section class="paper-card literature-network-links">
+              <h2 class="paper-section-title">Knowledge network</h2>
+              <NuxtLink class="paper-button literature-network-action" :to="{path:'/literature/network',query:{focus_paper:paperId}}">View in relationship network</NuxtLink>
+              <NuxtLink v-if="firstStructuredAuthor?.id" class="paper-button literature-network-action" :to="`/literature/authors/${firstStructuredAuthor.id}`">View first-author profile</NuxtLink>
+              <template v-if="paperAuthors.length"><h3>Core authors</h3><div class="literature-link-tags"><NuxtLink v-for="author in paperAuthors.slice(0,10)" :key="author.id||author.full_name" :to="author.id?`/literature/authors/${author.id}`:{path:'/literature/authors',query:{q:author.full_name||author.name}}">{{ author.full_name || author.name || 'Unknown author' }}</NuxtLink></div></template>
+              <template v-if="paperInstitutions.length"><h3>Related institutions</h3><div class="literature-link-tags"><NuxtLink v-for="institution in paperInstitutions.slice(0,8)" :key="institution" :to="{path:'/literature/institutions',query:{affiliation:institution}}">{{ institution }}</NuxtLink></div></template>
+            </section>
+
             <section class="paper-card literature-rating-card">
               <div class="literature-score-heading">
                 <span>
@@ -351,6 +360,8 @@ const sections = computed(() => paper.value?.sections || paper.value?.fulltext?.
 const figures = computed(() => paper.value?.figures || paper.value?.fulltext?.figures || [])
 const citations = computed(() => data.value?.citations?.citations || data.value?.citations?.items || [])
 const paperAuthors = computed(() => data.value?.authors?.authors || data.value?.authors?.items || [])
+const firstStructuredAuthor = computed(() => paperAuthors.value[0] || null)
+const paperInstitutions = computed(() => [...new Set(paperAuthors.value.flatMap(author => author.institutions || (author.current_affiliation ? [author.current_affiliation] : [])).filter(Boolean))])
 const similar = computed(() => data.value?.similar?.papers || data.value?.similar?.results || data.value?.similar?.items || [])
 const canSubmitRating = computed(() =>
   dimensions.every((dimension) => Number.isInteger(ratingForm[dimension.key]) && ratingForm[dimension.key] >= 0 && ratingForm[dimension.key] <= 5) &&
@@ -589,6 +600,7 @@ function formatAuthors(value) {
   font-size: 12px;
   line-height: 1.5;
 }
+.literature-network-links{display:grid;gap:9px}.literature-network-links h3{margin:10px 0 0;color:var(--paper-soft);font-size:10px;text-transform:uppercase;letter-spacing:.07em}.literature-network-action{justify-content:center;text-align:center}.literature-link-tags{display:flex;flex-wrap:wrap;gap:6px}.literature-link-tags a{padding:5px 7px;background:var(--paper-surface-soft);color:var(--paper-teal);font-size:10px;font-weight:750;text-decoration:none}.literature-link-tags a:hover{background:var(--paper-teal);color:#fff}
 .literature-content-tabs{position:sticky;top:0;z-index:3;display:flex;overflow:auto;margin-bottom:0;border:1px solid var(--paper-line);background:var(--paper-line);gap:1px}.literature-content-tabs button{min-width:max-content;border:0;padding:12px 15px;background:#fff;color:var(--paper-muted);font-size:12px;font-weight:800;cursor:pointer}.literature-content-tabs button.active{background:var(--paper-teal);color:#fff}.literature-reading-context{display:flex;align-items:baseline;gap:14px;padding:12px 15px;margin-bottom:14px;border:1px solid var(--paper-line);border-top:0;background:var(--paper-surface-soft)}.literature-reading-context span{flex:0 0 auto;color:var(--paper-teal);font-size:10px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}.literature-reading-context p{margin:0;color:var(--paper-muted);font-size:12px;line-height:1.5}.literature-section{border-top:1px solid var(--paper-line)}.literature-section summary{display:flex;justify-content:space-between;gap:16px;padding:16px 0;cursor:pointer;font:500 19px Georgia,serif}.literature-section summary small{color:var(--paper-soft);font:700 10px var(--paper-font-ui);text-transform:uppercase}.literature-section .paper-manuscript{max-width:72ch;padding:4px 0 24px;font-size:16px;line-height:1.85}.literature-similar{display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-top:1px solid var(--paper-line);color:var(--paper-ink);text-decoration:none}.literature-similar span{color:var(--paper-green)}
 .literature-supplement{padding:0}.literature-supplement>summary,.literature-evaluate-panel>summary{padding:16px 18px;color:var(--paper-ink);cursor:pointer;font-weight:800;list-style-position:inside}.literature-supplement[open]{padding:0 18px 18px}.literature-supplement[open]>summary{margin:0 -18px 18px;border-bottom:1px solid var(--paper-line)}.literature-supplement-heading{margin-top:0}.literature-subheading{margin-top:24px}.literature-evaluate-panel{margin-top:8px;border:1px solid var(--paper-line)}.literature-evaluate-panel>summary{color:var(--paper-teal)}.literature-evaluate-body{padding:0 14px 14px}
 
