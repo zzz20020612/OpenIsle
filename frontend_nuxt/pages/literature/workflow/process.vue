@@ -12,9 +12,14 @@
       </header>
       <LiteratureKnowledgeNav />
       <LiteratureAdminNav />
-      <p v-if="message" class="admin-notice" :class="{ error }">{{ message }}</p>
+      <p v-if="message" class="admin-notice" :class="{ error }" role="status" aria-live="polite">
+        {{ message }}
+      </p>
       <section class="quality-grid">
-        <form class="paper-panel admin-card" @submit.prevent="run('/pipeline/run', pipeline)">
+        <form
+          class="paper-panel admin-card"
+          @submit.prevent="run('/pipeline/run', pipeline, 'Complete pipeline')"
+        >
           <h2>Complete pipeline</h2>
           <div class="admin-form">
             <label class="wide">Search topic<input v-model="pipeline.keyword" required /></label
@@ -51,11 +56,14 @@
                 max="50"
             /></label>
           </div>
-          <button class="admin-action" :disabled="busy">
-            Collect, download, parse and extract
+          <button class="admin-action" :disabled="Boolean(busy)">
+            {{ busy === 'Complete pipeline' ? 'Starting pipeline…' : 'Collect, download, parse and extract' }}
           </button>
         </form>
-        <form class="paper-panel admin-card" @submit.prevent="run('/collect', collect)">
+        <form
+          class="paper-panel admin-card"
+          @submit.prevent="run('/collect', collect, 'Metadata collection')"
+        >
           <h2>Metadata collection only</h2>
           <div class="admin-form">
             <label class="wide">Search topic<input v-model="collect.keyword" required /></label
@@ -79,7 +87,9 @@
             ><label>To year<input v-model="collect.year_to" /></label
             ><label>Journal<input v-model="collect.journal" /></label>
           </div>
-          <button class="admin-action" :disabled="busy">Collect metadata</button>
+          <button class="admin-action" :disabled="Boolean(busy)">
+            {{ busy === 'Metadata collection' ? 'Starting collection…' : 'Collect metadata' }}
+          </button>
         </form>
       </section>
       <section class="paper-panel admin-card">
@@ -94,10 +104,21 @@
           ><label
             >Batch limit<input v-model.number="parse.limit" type="number" min="1" max="50" /></label
           ><label><input v-model="parse.force" type="checkbox" /> Reparse completed PDFs</label
-          ><button class="admin-action" @click="run('/parse', parse)">Parse PDFs</button
-          ><button class="admin-action" @click="run('/extract', {})">
-            Extract pending knowledge</button
-          ><button class="admin-action" @click="rebuildIndex">Rebuild search index</button>
+          ><button
+            class="admin-action"
+            :disabled="Boolean(busy)"
+            @click="run('/parse', parse, 'PDF parsing')"
+          >
+            {{ busy === 'PDF parsing' ? 'Starting parser…' : 'Parse PDFs' }}</button
+          ><button
+            class="admin-action"
+            :disabled="Boolean(busy)"
+            @click="run('/extract', {}, 'Knowledge extraction')"
+          >
+            {{ busy === 'Knowledge extraction' ? 'Starting extraction…' : 'Extract pending knowledge' }}</button
+          ><button class="admin-action" :disabled="Boolean(busy)" @click="rebuildIndex">
+            {{ busy === 'Search index rebuild' ? 'Starting rebuild…' : 'Rebuild search index' }}
+          </button>
         </div>
       </section>
       <section class="paper-panel admin-card">
@@ -110,17 +131,27 @@
             placeholder="Literature paper ID"
           /><button
             class="admin-action"
-            :disabled="!paperId || busy"
-            @click="run('/sync', { paper_id: paperId })"
+            :disabled="!paperId || Boolean(busy)"
+            @click="run('/sync', { paper_id: paperId }, 'Paper synchronization')"
           >
-            Synchronize paper
+            {{ busy === 'Paper synchronization' ? 'Synchronizing…' : 'Synchronize paper' }}
           </button>
         </div>
       </section>
-      <section v-if="task" class="paper-panel admin-card">
-        <h2>Current task</h2>
+      <section v-if="task" class="paper-panel admin-card task-feedback" aria-live="polite">
+        <div class="task-feedback__heading">
+          <h2>Current task</h2>
+          <span class="task-status" :class="`task-status--${task.status || 'submitting'}`">
+            {{ taskStatusLabel }}
+          </span>
+        </div>
         <p>{{ task.message || task.status }}</p>
-        <progress max="100" :value="task.progress || 0" /><AdminObjectTable :value="task.result" />
+        <small v-if="task.task_id">Task ID: {{ task.task_id }}</small>
+        <progress
+          max="100"
+          :value="Number.isFinite(Number(task.progress)) ? Number(task.progress) : undefined"
+        />
+        <AdminObjectTable v-if="task.result" :value="task.result" />
       </section>
     </div>
   </main>
@@ -171,7 +202,7 @@ const api = useLiteratureAdmin(),
   }),
   parse = reactive({ source: 'all', limit: 5, force: false }),
   paperId = ref(null),
-  busy = ref(false),
+  busy = ref(''),
   message = ref(''),
   error = ref(false),
   task = ref(null)
@@ -192,13 +223,28 @@ const ensure = async () => {
   if (!authState.role) await loadCurrentUser()
   if (authState.role !== 'ADMIN') return navigateTo('/literature/workflow')
 }
-const run = async (path, body) => {
-  busy.value = true
-  message.value = ''
+const taskStatusLabel = computed(() => {
+  const status = String(task.value?.status || 'submitting').toLowerCase()
+  if (failedStatuses.has(status)) return 'Failed'
+  if (terminalStatuses.has(status)) return 'Completed'
+  if (status === 'submitting') return 'Submitting'
+  if (status === 'accepted' || status === 'pending') return 'Queued'
+  return 'Running'
+})
+const run = async (path, body, label = 'Operation') => {
+  if (busy.value) return
+  busy.value = label
+  message.value = `${label} request is being submitted…`
   error.value = false
-  task.value = null
+  task.value = { status: 'submitting', message: 'Sending the request to the processing engine…' }
   try {
     const accepted = await api.post(path, body)
+    task.value = {
+      ...accepted,
+      status: accepted.status || 'accepted',
+      message: accepted.message || 'Task accepted. Waiting for processing to begin…',
+    }
+    message.value = `${label} accepted. Processing has started.`
     if (accepted.task_id) {
       let status = ''
       do {
@@ -209,12 +255,12 @@ const run = async (path, body) => {
       if (failedStatuses.has(status))
         throw new Error(task.value.error || task.value.error_message || task.value.message)
     }
-    message.value = 'Operation completed.'
+    message.value = `${label} completed.`
   } catch (e) {
     error.value = true
     message.value = e?.data?.message || e?.data?.error || e.message
   } finally {
-    busy.value = false
+    busy.value = ''
   }
 }
 const rebuildIndex = () => {
@@ -224,7 +270,7 @@ const rebuildIndex = () => {
     )
   )
     return
-  run('/rebuild', {})
+  run('/rebuild', {}, 'Search index rebuild')
 }
 onMounted(ensure)
 </script>
@@ -264,5 +310,44 @@ onMounted(ensure)
 progress {
   width: 100%;
   height: 12px;
+}
+.task-feedback {
+  border-left: 4px solid var(--paper-blue);
+}
+.task-feedback__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.task-feedback__heading h2 {
+  margin: 0;
+}
+.task-feedback small {
+  display: block;
+  margin: 8px 0;
+  color: var(--paper-muted);
+}
+.task-status {
+  border: 1px solid var(--paper-line);
+  padding: 4px 9px;
+  color: var(--paper-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.task-status--done,
+.task-status--completed,
+.task-status--success {
+  border-color: var(--paper-green);
+  color: var(--paper-green);
+}
+.task-status--failed,
+.task-status--permanent_failed,
+.task-status--cancelled,
+.task-status--canceled {
+  border-color: var(--paper-danger);
+  color: var(--paper-danger);
 }
 </style>

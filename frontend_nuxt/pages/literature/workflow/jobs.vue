@@ -218,7 +218,16 @@ const archive = async () => {
   }
 }
 const humanize = (v) => v.replaceAll('_', ' ')
-const format = (v) => (v ? new Date(v).toLocaleString() : '—')
+const format = (value) => {
+  if (!value) return '—'
+  const raw = String(value)
+  // The literature engine stores naive timestamps in UTC. Add the missing
+  // timezone marker so browsers convert them to the viewer's local timezone.
+  const normalized = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(raw)
+    ? `${raw.replace(' ', 'T')}Z`
+    : raw
+  return new Date(normalized).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
+}
 onMounted(load)
 </script>
 <style scoped src="~/assets/literature-admin.css"></style>
