@@ -1036,6 +1036,29 @@ def _build_all_in_one_input(
     return "\n".join(lines)
 
 
+def _split_aggregate_result(result: Any) -> tuple[Dict[str, Any], Dict[str, Any], List[Dict[str, Any]]]:
+    """Validate and normalize the three aggregate extraction components."""
+    if not isinstance(result, dict):
+        raise ValueError("aggregate extraction must return a JSON object")
+    if not all(key in result for key in ("knowledge_card", "methods", "data_points")):
+        raise ValueError("aggregate extraction is missing one or more required components")
+
+    card = result.get("knowledge_card")
+    methods = result.get("methods")
+    data_result = result.get("data_points")
+    if not isinstance(card, dict) or not isinstance(methods, dict):
+        raise ValueError("knowledge_card and methods must be JSON objects")
+    if not card.get("research_question") and not card.get("core_answer"):
+        raise ValueError("knowledge_card is empty")
+    if isinstance(data_result, dict):
+        data_points = data_result.get("data_points", [])
+    else:
+        data_points = data_result
+    if not isinstance(data_points, list) or any(not isinstance(item, dict) for item in data_points):
+        raise ValueError("data_points must be a JSON array of objects")
+    return card, methods, data_points
+
+
 def extract_all_in_one(
     paper_id: int,
     llm_client=None,
@@ -1149,16 +1172,15 @@ def extract_all_in_one(
         )
         return extract_all(paper_id, llm_client, force=True)
 
-    # 解析三部分
-    card = result.get("knowledge_card", {})
-    methods = result.get("methods", {})
-    data_points_result = result.get("data_points", {})
-    if isinstance(data_points_result, dict):
-        data_points = data_points_result.get("data_points", [])
-    elif isinstance(data_points_result, list):
-        data_points = data_points_result
-    else:
-        data_points = []
+    try:
+        card, methods, data_points = _split_aggregate_result(result)
+    except ValueError as error:
+        for et in EXTRACTION_TYPES:
+            record_extraction_status(
+                paper_id, et, "failed", error_msg=str(error), error_class=error.__class__.__name__
+            )
+        logger.warning("paper_id=%d 合并提取结构不完整，回退分项提取: %s", paper_id, error)
+        return extract_all(paper_id, llm_client, force=True)
 
     # 补充缺失的锚点/ID
     if not card.get("source_section_ids"):

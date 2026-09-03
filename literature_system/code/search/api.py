@@ -1841,6 +1841,8 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
         language = (qs.get("language", [""])[0] or "").strip()
         author = (qs.get("author", [""])[0] or "").strip()
         journal_tier = (qs.get("journal_tier", [""])[0] or "").strip()
+        admission_view = (qs.get("view", ["all"])[0] or "all").strip().lower()
+        completeness_level = (qs.get("level", [""])[0] or "").strip().upper()
         sort = (qs.get("sort", ["year_desc"])[0] or "year_desc").lower()
         try:
             limit = int(qs.get("limit", ["50"])[0])
@@ -1876,6 +1878,34 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
             where_clauses.append("p.journal_tier = ?")
             params.append(journal_tier)
 
+        parsed_sql = """(
+            EXISTS (SELECT 1 FROM paper_fulltext ft WHERE ft.paper_id = p.id AND COALESCE(ft.char_count, 0) >= 2000)
+            AND EXISTS (SELECT 1 FROM paper_sections ps WHERE ps.paper_id = p.id AND length(trim(COALESCE(ps.content, ''))) > 0)
+        )"""
+        knowledge_sql = """(
+            EXISTS (SELECT 1 FROM paper_knowledge_cards kc WHERE kc.paper_id = p.id)
+            AND EXISTS (SELECT 1 FROM paper_methods pm WHERE pm.paper_id = p.id)
+        )"""
+        data_ready_sql = """COALESCE((
+            SELECT pj.status FROM parse_jobs pj
+            WHERE pj.paper_id = p.id AND pj.stage = 'extract' AND pj.parser_used = 'data_points'
+            ORDER BY pj.id DESC LIMIT 1
+        ), '') IN ('done', 'skipped')"""
+        if completeness_level in {"L0", "L1"}:
+            # Exact L0/L1 classification also checks verified filesystem PDF
+            # availability below, so the level selector must override `view`.
+            pass
+        elif completeness_level == "L2":
+            where_clauses.extend([parsed_sql, f"NOT {knowledge_sql}"])
+        elif completeness_level == "L3":
+            where_clauses.extend([parsed_sql, knowledge_sql, f"NOT ({data_ready_sql})"])
+        elif completeness_level == "L4":
+            where_clauses.extend([parsed_sql, knowledge_sql, data_ready_sql])
+        elif admission_view == "usable":
+            where_clauses.append(parsed_sql)
+        elif admission_view == "pending":
+            where_clauses.append(f"NOT {parsed_sql}")
+
         order_by = {
             "year_desc": "substr(p.published_date, 1, 4) DESC",
             "year_asc": "substr(p.published_date, 1, 4) ASC",
@@ -1884,19 +1914,30 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
         }.get(sort, "substr(p.published_date, 1, 4) DESC")
 
         cur = self.engine.conn.cursor()
-        count_sql = f"SELECT COUNT(*) AS c FROM papers p WHERE {' AND '.join(where_clauses)}"
-        cur.execute(count_sql, params)
-        total = cur.fetchone()["c"]
-
         sql = f"""
             SELECT p.id, p.doi, p.title, p.published_date, p.journal, p.author,
                    p.keywords, p.source, p.citation_count, p.language, p.journal_tier
             FROM papers p
             WHERE {' AND '.join(where_clauses)}
             ORDER BY {order_by}
-            LIMIT ? OFFSET ?
         """
-        cur.execute(sql, params + [limit, offset])
+        exact_file_level = completeness_level in {"L0", "L1"}
+        if not exact_file_level:
+            count_sql = f"SELECT COUNT(*) AS c FROM papers p WHERE {' AND '.join(where_clauses)}"
+            cur.execute(count_sql, params)
+            total = cur.fetchone()["c"]
+            sql += " LIMIT ? OFFSET ?"
+            cur.execute(sql, params + [limit, offset])
+        else:
+            # L0/L1 differ by verified local-file availability, which is not a
+            # database column. Load the pending candidates and classify them
+            # before applying pagination so totals remain correct.
+            where_clauses.append(f"NOT {parsed_sql}")
+            sql = sql.replace(
+                f"WHERE {' AND '.join(where_clauses[:-1])}",
+                f"WHERE {' AND '.join(where_clauses)}",
+            )
+            cur.execute(sql, params)
         rows = [dict(r) for r in cur.fetchall()]
         for r in rows:
             r["author"] = _safe_json_loads(r.get("author"))
@@ -1915,10 +1956,20 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                 r["pdf_available"] = pdf_availability[r["id"]]
                 r["completeness"] = completeness.get(r["id"])
 
+        if exact_file_level:
+            rows = [
+                row for row in rows
+                if row.get("completeness", {}).get("level") == completeness_level
+            ]
+            total = len(rows)
+            rows = rows[offset:offset + limit]
+
         return {
             "total": total,
             "limit": limit,
             "offset": offset,
+            "view": admission_view,
+            "level": completeness_level or None,
             "papers": rows,
         }
 

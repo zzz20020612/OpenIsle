@@ -25,9 +25,9 @@
 
       <div v-if="!accessDenied && message" class="workflow-message" :class="{ error: failed, partial }">{{ message }}</div>
       <section v-if="!accessDenied" class="completeness-grid" aria-label="Literature completeness summary">
-        <article v-for="item in completenessCards" :key="item.state" class="paper-panel completeness-card" :class="item.state">
-          <strong>{{ item.count }}</strong><span>{{ item.label }}</span>
-        </article>
+        <NuxtLink v-for="item in completenessCards" :key="item.level" class="paper-panel completeness-card" :class="item.level.toLowerCase()" :to="{path:'/literature',query:{level:item.level}}" :title="item.description">
+          <strong>{{ item.count }}</strong><span>{{ item.level }} · {{ item.label }}</span>
+        </NuxtLink>
       </section>
       <section v-if="!accessDenied && activeTask" class="paper-panel task-progress" aria-live="polite">
         <div class="task-progress-heading">
@@ -127,11 +127,11 @@ const statsText = computed(() => {
   return parts.join(' · ') || 'Current task history'
 })
 const completenessCards = computed(() => [
-  { state: 'complete', label: 'Complete', count: completenessStats.value.complete || 0 },
-  { state: 'processing', label: 'Processing', count: completenessStats.value.processing || 0 },
-  { state: 'retryable', label: 'Needs retry', count: completenessStats.value.retryable || 0 },
-  { state: 'incomplete', label: 'Incomplete', count: completenessStats.value.incomplete || 0 },
-  { state: 'terminal', label: 'Cannot process', count: completenessStats.value.terminal || 0 },
+  { level: 'L0', label: 'Metadata only', description: 'No downloaded PDF yet.', count: completenessStats.value.L0 || 0 },
+  { level: 'L1', label: 'PDF ready', description: 'PDF exists but reliable full text is not ready.', count: completenessStats.value.L1 || 0 },
+  { level: 'L2', label: 'Full text', description: 'Full text and sections are ready for reading.', count: completenessStats.value.L2 || 0 },
+  { level: 'L3', label: 'Knowledge', description: 'Knowledge and methods are ready; data extraction remains.', count: completenessStats.value.L3 || 0 },
+  { level: 'L4', label: 'Evaluation ready', description: 'All required processing stages are complete.', count: completenessStats.value.L4 || 0 },
 ])
 const taskStatusLabel = computed(() => {
   const status = String(activeTask.value?.status || 'pending').toLowerCase()
@@ -173,8 +173,8 @@ const refresh = async () => {
     jobStats.value = statsResult
     embeddingConfigured.value = Boolean(workflowSettings.embedding_api_key_configured || workflowSettings.EMBEDDING_API_KEY_configured || workflowSettings.embedding?.configured)
     completenessStats.value = (literatureResult.papers || []).reduce((counts, paper) => {
-      const state = paper.completeness?.state || 'unknown'
-      counts[state] = (counts[state] || 0) + 1
+      const level = paper.completeness?.level || 'unknown'
+      counts[level] = (counts[level] || 0) + 1
       return counts
     }, {})
   } catch (cause) {
@@ -254,7 +254,7 @@ onBeforeUnmount(() => { pollGeneration++ })
 .workflow-actions,.stage-actions,.field-row,.panel-heading { display:flex; gap:10px; }
 .workflow-actions { flex-wrap:wrap; }
 .workflow-access-notice{max-width:760px;padding:28px;border-left:5px solid #0065a8}.workflow-access-notice h2{margin:6px 0 10px;font-family:Georgia,serif;font-size:27px;font-weight:400}.workflow-access-notice p{margin:0 0 20px;color:var(--paper-muted);line-height:1.65}
-.completeness-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin-bottom:24px;border-top:1px solid var(--paper-line);border-bottom:1px solid var(--paper-line)}.completeness-card{display:grid;gap:3px;padding:14px 16px;border:0;border-right:1px solid var(--paper-line);border-top:3px solid var(--paper-line)}.completeness-card:last-child{border-right:0}.completeness-card strong{font-family:Georgia,serif;font-size:24px;font-weight:400}.completeness-card span{color:var(--paper-muted);font-size:11px;font-weight:800;text-transform:uppercase}.completeness-card.complete{border-top-color:#34866a}.completeness-card.processing{border-top-color:#3480a0}.completeness-card.retryable,.completeness-card.incomplete{border-top-color:#c58a2b}.completeness-card.terminal{border-top-color:#a33d34}
+.completeness-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin-bottom:24px;border-top:1px solid var(--paper-line);border-bottom:1px solid var(--paper-line)}.completeness-card{display:grid;gap:3px;padding:14px 16px;border:0;border-right:1px solid var(--paper-line);border-top:3px solid var(--paper-line);color:inherit;text-decoration:none}.completeness-card:hover{background:#f4f8f8}.completeness-card:last-child{border-right:0}.completeness-card strong{font-family:Georgia,serif;font-size:24px;font-weight:400}.completeness-card span{color:var(--paper-muted);font-size:11px;font-weight:800;text-transform:uppercase}.completeness-card.l0{border-top-color:#a33d34}.completeness-card.l1{border-top-color:#c58a2b}.completeness-card.l2{border-top-color:#3480a0}.completeness-card.l3,.completeness-card.l4{border-top-color:#34866a}
 .workflow-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:14px; }
 .workflow-card,.jobs-panel,.advanced-panel { padding:20px; border-top:4px solid #0065a8; }
 .workflow-card h2,.panel-heading h2 { margin:0 0 8px; font-family:Georgia,serif; font-weight:500; }

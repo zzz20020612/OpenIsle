@@ -146,25 +146,72 @@ class LLMClient:
 
     @staticmethod
     def _parse_json(content: str) -> Dict[str, Any]:
-        """解析 LLM 返回的 JSON，支持从 markdown code block 中提取。"""
-        content = content.strip()
-        # 尝试直接解析
-        try:
-            return json.loads(content)
-        except json.JSONDecodeError:
-            pass
-        # 尝试从 ```json ... ``` 中提取
-        if "```json" in content:
-            start = content.find("```json") + 7
-            end = content.rfind("```")
-            if end > start:
-                return json.loads(content[start:end].strip())
-        # 尝试从 ``` ... ``` 中提取
+        """Parse JSON with bounded repair for common model wrappers.
+
+        Repair never invents values. It may remove surrounding prose or add
+        closing brackets when the response ended at a valid JSON boundary.
+        Semantically incomplete objects are rejected by the extractor and
+        retried as independent components.
+        """
+        content = (content or "").strip()
+        candidates = [content]
         if "```" in content:
-            start = content.find("```") + 3
-            end = content.rfind("```")
-            if end > start:
-                return json.loads(content[start:end].strip())
+            first = content.find("```") + 3
+            first_line_end = content.find("\n", first)
+            if first_line_end > first and content[first:first_line_end].strip().lower() == "json":
+                first = first_line_end + 1
+            end = content.find("```", first)
+            if end > first:
+                candidates.insert(0, content[first:end].strip())
+
+        for candidate in candidates:
+            try:
+                parsed = json.loads(candidate)
+                if isinstance(parsed, dict):
+                    return parsed
+            except json.JSONDecodeError:
+                pass
+
+            start = candidate.find("{")
+            if start < 0:
+                continue
+            stack: List[str] = []
+            in_string = False
+            escaped = False
+            for index, char in enumerate(candidate[start:], start=start):
+                if in_string:
+                    if escaped:
+                        escaped = False
+                    elif char == "\\":
+                        escaped = True
+                    elif char == '"':
+                        in_string = False
+                    continue
+                if char == '"':
+                    in_string = True
+                elif char in "{[":
+                    stack.append(char)
+                elif char in "}]":
+                    if not stack or (char == "}" and stack[-1] != "{") or (char == "]" and stack[-1] != "["):
+                        break
+                    stack.pop()
+                    if not stack:
+                        try:
+                            parsed = json.loads(candidate[start:index + 1])
+                            if isinstance(parsed, dict):
+                                return parsed
+                        except json.JSONDecodeError:
+                            break
+
+            fragment = candidate[start:].rstrip()
+            if stack and not in_string and fragment[-1:] not in {",", ":"}:
+                repaired = fragment + "".join("}" if opener == "{" else "]" for opener in reversed(stack))
+                try:
+                    parsed = json.loads(repaired)
+                    if isinstance(parsed, dict):
+                        return parsed
+                except json.JSONDecodeError:
+                    pass
         raise LLMError(f"无法解析 LLM 返回的 JSON: {content[:200]}...")
 
 

@@ -24,6 +24,7 @@
             <span v-if="paper.journal" class="paper-pill subject">{{ paper.journal }}</span>
             <span v-if="publicationYear" class="paper-pill">{{ publicationYear }}</span>
             <span v-if="paper.source" class="paper-pill">Source: {{ paper.source }}</span>
+            <span v-if="paper.completeness?.level" class="paper-pill subject">{{ paper.completeness.level }} · {{ paper.completeness.level_label }}</span>
             <span class="paper-pill" :class="{ subject: paper.completeness?.state === 'complete' }">{{ processingStatusLabel }}</span>
             <span v-if="paper.citation_count != null" class="paper-pill">
               {{ paper.citation_count }} citations
@@ -42,6 +43,10 @@
           <ul v-if="paper.completeness?.reasons?.length">
             <li v-for="reason in paper.completeness.reasons" :key="reason">{{ reason }}</li>
           </ul>
+        </section>
+        <section v-if="paper.completeness?.warnings?.includes('visual_content_missing')" class="paper-card literature-processing-notice incomplete">
+          <strong>Visual content requires source verification</strong>
+          <p>The text and sections are usable, but figures or tables were not extracted. Review the connected PDF before relying on visual evidence.</p>
         </section>
 
         <div class="paper-detail-layout">

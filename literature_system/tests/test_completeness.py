@@ -25,6 +25,8 @@ def complete_input(**overrides):
         "section_count": 6,
         "knowledge_present": True,
         "methods_present": True,
+        "data_extraction_status": "done",
+        "figure_count": 2,
         "latest_job": None,
     }
     payload.update(overrides)
@@ -38,6 +40,35 @@ def test_complete_paper_passes_demo_audit():
     assert result["complete"] is True
     assert result["retryable"] is False
     assert result["reason_codes"] == []
+    assert result["level"] == "L4"
+    assert result["usable"] is True
+    assert result["evaluable"] is True
+
+
+@pytest.mark.parametrize(
+    "overrides,expected_level",
+    [
+        ({"pdf_available": False}, "L0"),
+        ({"fulltext_char_count": 0, "section_count": 0}, "L1"),
+        ({"knowledge_present": False}, "L2"),
+        ({"data_extraction_status": "failed"}, "L3"),
+        ({"data_extraction_status": "skipped"}, "L4"),
+    ],
+)
+def test_completeness_levels_follow_persisted_artifacts(overrides, expected_level):
+    result = assess_completeness(complete_input(**overrides))
+
+    assert result["level"] == expected_level
+    assert result["usable"] is (expected_level in {"L2", "L3", "L4"})
+    assert result["evaluable"] is (expected_level == "L4")
+
+
+def test_missing_figures_are_reported_without_blocking_evaluation():
+    result = assess_completeness(complete_input(figure_count=0))
+
+    assert result["level"] == "L4"
+    assert result["visual_content_extracted"] is False
+    assert "visual_content_missing" in result["warnings"]
 
 
 @pytest.mark.parametrize("missing_field", ["title", "author"])
@@ -47,6 +78,7 @@ def test_missing_required_metadata_is_incomplete(missing_field):
     assert result["state"] == "incomplete"
     assert result["complete"] is False
     assert f"missing_{missing_field}" in result["reason_codes"]
+    assert result["level"] == "L4"
 
 
 def test_downloadable_but_not_downloaded_pdf_is_retryable():
@@ -140,9 +172,10 @@ def test_database_loader_aggregates_artifacts_and_latest_job():
         CREATE TABLE paper_sections (id INTEGER PRIMARY KEY, paper_id INTEGER);
         CREATE TABLE paper_knowledge_cards (paper_id INTEGER PRIMARY KEY);
         CREATE TABLE paper_methods (paper_id INTEGER PRIMARY KEY);
+        CREATE TABLE paper_figures (id INTEGER PRIMARY KEY, paper_id INTEGER);
         CREATE TABLE parse_jobs (
             id INTEGER PRIMARY KEY, paper_id INTEGER, stage TEXT, status TEXT,
-            error_class TEXT, error_msg TEXT, created_at TEXT
+            parser_used TEXT, error_class TEXT, error_msg TEXT, created_at TEXT
         );
         INSERT INTO papers VALUES
             (1, '10.1/complete', 'Complete', 'Alice', 'https://oa/1.pdf'),
@@ -151,16 +184,20 @@ def test_database_loader_aggregates_artifacts_and_latest_job():
         INSERT INTO paper_sections VALUES (1, 1), (2, 1);
         INSERT INTO paper_knowledge_cards VALUES (1);
         INSERT INTO paper_methods VALUES (1);
+        INSERT INTO paper_figures VALUES (1, 1), (2, 1);
         INSERT INTO parse_jobs VALUES
-            (1, 2, 'pdf', 'failed', 'NetworkError', 'timeout', '2026-08-21'),
-            (2, 2, 'pdf', 'running', NULL, NULL, '2026-08-22');
+            (1, 2, 'pdf', 'failed', NULL, 'NetworkError', 'timeout', '2026-08-21'),
+            (2, 2, 'pdf', 'running', NULL, NULL, NULL, '2026-08-22'),
+            (3, 1, 'extract', 'done', 'data_points', NULL, NULL, '2026-08-22');
         """
     )
 
     results = load_completeness_many(conn, [1, 2], {1: True, 2: False})
 
     assert results[1]["state"] == "complete"
+    assert results[1]["level"] == "L4"
     assert results[1]["evidence"]["section_count"] == 2
+    assert results[1]["evidence"]["figure_count"] == 2
     assert results[2]["state"] == "processing"
     assert results[2]["stage"] == "pdf"
 
@@ -177,9 +214,10 @@ def test_database_loader_returns_no_entry_for_unknown_paper():
         CREATE TABLE paper_sections (id INTEGER PRIMARY KEY, paper_id INTEGER);
         CREATE TABLE paper_knowledge_cards (paper_id INTEGER PRIMARY KEY);
         CREATE TABLE paper_methods (paper_id INTEGER PRIMARY KEY);
+        CREATE TABLE paper_figures (id INTEGER PRIMARY KEY, paper_id INTEGER);
         CREATE TABLE parse_jobs (
             id INTEGER PRIMARY KEY, paper_id INTEGER, stage TEXT, status TEXT,
-            error_class TEXT, error_msg TEXT, created_at TEXT
+            parser_used TEXT, error_class TEXT, error_msg TEXT, created_at TEXT
         );
         """
     )

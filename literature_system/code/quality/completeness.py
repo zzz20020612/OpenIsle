@@ -20,6 +20,7 @@ REASON_MESSAGES = {
     "sections_missing": "No substantive document sections were parsed.",
     "knowledge_missing": "The knowledge card has not been extracted.",
     "methods_missing": "The methods record has not been extracted.",
+    "data_extraction_incomplete": "Data-point extraction has not reached a terminal successful state.",
 }
 
 
@@ -48,10 +49,17 @@ def _result(
     retryable: bool,
     evidence: Dict[str, Any],
 ) -> Dict[str, Any]:
+    level = evidence["level"]
     return {
         "state": state,
         "stage": stage,
-        "complete": state == "complete",
+        "complete": state == "complete" and level == "L4",
+        "level": level,
+        "level_label": evidence["level_label"],
+        "usable": level in {"L2", "L3", "L4"},
+        "evaluable": state == "complete" and level == "L4",
+        "visual_content_extracted": evidence["figure_count"] > 0,
+        "warnings": [] if evidence["figure_count"] > 0 else ["visual_content_missing"],
         "retryable": retryable,
         "reason_codes": reasons,
         "reasons": [REASON_MESSAGES[reason] for reason in reasons],
@@ -69,12 +77,42 @@ def assess_completeness(values: Mapping[str, Any]) -> Dict[str, Any]:
     """
     char_count = int(values.get("fulltext_char_count") or 0)
     section_count = int(values.get("section_count") or 0)
+    figure_count = int(values.get("figure_count") or 0)
+    data_status = _text(values.get("data_extraction_status")).lower()
+    pdf_available = bool(values.get("pdf_available"))
+    parsed = char_count >= MIN_FULLTEXT_CHARS and section_count > 0
+    knowledge_ready = bool(values.get("knowledge_present")) and bool(values.get("methods_present"))
+    data_ready = data_status in {"done", "skipped"}
+    # The L0-L4 level describes processing artifacts only. Metadata quality is
+    # reported independently through `state` and reason codes, so a missing
+    # author cannot falsely hide an already parsed PDF as L0.
+    if not pdf_available:
+        level = "L0"
+    elif not parsed:
+        level = "L1"
+    elif not knowledge_ready:
+        level = "L2"
+    elif not data_ready:
+        level = "L3"
+    else:
+        level = "L4"
+    level_labels = {
+        "L0": "Metadata only",
+        "L1": "PDF ready",
+        "L2": "Full text parsed",
+        "L3": "Knowledge extracted",
+        "L4": "Ready for evaluation",
+    }
     evidence = {
-        "pdf_available": bool(values.get("pdf_available")),
+        "pdf_available": pdf_available,
         "fulltext_char_count": char_count,
         "section_count": section_count,
         "knowledge_present": bool(values.get("knowledge_present")),
         "methods_present": bool(values.get("methods_present")),
+        "data_extraction_status": data_status or None,
+        "figure_count": figure_count,
+        "level": level,
+        "level_label": level_labels[level],
     }
 
     metadata_reasons = []
@@ -141,6 +179,12 @@ def assess_completeness(values: Mapping[str, Any]) -> Dict[str, Any]:
             retryable=True, evidence=evidence,
         )
 
+    if not data_ready:
+        return _result(
+            "retryable", "extract", ["data_extraction_incomplete"],
+            retryable=True, evidence=evidence,
+        )
+
     return _result("complete", "complete", [], retryable=False, evidence=evidence)
 
 
@@ -161,6 +205,8 @@ def load_completeness_many(
                COUNT(DISTINCT s.id) AS section_count,
                CASE WHEN kc.paper_id IS NULL THEN 0 ELSE 1 END AS knowledge_present,
                CASE WHEN pm.paper_id IS NULL THEN 0 ELSE 1 END AS methods_present,
+               COUNT(DISTINCT pf.id) AS figure_count,
+               dj.status AS data_extraction_status,
                j.stage AS job_stage, j.status AS job_status,
                j.error_class AS job_error_class, j.error_msg AS job_error_msg
         FROM papers p
@@ -168,6 +214,13 @@ def load_completeness_many(
         LEFT JOIN paper_sections s ON s.paper_id = p.id
         LEFT JOIN paper_knowledge_cards kc ON kc.paper_id = p.id
         LEFT JOIN paper_methods pm ON pm.paper_id = p.id
+        LEFT JOIN paper_figures pf ON pf.paper_id = p.id
+        LEFT JOIN parse_jobs dj ON dj.id = (
+            SELECT dj2.id FROM parse_jobs dj2
+            WHERE dj2.paper_id = p.id AND dj2.stage = 'extract'
+              AND dj2.parser_used = 'data_points'
+            ORDER BY dj2.id DESC LIMIT 1
+        )
         LEFT JOIN parse_jobs j ON j.id = (
             SELECT j2.id FROM parse_jobs j2
             WHERE j2.paper_id = p.id
@@ -175,7 +228,7 @@ def load_completeness_many(
         )
         WHERE p.id IN ({placeholders})
         GROUP BY p.id, p.doi, p.title, p.author, p.oa_url,
-                 ft.char_count, kc.paper_id, pm.paper_id,
+                 ft.char_count, kc.paper_id, pm.paper_id, dj.status,
                  j.stage, j.status, j.error_class, j.error_msg
     """
     cur = conn.cursor()
