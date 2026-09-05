@@ -308,6 +308,7 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                 return
 
             if path == "/workflow/settings":
+                wf_settings.apply_to_config()
                 settings = wf_settings.get_settings(mask_sensitive=True)
                 for key in wf_settings.SENSITIVE_KEYS:
                     settings.pop(key, None)
@@ -714,6 +715,7 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
             测试结果
         """
         try:
+            wf_settings.apply_to_config()
             if service == "llm":
                 api_key = data.get("api_key", "").strip() or config.LLM_API_KEY
                 base_url = data.get("base_url", "").strip() or config.LLM_BASE_URL
@@ -783,15 +785,15 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                 # MinerU 测试连接
                 headers = {"Authorization": f"Bearer {api_key}"}
                 response = requests.get(
-                    "https://mineru.net/api/v4/status",
+                    "https://mineru.net/api/v4/extract-results/batch/00000000-0000-0000-0000-000000000000",
                     headers=headers,
                     timeout=10
                 )
                 
-                if response.status_code == 200:
-                    return {"success": True, "message": "MinerU 连接成功"}
+                if response.status_code == 200 and response.json().get("code") in (0, -60012):
+                    return {"success": True, "message": "MinerU 鉴权及任务接口可用；解析和结果下载需通过实际任务验证"}
                 else:
-                    return {"success": False, "message": f"连接失败: {response.status_code}"}
+                    return {"success": False, "message": f"MinerU 鉴权或接口检查失败: HTTP {response.status_code}"}
             
             elif service == "wos":
                 api_key = data.get("api_key", "").strip() or config.WOS_API_KEY

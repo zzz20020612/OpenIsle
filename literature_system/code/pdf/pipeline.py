@@ -21,6 +21,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List, Tuple
 
 import config
+from pdf.result_download import download_result
 from logger import get_logger
 from pdf.scheduler import (
     get_conn, get_job, update_job, classify_error,
@@ -652,9 +653,7 @@ class MineruAPIClient:
         result_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            r = requests.get(result_url, timeout=120, stream=True)
-            r.raise_for_status()
-            zip_bytes = r.content
+            zip_bytes = download_result(result_url, config.MINERU_RESULT_FALLBACK_PROXY)
             with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
                 zf.extractall(result_dir)
             log.info(f"[mineru] 结果下载完成: {result_dir}")
@@ -690,7 +689,9 @@ class MineruAPIClient:
 
         # 找 content_list.json
         content_list_path = None
-        for p in result_dir.rglob("*content_list*.json"):
+        # The ZIP also includes content_list_v2.json (nested page lists).
+        # This adapter consumes the flat, backward-compatible content_list.
+        for p in sorted(result_dir.rglob("*content_list.json")):
             content_list_path = p
             break
 
