@@ -154,6 +154,20 @@ public class LiteratureIntegrationService {
     }
   }
 
+  public LiteratureFileResponse getFigure(long paperId, long figureId) {
+    if (paperId <= 0 || figureId <= 0) throw new IllegalArgumentException("paperId and figureId must be positive");
+    try {
+      ResponseEntity<byte[]> response = restTemplate.getForEntity(
+        URI.create(baseUrl + "/paper/" + paperId + "/figure/" + figureId), byte[].class
+      );
+      return new LiteratureFileResponse(response.getStatusCode(), response.getBody(), response.getHeaders().getContentType());
+    } catch (HttpStatusCodeException ex) {
+      return new LiteratureFileResponse(ex.getStatusCode(), ex.getResponseBodyAsByteArray(), MediaType.APPLICATION_JSON);
+    } catch (ResourceAccessException ex) {
+      return new LiteratureFileResponse(HttpStatus.SERVICE_UNAVAILABLE, new byte[0], MediaType.APPLICATION_JSON);
+    }
+  }
+
   public LiteratureProxyResponse parseSubmissionPdf(byte[] pdfBytes) {
     if (pdfBytes == null || pdfBytes.length < 5) {
       throw new IllegalArgumentException("PDF file is empty");

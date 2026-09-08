@@ -277,6 +277,10 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
                 return
 
             if path.startswith("/paper/"):
+                figure_match = re.fullmatch(r"/paper/([1-9][0-9]*)/figure/([1-9][0-9]*)", path)
+                if figure_match:
+                    self._serve_paper_figure(int(figure_match.group(1)), int(figure_match.group(2)))
+                    return
                 pdf_match = re.fullmatch(r"/paper/([1-9][0-9]*)/pdf", path)
                 if pdf_match:
                     self._serve_paper_pdf(int(pdf_match.group(1)))
@@ -371,6 +375,37 @@ class SearchAPIHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/pdf")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Content-Disposition", f'inline; filename="literature-{paper_id}.pdf"')
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _serve_paper_figure(self, paper_id: int, figure_id: int):
+        """Serve a MinerU-extracted raster while keeping paths inside PDF storage."""
+        import mimetypes
+
+        cur = self.engine.conn.cursor()
+        cur.execute(
+            "SELECT file_path, fig_type FROM paper_figures WHERE id = ? AND paper_id = ?",
+            (figure_id, paper_id),
+        )
+        row = cur.fetchone()
+        if not row or row["fig_type"] == "table":
+            self._send_error(404, "Figure image not found")
+            return
+        stored = str(row["file_path"] or "").replace("\\", "/")
+        if stored.startswith("pdfs/"):
+            stored = stored[5:]
+        root = Path(config.PDF_DOWNLOAD_DIR).resolve()
+        resolved = (root / stored).resolve()
+        if root not in resolved.parents or not resolved.is_file():
+            self._send_error(404, "Figure image not found")
+            return
+        data = resolved.read_bytes()
+        content_type = mimetypes.guess_type(resolved.name)[0] or "application/octet-stream"
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "public, max-age=86400")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
         self.wfile.write(data)

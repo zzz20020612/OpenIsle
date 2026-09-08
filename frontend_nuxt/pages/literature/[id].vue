@@ -121,7 +121,7 @@
 
             <section v-show="activeContentTab === 'figures'" class="paper-block">
               <h2 class="paper-block-title">Figures and Tables</h2>
-              <div v-if="figures.length" class="literature-data-list"><article v-for="(figure,index) in figures" :key="figure.id || index" class="literature-data-item"><strong>{{ figure.label || figure.title || `Figure ${index + 1}` }}</strong><p>{{ figure.caption || figure.description || 'Caption unavailable' }}</p></article></div><p v-else class="literature-muted">No figures or tables were extracted.</p>
+              <div v-if="figures.length" class="literature-data-list"><article v-for="(figure,index) in figures" :key="figure.id || index" class="literature-data-item"><strong>{{ figure.fig_label || figure.label || figure.title || `Figure ${index + 1}` }}</strong><div v-if="figure.fig_type === 'table' && isExtractedTable(figure)" class="extracted-table" v-html="sanitizedTableHtml(figure.file_path)"></div><img v-else-if="figure.id" class="extracted-figure" :src="figureImageUrl(figure)" :alt="figure.caption || figure.fig_label || `Figure ${index + 1}`" loading="lazy"><p>{{ figure.caption || figure.description || 'Caption unavailable' }}</p></article></div><p v-else class="literature-muted">No figures or tables were extracted.</p>
             </section>
 
             <section v-show="activeContentTab === 'citations'" class="paper-block">
@@ -363,6 +363,16 @@ const score = computed(() => data.value?.score || {})
 const ratings = computed(() => Array.isArray(data.value?.ratings) ? data.value.ratings : [])
 const sections = computed(() => paper.value?.sections || paper.value?.fulltext?.sections || [])
 const figures = computed(() => paper.value?.figures || paper.value?.fulltext?.figures || [])
+const figureImageUrl = figure => `${runtimeConfig.public.apiBaseUrl}/api/literature/papers/${paperId.value}/figures/${figure.id}`
+const isExtractedTable = figure => String(figure?.file_path || '').trimStart().startsWith('<table')
+const sanitizedTableHtml = value => String(value || '')
+  .replace(/<(?!\/?(?:table|thead|tbody|tr|th|td)\b)[^>]*>/gi, '')
+  .replace(/<(table|thead|tbody|tr)(?:\s[^>]*)?>/gi, '<$1>')
+  .replace(/<(th|td)([^>]*)>/gi, (_, tag, attrs) => {
+    const spans = [...String(attrs).matchAll(/\b(rowspan|colspan)\s*=\s*["']?(\d+)["']?/gi)]
+      .map(match => ` ${match[1].toLowerCase()}="${match[2]}"`).join('')
+    return `<${tag.toLowerCase()}${spans}>`
+  })
 const citations = computed(() => data.value?.citations?.citations || data.value?.citations?.items || [])
 const paperAuthors = computed(() => data.value?.authors?.authors || data.value?.authors?.items || [])
 const firstStructuredAuthor = computed(() => paperAuthors.value[0] || null)
@@ -605,6 +615,7 @@ function formatAuthors(value) {
   font-size: 12px;
   line-height: 1.5;
 }
+.extracted-figure{grid-column:1/-1;display:block;max-width:100%;max-height:720px;margin:10px auto;border:1px solid var(--paper-line);background:#fff;object-fit:contain}.extracted-table{grid-column:1/-1;max-width:100%;overflow:auto;margin-top:10px}.extracted-table :deep(table){width:100%;border-collapse:collapse;font-size:12px}.extracted-table :deep(th),.extracted-table :deep(td){padding:7px 9px;border:1px solid var(--paper-line);text-align:left}.extracted-table :deep(tr:first-child){background:var(--paper-surface-soft);font-weight:750}
 .literature-network-links{display:grid;gap:9px}.literature-network-links h3{margin:10px 0 0;color:var(--paper-soft);font-size:10px;text-transform:uppercase;letter-spacing:.07em}.literature-network-action{justify-content:center;text-align:center}.literature-link-tags{display:flex;flex-wrap:wrap;gap:6px}.literature-link-tags a{padding:5px 7px;background:var(--paper-surface-soft);color:var(--paper-teal);font-size:10px;font-weight:750;text-decoration:none}.literature-link-tags a:hover{background:var(--paper-teal);color:#fff}
 .literature-content-tabs{position:sticky;top:0;z-index:3;display:flex;overflow:auto;margin-bottom:0;border:1px solid var(--paper-line);background:var(--paper-line);gap:1px}.literature-content-tabs button{min-width:max-content;border:0;padding:12px 15px;background:#fff;color:var(--paper-muted);font-size:12px;font-weight:800;cursor:pointer}.literature-content-tabs button.active{background:var(--paper-teal);color:#fff}.literature-reading-context{display:flex;align-items:baseline;gap:14px;padding:12px 15px;margin-bottom:14px;border:1px solid var(--paper-line);border-top:0;background:var(--paper-surface-soft)}.literature-reading-context span{flex:0 0 auto;color:var(--paper-teal);font-size:10px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}.literature-reading-context p{margin:0;color:var(--paper-muted);font-size:12px;line-height:1.5}.literature-section{border-top:1px solid var(--paper-line)}.literature-section summary{display:flex;justify-content:space-between;gap:16px;padding:16px 0;cursor:pointer;font:500 19px Georgia,serif}.literature-section summary small{color:var(--paper-soft);font:700 10px var(--paper-font-ui);text-transform:uppercase}.literature-section .paper-manuscript{max-width:72ch;padding:4px 0 24px;font-size:16px;line-height:1.85}.literature-similar{display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-top:1px solid var(--paper-line);color:var(--paper-ink);text-decoration:none}.literature-similar span{color:var(--paper-green)}
 .literature-supplement{padding:0}.literature-supplement>summary,.literature-evaluate-panel>summary{padding:16px 18px;color:var(--paper-ink);cursor:pointer;font-weight:800;list-style-position:inside}.literature-supplement[open]{padding:0 18px 18px}.literature-supplement[open]>summary{margin:0 -18px 18px;border-bottom:1px solid var(--paper-line)}.literature-supplement-heading{margin-top:0}.literature-subheading{margin-top:24px}.literature-evaluate-panel{margin-top:8px;border:1px solid var(--paper-line)}.literature-evaluate-panel>summary{color:var(--paper-teal)}.literature-evaluate-body{padding:0 14px 14px}

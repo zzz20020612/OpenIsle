@@ -105,6 +105,19 @@ public class LiteratureController {
     return pdfResponse(literatureService.getPdf(paperId), paperId, true);
   }
 
+  @GetMapping("/papers/{paperId}/figures/{figureId}")
+  @Operation(summary = "View an extracted literature figure")
+  public ResponseEntity<byte[]> viewFigure(@PathVariable long paperId, @PathVariable long figureId) {
+    LiteratureFileResponse result = literatureService.getFigure(paperId, figureId);
+    ResponseEntity.BodyBuilder response = ResponseEntity.status(result.status());
+    response.contentType(result.contentType() == null ? MediaType.APPLICATION_OCTET_STREAM : result.contentType());
+    if (result.status().is2xxSuccessful()) {
+      response.header("Cache-Control", "public, max-age=86400");
+      response.header("X-Content-Type-Options", "nosniff");
+    }
+    return response.body(result.body());
+  }
+
   @RequestMapping(value = "/explore/**", method = RequestMethod.GET)
   @Operation(summary = "Use the complete public literature discovery API")
   public ResponseEntity<JsonNode> explore(HttpServletRequest request) {
