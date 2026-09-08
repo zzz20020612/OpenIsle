@@ -142,7 +142,29 @@ class LLMClient:
             max_tokens=max_tokens,
             response_format={"type": "json_object"},
         )
-        return self._parse_json(content)
+        try:
+            return self._parse_json(content)
+        except LLMError:
+            # Some OpenAI-compatible models occasionally stop in the middle of
+            # a JSON string even when json_object mode is requested. A second,
+            # explicitly compact generation is safer than trying to invent the
+            # missing scientific content locally.
+            logger.warning("LLM JSON 输出不完整，使用紧凑格式重新生成一次")
+            retry_messages = list(messages) + [{
+                "role": "user",
+                "content": (
+                    "上一份输出不是完整 JSON。请重新生成完整、可解析的 JSON 对象；"
+                    "只输出 JSON，不要 Markdown。保持要求的全部字段，但内容务必精炼："
+                    "每个字符串不超过 300 个汉字，数组最多 5 项。"
+                ),
+            }]
+            retry_content = self.chat(
+                retry_messages,
+                temperature=0,
+                max_tokens=max_tokens,
+                response_format={"type": "json_object"},
+            )
+            return self._parse_json(retry_content)
 
     @staticmethod
     def _parse_json(content: str) -> Dict[str, Any]:

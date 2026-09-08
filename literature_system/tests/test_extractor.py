@@ -51,6 +51,25 @@ class LlmJsonRepairTest(unittest.TestCase):
 
         self.assertEqual([], result["data_points"])
 
+    def test_chat_json_retries_truncated_output_with_compact_instruction(self):
+        from phase3.llm_client import LLMClient
+
+        client = object.__new__(LLMClient)
+        replies = iter(['{"answer": "truncated', '{"answer": "complete"}'])
+        calls = []
+
+        def fake_chat(messages, **kwargs):
+            calls.append((messages, kwargs))
+            return next(replies)
+
+        client.chat = fake_chat
+        result = client.chat_json([{"role": "user", "content": "extract"}])
+
+        self.assertEqual({"answer": "complete"}, result)
+        self.assertEqual(2, len(calls))
+        self.assertIn("务必精炼", calls[1][0][-1]["content"])
+        self.assertEqual(0, calls[1][1]["temperature"])
+
 
 def test_retry_runs_only_failed_component(monkeypatch):
     from phase3 import extractor
