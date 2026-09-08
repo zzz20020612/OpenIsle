@@ -616,7 +616,7 @@ class SearchEngine:
 
         # 图表
         cur.execute("""
-            SELECT fig_label, fig_type, caption, file_path, page
+            SELECT id, fig_label, fig_type, caption, file_path, page
             FROM paper_figures WHERE paper_id = ?
             ORDER BY id
         """, (paper_id,))
