@@ -75,7 +75,7 @@
               <template v-if="knowledge">
                 <KnowledgeField label="Research question" :value="knowledge.research_question" />
                 <KnowledgeField label="Core answer" :value="knowledge.core_answer" />
-                <KnowledgeField label="Key claims" :value="knowledge.key_claims" />
+                <section class="knowledge-field"><h3>Key claims and evidence</h3><article v-for="(claim,index) in knowledgeClaims" :key="index" class="reading-section"><p>{{ claim.claim || claim.text || claim }}</p><p v-if="claim.evidence" class="literature-muted">{{ claim.evidence }}</p><p v-if="claim.condition" class="literature-muted">{{ claim.condition }}</p><button v-if="sections.some(section => section.id === claim.anchor?.section_id)" class="paper-button" @click="showEvidence(claim.anchor.section_id)">Read source section</button></article></section>
                 <KnowledgeField label="Evidence generation" :value="knowledge.evidence_generation" />
                 <KnowledgeField label="Boundaries and limitations" :value="knowledge.boundaries" />
                 <KnowledgeField label="Reusable inspiration" :value="knowledge.reusable_inspiration" />
@@ -106,16 +106,20 @@
                   <p v-if="point.context">{{ point.context }}</p>
                 </article>
               </div>
-              <p v-else class="literature-muted">No structured data points have been extracted yet.</p>
+              <p v-else class="literature-muted">{{ paper.completeness?.evidence?.data_extraction_status === 'done' ? 'Extraction completed without identifying structured data points. Consult the source for numerical evidence.' : 'Structured data extraction is not complete.' }}</p>
             </section>
 
             <section v-show="activeContentTab === 'sections'" class="paper-block">
               <div class="paper-card-heading"><h2 class="paper-block-title">Sections</h2><span class="paper-mini-label">Machine-extracted from the source PDF</span></div>
-              <div v-if="sections.length" class="literature-sections">
-                <details v-for="(section,index) in sections" :key="section.id || index" class="literature-section" :open="index === 0">
-                  <summary><span>{{ section.heading || section.title || `Section ${index + 1}` }}</span><small v-if="section.page_start != null">Pages {{ Number(section.page_start) + 1 }}–{{ Number(section.page_end ?? section.page_start) + 1 }}</small></summary>
-                  <div class="paper-manuscript literature-prose">{{ section.text || section.content }}</div>
-                </details>
+              <div v-if="sections.length" class="reading-layout">
+                <nav class="reading-toc" aria-label="Article sections"><a v-for="(section,index) in sections" :key="section.id || index" :href="`#section-${section.id || index}`" :style="{ paddingLeft: `${((section.heading_level || 1)-1)*12+8}px` }">{{ section.heading || `Section ${index+1}` }}</a></nav>
+                <div class="literature-sections">
+                <section v-for="(section,index) in sections" :id="`section-${section.id || index}`" :key="section.id || index" class="reading-section">
+                  <component :is="section.heading_level > 1 ? 'h4' : 'h3'">{{ section.heading || section.title || `Section ${index + 1}` }}</component>
+                  <a v-if="paper.pdf_available && section.page_start != null" :href="`${pdfViewUrl}#page=${Number(section.page_start)+1}`" target="_blank" rel="noopener" class="reading-source">View source · page {{ Number(section.page_start)+1 }}</a>
+                  <p v-for="(paragraph,part) in String(section.text || section.content || '').split(/\n\s*\n|\n/).filter(Boolean)" :key="part" class="reading-paragraph">{{ paragraph }}</p>
+                </section>
+                </div>
               </div><p v-else class="literature-muted">No parsed sections are available for this record.</p>
             </section>
 
@@ -125,8 +129,10 @@
             </section>
 
             <section v-show="activeContentTab === 'citations'" class="paper-block">
-              <h2 class="paper-block-title">Citations</h2>
-              <AdminDataTable :rows="citations" empty="No structured citations are available." />
+              <h2 class="paper-block-title">References · {{ citations.length }}</h2>
+              <p class="literature-muted">Works referenced by this paper. Incomplete records retain the source citation.</p>
+              <ol class="reading-references"><li v-for="(reference,index) in citations" :key="reference.id || index"><template v-if="reference.cited_title"><strong>{{ reference.cited_title }}</strong><p>{{ [reference.cited_authors,reference.cited_year,reference.cited_journal].filter(Boolean).join(' · ') }}</p></template><p v-else>{{ reference.raw_reference || 'Reference text unavailable' }}</p><a v-if="reference.cited_doi && reference.cited_title" :href="`https://doi.org/${reference.cited_doi}`" target="_blank" rel="noopener">View publication</a><details v-if="reference.cited_title && reference.raw_reference"><summary>Source citation</summary><p>{{ reference.raw_reference }}</p></details></li></ol>
+              <p v-if="!citations.length" class="literature-muted">Structured references are not available. Check the References section in the full text.</p>
             </section>
 
             <details class="paper-block literature-supplement">
@@ -239,12 +245,9 @@
             </section>
 
             <section class="paper-card literature-quality">
-              <h2 class="paper-section-title">Extraction quality</h2>
-              <strong>{{ qualityLabel }}</strong>
-              <p>
-                This score describes extraction confidence. It is not the platform's scholarly rating or
-                ranking score.
-              </p>
+              <h2 class="paper-section-title">Available content</h2>
+              <dl class="literature-facts"><div><dt>Abstract</dt><dd>{{ paper.abstract ? 'Available' : 'Not identified' }}</dd></div><div><dt>Sections</dt><dd>{{ sections.length }}</dd></div><div><dt>Figures and tables</dt><dd>{{ figures.length }}</dd></div><div><dt>Knowledge</dt><dd>{{ knowledge ? 'Extracted' : 'Not available' }}</dd></div></dl>
+              <p>Availability does not guarantee accuracy. Follow source links to verify evidence.</p>
             </section>
 
             <section class="paper-card">
@@ -296,7 +299,7 @@ const contentTabs = [
   { id: 'abstract', label: 'Abstract' },
   { id: 'sections', label: 'Sections' },
   { id: 'figures', label: 'Figures' },
-  { id: 'citations', label: 'Citations' },
+  { id: 'citations', label: 'References' },
   { id: 'knowledge', label: 'Knowledge' },
   { id: 'methods', label: 'Methods' },
   { id: 'data', label: 'Data' },
@@ -362,6 +365,16 @@ const dataPoints = computed(() => data.value?.dataPointsResult?.data_points || [
 const score = computed(() => data.value?.score || {})
 const ratings = computed(() => Array.isArray(data.value?.ratings) ? data.value.ratings : [])
 const sections = computed(() => paper.value?.sections || paper.value?.fulltext?.sections || [])
+const knowledgeClaims = computed(() => {
+  const value = knowledge.value?.key_claims
+  if (Array.isArray(value)) return value
+  try { const parsed = JSON.parse(value || '[]'); return Array.isArray(parsed) ? parsed : [] } catch { return [] }
+})
+const showEvidence = async (id) => {
+  activeContentTab.value = 'sections'
+  await nextTick()
+  document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 const figures = computed(() => paper.value?.figures || paper.value?.fulltext?.figures || [])
 const figureImageUrl = figure => `${runtimeConfig.public.apiBaseUrl}/api/literature/papers/${paperId.value}/figures/${figure.id}`
 const isExtractedTable = figure => String(figure?.file_path || '').trimStart().startsWith('<table')
@@ -499,6 +512,7 @@ function formatAuthors(value) {
 </script>
 
 <style scoped>
+.reading-layout{display:grid;grid-template-columns:180px minmax(0,1fr);gap:24px}.reading-toc{position:sticky;top:64px;align-self:start;max-height:70vh;overflow:auto;border-right:1px solid var(--paper-line)}.reading-toc a{display:block;padding:8px;color:var(--paper-teal);font-size:12px;text-decoration:none;line-height:1.5}.reading-toc a:hover,.reading-toc a:focus-visible{background:var(--paper-surface-soft);text-decoration:underline}.reading-section{scroll-margin-top:100px;padding:16px 0;border-bottom:1px solid var(--paper-line)}.reading-section h3{font:600 24px Georgia,serif;margin:0 0 10px}.reading-section h4{font:600 20px Georgia,serif;margin:0 0 10px}.reading-source{font-size:12px;color:var(--paper-teal)}.reading-paragraph{font:16px/1.85 Georgia,serif;overflow-wrap:anywhere;margin:16px 0}.reading-references{padding-left:24px}.reading-references li{padding:16px 8px;border-bottom:1px solid var(--paper-line);line-height:1.7;overflow-wrap:anywhere}.reading-references p{margin:6px 0}.reading-references a{color:var(--paper-teal)}.reading-references summary{cursor:pointer;font-size:12px}@media(max-width:1000px){.reading-layout{grid-template-columns:1fr}.reading-toc{position:static;max-height:220px;border-right:0;border-bottom:1px solid var(--paper-line)}}
 .literature-detail-container {
   max-width: 1180px;
 }

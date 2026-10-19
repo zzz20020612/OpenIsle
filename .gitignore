@@ -38,3 +38,11 @@ pnpm-workspace.yaml
 
 # others
 openisle.iml
+
+# Local previews, deployment archives, and independent checkout
+/.codex-pdf-preview*/
+/OpenIsle-deploy.zip
+/Literature System - scripts.zip
+/frontend_nuxt/.nuxt-stale-*/
+/paper-workbench/
+/tmp/

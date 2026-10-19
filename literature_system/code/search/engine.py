@@ -608,11 +608,18 @@ class SearchEngine:
 
         # 章节
         cur.execute("""
-            SELECT section_type, heading, content, page_start, page_end, order_idx
+            SELECT id, section_type, heading, content, page_start, page_end, order_idx
             FROM paper_sections WHERE paper_id = ?
             ORDER BY order_idx
         """, (paper_id,))
         paper["sections"] = [dict(r) for r in cur.fetchall()]
+        from pdf.reading import abstract_from_sections, reading_sections, keywords_from_sections
+        paper["sections"] = reading_sections(paper["sections"])
+        if not paper.get("abstract"):
+            paper["abstract"] = abstract_from_sections(paper["sections"])
+            paper["abstract_source"] = "pdf" if paper["abstract"] else None
+        if not paper.get("keywords"):
+            paper["keywords"] = keywords_from_sections(paper["sections"])
 
         # 图表
         cur.execute("""

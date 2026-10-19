@@ -60,6 +60,8 @@ def get_pdf_path(paper_id: int, doi: Optional[str] = None) -> Optional[Path]:
 # 章节类型分类器
 # ============================================================
 SECTION_RULES = [
+    ("background",     re.compile(r"^\s*(related\s+work|literature\s+review)\b", re.I)),
+    ("methods",        re.compile(r"^\s*(proposed\s+(work|method|approach|system)|system\s+architecture)\b", re.I)),
     ("abstract",       re.compile(r"^\s*abstract\b", re.I)),
     ("intro",          re.compile(r"^\s*(introduction|background)\b", re.I)),
     ("methods",        re.compile(r"^\s*(methods?|materials?\s+and\s+methods?|study\s+area|data\s+collection)\b", re.I)),
@@ -1039,6 +1041,13 @@ class PdfPipeline:
         cur = conn.cursor()
         try:
             # paper_fulltext（UPSERT）
+            from pdf.reading import abstract_from_sections, keywords_from_sections
+            recovered_abstract = abstract_from_sections(result.sections)
+            if recovered_abstract:
+                cur.execute("UPDATE papers SET abstract = ? WHERE id = ? AND (abstract IS NULL OR TRIM(abstract) = '')", (recovered_abstract, paper_id))
+            recovered_keywords = keywords_from_sections(result.sections)
+            if recovered_keywords:
+                cur.execute("UPDATE papers SET keywords = ? WHERE id = ? AND (keywords IS NULL OR TRIM(keywords) IN ('', '[]'))", (json.dumps(recovered_keywords, ensure_ascii=False), paper_id))
             cur.execute(
                 """INSERT INTO paper_fulltext
                    (paper_id, parser_used, parse_quality, full_text, full_markdown,

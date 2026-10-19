@@ -49,6 +49,12 @@ TITLE_PATTERN_APA = re.compile(
 
 def extract_doi_from_text(text: str) -> Optional[str]:
     """从文本中提取 DOI。"""
+    text = text.replace('\\_', '_')
+    # Repair spaces introduced around DOI punctuation by PDF text layout.
+    text = re.sub(r'(?<=\w)\s*([/_-])\s*(?=\w)', r'\1', text)
+    # A period followed by whitespace usually ends a citation. Only join
+    # the well-defined Elsevier /j. prefix, never arbitrary sentence stops.
+    text = re.sub(r'(/j\.)\s+(?=[a-z])', r'\1', text)
     m = DOI_PREFIX_PATTERN.search(text) or DOI_PATTERN.search(text)
     if m:
         doi = m.group(1).rstrip(".,;)")
@@ -160,6 +166,7 @@ def parse_pdf_references(ref_text: str) -> List[Dict]:
 
     result = []
     for ref_line in grouped:
+        ref_line = re.sub(r'^\s*(\[\d+\])\s*\1\s*', r'\1 ', ref_line)
         if len(ref_line) < 20:
             continue
         # 提取 DOI（仅在该条引用范围内查找，避免跨条目匹配）
@@ -180,7 +187,7 @@ def parse_pdf_references(ref_text: str) -> List[Dict]:
             "cited_journal": "",
             "raw_reference": ref_line,
             "match_method": "doi_lookup" if doi else "regex" if (year or title) else "unmatched",
-            "match_confidence": "high" if doi else "medium" if (year or title) else "low",
+            "match_confidence": "medium" if (doi or year or title) else "low",
         })
     log.info(f"[pdf_refs] 解析 {len(result)} 条参考文献")
     return result
