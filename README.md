@@ -8,6 +8,12 @@
   <a href="https://hellogithub.com/repository/nagisa77/OpenIsle" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=8605546658d94cbab45182af2a02e4c8&claim_uid=p5GNFTtZl6HBAYQ" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 </p>
 
+## 当前交接版本：v2.1.0
+
+本分支基于 OpenIsle 扩展为学术投稿、研究评价和文献知识处理平台，下面保留了上游项目介绍。
+接手本项目请先阅读 [中文交接说明](HANDOVER.md)，再阅读各模块文档。
+正式源码快照见 [v2.1.0 Release](https://github.com/zzz20020612/OpenIsle/releases/tag/v2.1.0)。
+
 ## 💡 简介
 
 OpenIsle 是一个使用 Spring Boot 和 Vue 3 构建的全栈开源社区平台，提供用户注册、登录、贴文发布、评论交互等完整功能，可用于项目社区或直接打造自主社区站点。
